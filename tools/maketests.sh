@@ -18,7 +18,8 @@
 
 AUDIO=false
 VIDEO=false
-FFMPEG="$(which sox 2>/dev/null)"
+FFMPEG="$(which avconv 2>/dev/null || which ffmpeg 2>/dev/null)"
+OPUSENC="$(which opusenc 2>/dev/null)"
 SOX="$(which sox 2>/dev/null)"
 SYNTH="synth 10 sine 440 vol 0.5"
 
@@ -112,6 +113,21 @@ function vorbis {
   done
 }
 
+# Generate Ogg/Opus audio test files.
+function opus {
+  [[ -x "$OPUSENC" ]] || return
+  echo "Generating Ogg/Opus audio test files"
+  for r in 8000 16000 24000 32000 48000 96000 192000 \
+           11025 22050 44100 88200 176400
+  do
+    $SOX -b16 -c1 -r$r -e signed -n -L sinewave-s16le-1-$r.tmp.wav $SYNTH
+    $OPUSENC sinewave-s16le-1-$r.tmp.wav sinewave-s16le-1-$r.opus
+    $SOX -b16 -c2 -r$r -e signed -n -L sinewave-s16le-2-$r.tmp.wav $SYNTH
+    $OPUSENC sinewave-s16le-2-$r.tmp.wav sinewave-s16le-2-$r.opus
+  done
+  rm sinewave-s16le-?-*.tmp.wav
+}
+
 # Generate WAV audio test files.
 function wav {
   echo "Generating WAV audio test files"
@@ -172,6 +188,7 @@ $AUDIO && {
   mp3
   vorbis
   wav
+  opus
 }
 
 # Generate all video formats.
@@ -183,7 +200,7 @@ $VIDEO && {
 for ARGS
 do
   case $1 in
-  flac|mp3|vorbis|wav)
+  flac|mp3|vorbis|wav|opus)
       $1
       ;;
   vob)

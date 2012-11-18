@@ -31,6 +31,10 @@ SILENT=false
 TREMOR=false
 VERBOSE=false
 
+SOX="$(which sox 2>/dev/null)"
+FFMPEG="$(which avconv 2>/dev/null || which ffmpeg 2>/dev/null)"
+
+
 # Clean error termination.
 function die {
   echo '***' $@ > /dev/stderr
@@ -66,7 +70,6 @@ function help () {
 }
 
 # Check the FFmpeg decoder's samples.
-FFMPEG=$(which avconv 2>/dev/null || which ffmpeg 2>/dev/null)
 function ffmpeg () {
   local ENDIAN OPTS
 
@@ -83,7 +86,6 @@ function ffmpeg () {
 }
 
 # Check the FLAC decoder's samples.
-SOX=$(which sox 2>/dev/null)
 function flac () {
   local OPTS
 
@@ -103,15 +105,22 @@ function flac () {
 }
 
 # Check the Ogg/Vorbis decoder's samples.
-OGGDEC=$(which oggdec 2>/dev/null)
+OGGDEC="$(which oggdec 2>/dev/null)"
 function vorbis () {
   [[ -x "$OGGDEC" ]] || die oggdec not installed
   SUM2="$($OGGDEC -RQ -o - $FILE | md5sum)"
   LEN2=$($OGGDEC -RQ -o - $FILE | wc -c)
 }
 
+# Check the Ogg/Opus decoder's samples.
+OPUSDEC="$(which opusdec 2>/dev/null)"
+function opus () {
+  [[ -x "$OPUSDEC" ]] || die opusdec not installed
+  SUM2="$($OPUSDEC --quiet --rate 48000 $FILE - | md5sum)"
+  LEN2=$($OPUSDEC --quiet --rate 48000 $FILE - | wc -c)
+}
+
 # Check the LibSndfile decoder's samples.
-SOX=$(which sox 2>/dev/null)
 function sndfile () {
   # LibSndfile doesn't have a decoder, use SoX.
   [[ -x "$SOX" ]] || die "sox (for sndfile) not installed"
@@ -121,7 +130,6 @@ function sndfile () {
 }
 
 # Check the MP3 decoder's samples.
-SOX=$(which sox 2>/dev/null)
 function mp3 () {
   # Lame's decoder only does 16-bit, use SoX.
   [[ -x "$SOX" ]] || die "sox (for mp3) not installed"
@@ -213,7 +221,7 @@ do
 
   # Get the independant MD5 sum and length of audio file.
   case $DEC in
-  ffmpeg|flac|mp3|sndfile|speex|vorbis)
+  ffmpeg|flac|mp3|sndfile|speex|vorbis|opus)
       IGNORE_LEN=false
       IGNORE_SUM=false
       $DEC
@@ -262,8 +270,8 @@ do
     REVN=
   }
   echo "$NAME:"
-  echo "    $SUM $LEN $DEC $FMT $CHANS $RATE"
-  echo "    $SUM2 $LEN2"
+  echo "MOC:    $SUM $LEN $DEC $FMT $CHANS $RATE"
+  echo "REF:    $SUM2 $LEN2"
   $BADFMT && echo "*** Format mismatch"
   $BADSUM && echo "*** MD5 sum mismatch"
   $BADLEN && echo "*** Length mismatch"
