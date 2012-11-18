@@ -546,7 +546,7 @@ static int sort_dirs_func (const void *a, const void *b)
 	if (!strcmp(sb, "../"))
 		return 1;
 
-	return strcoll (sa, sb);
+	return strcmp (sa, sb);
 }
 
 static int get_tags_setting ()
