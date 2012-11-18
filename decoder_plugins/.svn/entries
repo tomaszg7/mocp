@@ -1,0 +1,132 @@
+10
+
+dir
+2510
+svn://daper.net/moc/trunk/decoder_plugins
+svn://daper.net/moc
+
+
+
+2012-10-11T04:22:08.957726Z
+2505
+jcf
+has-props
+
+
+
+
+
+
+
+
+
+
+
+
+
+910807d9-36e0-0310-a014-e9ea483e2ba4
+
+mp3
+dir
+
+aac
+dir
+
+ffmpeg
+dir
+
+sndfile
+dir
+
+speex
+dir
+
+vorbis
+dir
+
+flac
+dir
+
+modplug
+dir
+
+sidplay2
+dir
+
+decoders.m4
+file
+
+
+
+
+2012-11-18T02:48:33.333600Z
+04d30520b5c68e98d7c87836960e8ae8
+2011-07-19T21:41:51.925740Z
+2360
+jcf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+977
+
+musepack
+dir
+
+Makefile.am
+file
+
+
+
+
+2012-11-18T02:48:33.333600Z
+74c398746848a1f5942ed3a0f78d19c8
+2011-03-13T06:58:39.890782Z
+2286
+jcf
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+550
+
+timidity
+dir
+
+wavpack
+dir
+
