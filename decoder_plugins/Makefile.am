@@ -20,6 +20,10 @@ if BUILD_flac
     SUBDIRS += flac
 endif
 
+if BUILD_opus
+    SUBDIRS += opus
+endif
+
 if BUILD_wavpack
     SUBDIRS += wavpack
 endif
