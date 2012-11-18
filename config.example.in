@@ -382,12 +382,11 @@
 # with the file's rate.
 #ForceSampleRate = 0
 
-# By default, even if the sound card reports that it can output 24bit samples
-# MOC converts 24bit PCM to 16bit.  Setting this option to 'yes' allows MOC
-# to use 24bit output.  (The MP3 decoder, for example, uses this format.)
-# This is disabled by default because there were reports that it prevents
-# MP3 files from playing on some soundcards.
-#Allow24bitOutput = no
+# Forbid MOC from using listed audio formats. Useful when your soundcard 
+# reports that it is able to process some format but it can't.
+# To disable float, 24bit and 32bit formats set
+#		MaskOutputFormats	= SFMT_FLOAT:SFMT_S32:SFMT_U32:SFMT_S24:SFMT_U24
+#MaskOutputFormats	= ""
 
 # Use realtime priority for output buffer thread.  This will prevent gaps
 # while playing even with heavy load.  The user who runs MOC must have

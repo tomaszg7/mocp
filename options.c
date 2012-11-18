@@ -662,7 +662,7 @@ void options_init ()
 	                 CHECK_SYMBOL(5), "SincBestQuality", "SincMediumQuality",
 	                                  "SincFastest", "ZeroOrderHold", "Linear");
 	add_int  ("ForceSampleRate", 0, CHECK_RANGE(1), 0, 500000);
-	add_bool ("Allow24bitOutput", false);
+	add_list ("MaskOutputFormats","",CHECK_NONE);
 	add_bool ("UseRealtimePriority", false);
 	add_int  ("TagsCacheSize", 256, CHECK_RANGE(1), 0, INT_MAX);
 	add_bool ("PlaylistNumbering", true);
@@ -1030,6 +1030,18 @@ static bool set_option (const char *name, const char *value_in, bool append)
 		sleep (5);
 	}
 
+	if (!strcasecmp (name, "Allow24bitOutput"))
+	{
+	      fprintf (stderr, "\n\tOption 'Allow24bitOutput' is deprecated;"
+				 "\n\tplease use 'MaskOutputFormats'. Please "
+				 "\n\tread the comments for this option in"
+		                 "\n\tthe supplied config.example file and update"
+		                 "\n\tyour own configuration file accordingly.\n\n");
+	      sleep (5);
+	      return true;
+	}
+
+	
 	i = find_option (name_s, OPTION_ANY);
 	if (i == -1) {
 		fprintf (stderr, "Wrong option name: '%s'.", name_s);

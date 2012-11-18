@@ -136,16 +136,19 @@ char *sfmt_str (const long format, char *msg, const size_t buf_size)
 		strncat (msg, ", 16-bit signed", buf_size - strlen(msg) - 1);
 	if (format & SFMT_U16)
 		strncat (msg, ", 16-bit unsigned", buf_size - strlen(msg) - 1);
-	if (format & SFMT_S32)
+	if (format & SFMT_S24)
 		strncat (msg, ", 24-bit signed (as 32-bit samples)",
 				buf_size - strlen(msg) - 1);
-	if (format & SFMT_U32)
+	if (format & SFMT_U24)
 		strncat (msg, ", 24-bit unsigned (as 32-bit samples)",
 				buf_size - strlen(msg) - 1);
+	if (format & SFMT_S32)
+		strncat (msg, ", 32-bit signed", buf_size - strlen(msg) - 1);
+	if (format & SFMT_U32)
+		strncat (msg, ", 32-bit unsigned", buf_size - strlen(msg) - 1);
 	if (format & SFMT_FLOAT)
 		strncat (msg, ", float",
 				buf_size - strlen(msg) - 1);
-
 	if (format & SFMT_LE)
 		strncat (msg, " little-endian", buf_size - strlen(msg) - 1);
 	else if (format & SFMT_BE)
@@ -169,7 +172,10 @@ int sfmt_same_bps (const long fmt1, const long fmt2)
 	if (fmt1 & (SFMT_S16 | SFMT_U16)
 			&& fmt2 & (SFMT_S16 | SFMT_U16))
 		return 1;
-	if (fmt1 & (SFMT_S8 | SFMT_U8)
+	if (fmt1 & (SFMT_S24 | SFMT_U24)
+			&& fmt2 & (SFMT_S24 | SFMT_U24))
+		return 1;
+	if (fmt1 & (SFMT_S32 | SFMT_U32)
 			&& fmt2 & (SFMT_S32 | SFMT_U32))
 		return 1;
 	if (fmt1 & fmt2 & SFMT_FLOAT)
@@ -185,6 +191,7 @@ static long sfmt_best_matching (const long formats_with_endian,
 {
 	long formats = formats_with_endian & SFMT_MASK_FORMAT;
 	long req = req_with_endian & SFMT_MASK_FORMAT;
+	long endian = formats_with_endian & SFMT_MASK_ENDIANNESS;
 	long best = 0;
 
 #ifdef DEBUG
@@ -192,6 +199,7 @@ static long sfmt_best_matching (const long formats_with_endian,
 	char fmt_name2[SFMT_STR_MAX];
 #endif
 
+	
 	if (formats & req)
 		best = req;
 	else if (req == SFMT_S8 || req == SFMT_U8) {
@@ -203,6 +211,10 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
 			best = SFMT_U16;
+		else if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
 		else if (formats & SFMT_S32)
 			best = SFMT_S32;
 		else if (formats & SFMT_U32)
@@ -215,6 +227,10 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
 			best = SFMT_U16;
+		else if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
 		else if (formats & SFMT_S32)
 			best = SFMT_S32;
 		else if (formats & SFMT_U32)
@@ -226,17 +242,59 @@ static long sfmt_best_matching (const long formats_with_endian,
 		else if (formats & SFMT_U8)
 			best = SFMT_U8;
 	}
-	else if (req == SFMT_S32 || req == SFMT_U32 || req == SFMT_FLOAT) {
-		if (formats & SFMT_S32)
+	else if (req == SFMT_S24 || req == SFMT_U24) {
+		if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
+		else if (formats & SFMT_S32)
 			best = SFMT_S32;
 		else if (formats & SFMT_U32)
 			best = SFMT_U32;
+		else if (formats & SFMT_FLOAT)
+			best = SFMT_FLOAT;
 		else if (formats & SFMT_S16)
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
 			best = SFMT_U16;
+		else if (formats & SFMT_S8)
+			best = SFMT_S8;
+		else if (formats & SFMT_U8)
+			best = SFMT_U8;
+	}
+	else if (req == SFMT_S32 || req == SFMT_U32) {
+		if (formats & SFMT_S32)
+			best = SFMT_S32;
+		else if (formats & SFMT_U32)
+			best = SFMT_U32;
 		else if (formats & SFMT_FLOAT)
 			best = SFMT_FLOAT;
+		else if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
+		else if (formats & SFMT_S16)
+			best = SFMT_S16;
+		else if (formats & SFMT_U16)
+			best = SFMT_U16;
+		else if (formats & SFMT_S8)
+			best = SFMT_S8;
+		else if (formats & SFMT_U8)
+			best = SFMT_U8;
+	}
+	else if (req == SFMT_FLOAT) {
+		if (formats & SFMT_S32)
+			best = SFMT_S32;
+		else if (formats & SFMT_U32)
+			best = SFMT_U32;
+		else if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
+		else if (formats & SFMT_S16)
+			best = SFMT_S16;
+		else if (formats & SFMT_U16)
+			best = SFMT_U16;
 		else if (formats & SFMT_S8)
 			best = SFMT_S8;
 		else if (formats & SFMT_U8)
@@ -245,12 +303,9 @@ static long sfmt_best_matching (const long formats_with_endian,
 
 	assert (best != 0);
 
-	if (!(best & (SFMT_S8 | SFMT_U8))) {
-		if ((formats_with_endian & SFMT_LE)
-				&& (formats_with_endian & SFMT_BE))
-			best |= SFMT_NE;
-		else
-			best |= formats_with_endian & SFMT_MASK_ENDIANNESS;
+	if (!(best & (SFMT_S8 | SFMT_U8 | SFMT_FLOAT))) {
+		assert((endian & SFMT_LE) ^ (endian & SFMT_BE));
+		best |= endian;
 	}
 
 #ifdef DEBUG
@@ -279,6 +334,8 @@ int sfmt_Bps (const long format)
 			break;
 		case SFMT_S32:
 		case SFMT_U32:
+		case SFMT_S24:
+		case SFMT_U24:
 			Bps = 4;
 			break;
 		case SFMT_FLOAT:
@@ -734,6 +791,9 @@ int audio_open (struct sound_params *sound_params)
 		char fmt_name[SFMT_STR_MAX];
 
 		driver_sound_params.rate = hw.get_rate ();
+			debug ("Driver sfmt: %ld, req sfmt %ld",driver_sound_params.fmt, req_sound_params.fmt);
+			debug ("Driver channels: %d, req channels %d",driver_sound_params.channels, req_sound_params.channels);
+			debug ("Driver rate: %d, req rate %d",driver_sound_params.rate, req_sound_params.rate);
 		if (driver_sound_params.fmt != req_sound_params.fmt
 				|| driver_sound_params.channels
 				!= req_sound_params.channels
@@ -942,26 +1002,52 @@ static void find_working_driver (lists_t_strs *drivers, struct hw_funcs *funcs)
 static void print_output_capabilities (const struct output_driver_caps *caps)
 {
 	char fmt_name[SFMT_STR_MAX];
-
+	
 	logit ("Sound driver capabilities: channels %d - %d, formats: %s",
 			caps->min_channels, caps->max_channels,
 			sfmt_str(caps->formats, fmt_name, sizeof(fmt_name)));
 }
 
+static long decode_masked_formats (lists_t_strs *list)
+{
+	long fmt=0;
+	if (lists_strs_exists(list,"S8")) fmt |= SFMT_S8;
+	if (lists_strs_exists(list,"U8")) fmt |= SFMT_U8;
+	if (lists_strs_exists(list,"S16")) fmt |= SFMT_S16;
+	if (lists_strs_exists(list,"U16")) fmt |= SFMT_U16;
+	if (lists_strs_exists(list,"S24")) fmt |= SFMT_S24;
+	if (lists_strs_exists(list,"U24")) fmt |= SFMT_U24;
+	if (lists_strs_exists(list,"S32")) fmt |= SFMT_S32;
+	if (lists_strs_exists(list,"U32")) fmt |= SFMT_U32;
+	if (lists_strs_exists(list,"FLOAT")) fmt |= SFMT_FLOAT;
+  
+	return fmt;
+}
+
 void audio_initialize ()
 {
+	long masked_formats;
+//	lists_s_strs masked_fmt_list;
+
 	find_working_driver (options_get_list ("SoundDriver"), &hw);
 
 	assert (hw_caps.max_channels >= hw_caps.min_channels);
 	assert (sound_format_ok(hw_caps.formats));
 
 	print_output_capabilities (&hw_caps);
-	if (!options_get_int("Allow24bitOutput")
-			&& hw_caps.formats & (SFMT_S32 | SFMT_U32)) {
-		logit ("Disabling 24bit modes because Allow24bitOutput is set "
-				"to no.");
-		hw_caps.formats &= ~(SFMT_S32 | SFMT_U32);
+
+	masked_formats=decode_masked_formats(options_get_list("MaskOutputFormats"));
+	if(masked_formats&hw_caps.formats)
+	{
+	    logit ("Applying mask %lX to formats",masked_formats);
+	    hw_caps.formats &= ~masked_formats;
 	}
+// 	if (!options_get_int("Allow24bitOutput")
+// 			&& hw_caps.formats & (SFMT_S32 | SFMT_U32 | SFMT_U24 | SFMT_S24)) {
+// 		logit ("Disabling 24bit and 32bit modes because Allow24bitOutput is set "
+// 				"to no.");
+// 		hw_caps.formats &= ~(SFMT_S32 | SFMT_U32 | SFMT_S24 | SFMT_U24);
+// 	}
 
 	out_buf_init (&out_buf, options_get_int("OutputBuffer") * 1024);
 

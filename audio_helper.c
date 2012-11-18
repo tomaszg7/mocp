@@ -24,11 +24,13 @@ int sample_size(long sfmt)
     case SFMT_U16:
     case SFMT_S16:
       return 2;
+    case SFMT_U24:
+    case SFMT_S24:
     case SFMT_U32:
     case SFMT_S32:
       return 4;
     case SFMT_FLOAT:
-      return 2;
+      return sizeof(float);
     default:
       return -1;
   }

@@ -153,6 +153,8 @@ static void equ_process_buffer_u8(uint8_t *buf, size_t size);
 static void equ_process_buffer_s8(int8_t *buf, size_t size);
 static void equ_process_buffer_u16(uint16_t *buf, size_t size);
 static void equ_process_buffer_s16(int16_t *buf, size_t size);
+static void equ_process_buffer_u24(uint32_t *buf, size_t size);
+static void equ_process_buffer_s24(int32_t *buf, size_t size);
 static void equ_process_buffer_u32(uint32_t *buf, size_t size);
 static void equ_process_buffer_s32(int32_t *buf, size_t size);
 static void equ_process_buffer_float(float *buf, size_t size);
@@ -740,6 +742,12 @@ void equalizer_process_buffer(char *buf, size_t size, const struct sound_params 
     case SFMT_S16:
       equ_process_buffer_s16((int16_t *)buf, size / sizeof(int16_t));
       break;
+    case SFMT_U24:
+      equ_process_buffer_u24((uint32_t *)buf, size / sizeof(uint32_t));
+      break;
+    case SFMT_S24:
+      equ_process_buffer_s24((int32_t *)buf, size / sizeof(int32_t));
+      break;
     case SFMT_U32:
       equ_process_buffer_u32((uint32_t *)buf, size / sizeof(uint32_t));
       break;
@@ -857,6 +865,55 @@ static void equ_process_buffer_s16(int16_t *buf, size_t size)
 
   free(tmp);
 }
+
+static void equ_process_buffer_u24(uint32_t *buf, size_t size)
+{
+  size_t i;
+  float *tmp;
+
+  debug ("equalizing");
+
+  tmp = (float *)xmalloc (size * sizeof (float));
+
+  for(i=0; i<size; i++)
+    tmp[i] = preampf * (float)buf[i];
+
+  apply_biquads(tmp, tmp, equ_channels, size, current_equ->set->b, current_equ->set->bcount);
+
+  for(i=0; i<size; i++)
+  {
+    tmp[i] = r_mixin_rate * tmp[i] + mixin_rate * buf[i];
+    tmp[i] = CLAMP(0, tmp[i], U24_MAX);
+    buf[i] = (uint32_t)tmp[i];
+  }
+
+  free(tmp);
+}
+
+static void equ_process_buffer_s24(int32_t *buf, size_t size)
+{
+  size_t i;
+  float *tmp;
+
+  debug ("equalizing");
+
+  tmp = (float *)xmalloc (size * sizeof (float));
+
+  for(i=0; i<size; i++)
+    tmp[i] = preampf * (float)buf[i];
+
+  apply_biquads(tmp, tmp, equ_channels, size, current_equ->set->b, current_equ->set->bcount);
+
+  for(i=0; i<size; i++)
+  {
+    tmp[i] = r_mixin_rate * tmp[i] + mixin_rate * buf[i];
+    tmp[i] = CLAMP(S24_MIN, tmp[i], S24_MAX);
+    buf[i] = (int32_t)tmp[i];
+  }
+
+  free(tmp);
+}
+
 
 static void equ_process_buffer_u32(uint32_t *buf, size_t size)
 {

@@ -115,6 +115,8 @@ static void process_buffer_u8(uint8_t *buf, size_t size);
 static void process_buffer_s8(int8_t *buf, size_t size);
 static void process_buffer_u16(uint16_t *buf, size_t size);
 static void process_buffer_s16(int16_t *buf, size_t size);
+static void process_buffer_u24(uint32_t *buf, size_t size);
+static void process_buffer_s24(int32_t *buf, size_t size);
 static void process_buffer_u32(uint32_t *buf, size_t size);
 static void process_buffer_s32(int32_t *buf, size_t size);
 static void process_buffer_float(float *buf, size_t size);
@@ -122,6 +124,8 @@ static void mix_mono_u8(uint8_t *buf, int channels, size_t size);
 static void mix_mono_s8(int8_t *buf, int channels, size_t size);
 static void mix_mono_u16(uint16_t *buf, int channels, size_t size);
 static void mix_mono_s16(int16_t *buf, int channels, size_t size);
+static void mix_mono_u24(uint32_t *buf, int channels, size_t size);
+static void mix_mono_s24(int32_t *buf, int channels, size_t size);
 static void mix_mono_u32(uint32_t *buf, int channels, size_t size);
 static void mix_mono_s32(int32_t *buf, int channels, size_t size);
 static void mix_mono_float(float *buf, int channels, size_t size);
@@ -317,6 +321,18 @@ void softmixer_process_buffer(char *buf, size_t size, const struct sound_params 
       if(mix_mono)
         mix_mono_s16((int16_t *)buf, sound_params->channels, size / sizeof(int16_t));
       break;
+    case SFMT_U24:
+      if(do_softmix)
+        process_buffer_u24((uint32_t *)buf, size / sizeof(uint32_t));
+      if(mix_mono)
+        mix_mono_u24((uint32_t *)buf, sound_params->channels, size / sizeof(uint32_t));
+      break;
+    case SFMT_S24:
+      if(do_softmix)
+        process_buffer_s24((int32_t *)buf, size / sizeof(int32_t));
+      if(mix_mono)
+        mix_mono_s24((int32_t *)buf, sound_params->channels, size / sizeof(int32_t));
+      break;
     case SFMT_U32:
       if(do_softmix)
         process_buffer_u32((uint32_t *)buf, size / sizeof(uint32_t));
@@ -414,6 +430,40 @@ static void process_buffer_s16(int16_t *buf, size_t size)
     tmp /= 100;
     tmp = CLAMP(INT16_MIN, tmp, INT16_MAX);
     buf[i] = (int16_t)tmp;
+  }
+}
+
+static void process_buffer_u24(uint32_t *buf, size_t size)
+{
+  size_t i;
+
+  debug ("mixing");
+  
+  for(i=0; i<size; i++)
+  {
+    int64_t tmp = buf[i];
+    tmp -= S24_MIN;
+    tmp *= mixer_real;
+    tmp /= 100;
+    tmp += S24_MIN;
+    tmp = CLAMP(0, tmp, U24_MAX);
+    buf[i] = (uint32_t)tmp;
+  }
+}
+
+static void process_buffer_s24(int32_t *buf, size_t size)
+{
+  size_t i;
+
+  debug ("mixing");
+
+  for(i=0; i<size; i++)
+  {
+    int64_t tmp = buf[i];
+    tmp *= mixer_real;
+    tmp /= 100;
+    tmp = CLAMP(S24_MIN, tmp, S24_MAX);
+    buf[i] = (int32_t)tmp;
   }
 }
 
@@ -578,6 +628,64 @@ static void mix_mono_s16(int16_t *buf, int channels, size_t size)
 
     for(c=0; c<channels; c++)
       *buf++ = (int16_t)mono;
+
+    i+=channels;
+  }
+}
+
+static void mix_mono_u24(uint32_t *buf, int channels, size_t size)
+{
+  int c;
+  size_t i = 0;
+
+  debug ("making mono");
+
+  if(channels < 2)
+    return;
+
+  while(i < size)
+  {
+    int64_t mono = 0;
+
+    for(c=0; c<channels; c++)
+      mono += *buf++;
+
+    buf-=channels;
+
+    mono /= channels;
+    mono = MIN(mono, U24_MAX);  // can't be negative
+
+    for(c=0; c<channels; c++)
+      *buf++ = (uint32_t)mono;
+
+    i+=channels;
+  }
+}
+
+static void mix_mono_s24(int32_t *buf, int channels, size_t size)
+{
+  int c;
+  size_t i = 0;
+
+  debug ("making mono");
+
+  if(channels < 2)
+    return;
+
+  while(i < size)
+  {
+    int64_t mono = 0;
+
+    for(c=0; c<channels; c++)
+      mono += *buf++;
+
+    buf-=channels;
+
+    mono /= channels;
+    mono = CLAMP(S24_MIN, mono, S24_MAX);
+
+    for(c=0; c<channels; c++)
+      *buf++ = (int32_t)mono;
 
     i+=channels;
   }

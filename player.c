@@ -649,11 +649,13 @@ static void log_md5_sum (const char *file, struct sound_params sound_params,
 	switch (sound_params.fmt & SFMT_MASK_FORMAT) {
 	case SFMT_S8:
 	case SFMT_S16:
+	case SFMT_S24:
 	case SFMT_S32:
 		format = 's';
 		break;
 	case SFMT_U8:
 	case SFMT_U16:
+	case SFMT_U24:
 	case SFMT_U32:
 		format = 'u';
 		break;

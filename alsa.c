@@ -130,7 +130,7 @@ static int fill_capabilities (struct output_driver_caps *caps)
 	}
 	snd_pcm_hw_params_get_format_mask (hw_params, format_mask);
 
-	caps->formats = SFMT_NE;
+	caps->formats = SFMT_NE;      	
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_S8))
 		caps->formats |= SFMT_S8;
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U8))
@@ -139,14 +139,16 @@ static int fill_capabilities (struct output_driver_caps *caps)
 		caps->formats |= SFMT_S16;
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U16))
 		caps->formats |= SFMT_U16;
-#if 0
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_S24))
-		caps->formats |= SFMT_S32; /* conversion needed */
-#endif
+		caps->formats |= SFMT_S24;
+	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U24))
+		caps->formats |= SFMT_U24;
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_S32))
 		caps->formats |= SFMT_S32;
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U32))
 		caps->formats |= SFMT_U32;
+	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_FLOAT))
+		caps->formats |= SFMT_FLOAT;
 
 	snd_pcm_format_mask_free (format_mask);
 	snd_pcm_hw_params_free (hw_params);
@@ -357,11 +359,20 @@ static int alsa_open (struct sound_params *sound_params)
 		case SFMT_U16:
 			params.format = SND_PCM_FORMAT_U16;
 			break;
+		case SFMT_S24:
+			params.format = SND_PCM_FORMAT_S24;
+			break;
+		case SFMT_U24:
+			params.format = SND_PCM_FORMAT_U24;
+			break;
 		case SFMT_S32:
 			params.format = SND_PCM_FORMAT_S32;
 			break;
 		case SFMT_U32:
 			params.format = SND_PCM_FORMAT_U32;
+			break;
+		case SFMT_FLOAT:
+			params.format = SND_PCM_FORMAT_FLOAT;
 			break;
 		default:
 			error ("Unknown sample format: %s",

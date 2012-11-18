@@ -18,9 +18,11 @@ enum sfmt_fmt
 	SFMT_U8	=	0x00000002, /*!< unsigned 8-bit */
 	SFMT_S16 =	0x00000004, /*!< signed 16-bit */
 	SFMT_U16 =	0x00000008, /*!< unsigned 16-bit */
-	SFMT_S32 =	0x00000010, /*!< signed 24-bit (LSB is 0) */
-	SFMT_U32 =	0x00000020, /*!< unsigned 24-bit (LSB set to 0) */
-	SFMT_FLOAT =	0x00000040, /*!< float in range -1.0 to 1.0 */
+	SFMT_S24 =	0x00000010, /*!< signed 24-bit (MSB is 0) */
+	SFMT_U24 =	0x00000020, /*!< unsigned 24-bit (MSB set to 0) */
+	SFMT_S32 =	0x00000040, /*!< signed 32-bit (for 24-bit data LSB is 0) */
+	SFMT_U32 =	0x00000080, /*!< unsigned 24-bit (for 24-bit data LSB is 0) */
+	SFMT_FLOAT =	0x00000100, /*!< float in range -1.0 to 1.0 */
 };
 
 /** Sample endianness.
@@ -39,6 +41,11 @@ enum sfmt_endianness
 	SFMT_NE =	SFMT_LE
 #endif
 };
+
+	/* maximum and minimum values of 24-bit samples */
+#define U24_MAX		(1 << 24)
+#define S24_MAX		(1 << 23) - 1
+#define S24_MIN		-(1 << 23)
 
 /** @name Masks for the sample format.
  *
