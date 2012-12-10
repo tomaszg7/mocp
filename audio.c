@@ -149,6 +149,7 @@ char *sfmt_str (const long format, char *msg, const size_t buf_size)
 	if (format & SFMT_FLOAT)
 		strncat (msg, ", float",
 				buf_size - strlen(msg) - 1);
+
 	if (format & SFMT_LE)
 		strncat (msg, " little-endian", buf_size - strlen(msg) - 1);
 	else if (format & SFMT_BE)
@@ -199,7 +200,6 @@ static long sfmt_best_matching (const long formats_with_endian,
 	char fmt_name2[SFMT_STR_MAX];
 #endif
 
-	
 	if (formats & req)
 		best = req;
 	else if (req == SFMT_S8 || req == SFMT_U8) {
@@ -1003,8 +1003,8 @@ static void print_output_capabilities (const struct output_driver_caps *caps)
 {
 	char fmt_name[SFMT_STR_MAX];
 	
-	logit ("Sound driver capabilities: channels %d - %d, formats: %s",
-			caps->min_channels, caps->max_channels,
+	logit ("Sound driver capabilities: channels %d - %d, sample rate %u - %u, formats: %s",
+			caps->min_channels, caps->max_channels, caps->min_rate, caps->max_rate,
 			sfmt_str(caps->formats, fmt_name, sizeof(fmt_name)));
 }
 
@@ -1027,6 +1027,7 @@ static long decode_masked_formats (lists_t_strs *list)
 void audio_initialize ()
 {
 	long masked_formats;
+	int max_channels;
 //	lists_s_strs masked_fmt_list;
 
 	find_working_driver (options_get_list ("SoundDriver"), &hw);
@@ -1042,6 +1043,10 @@ void audio_initialize ()
 	    logit ("Applying mask %lX to formats",masked_formats);
 	    hw_caps.formats &= ~masked_formats;
 	}
+
+	max_channels=options_get_int("MaxChannels");
+	if (max_channels>0) hw_caps.max_channels=max_channels;
+
 // 	if (!options_get_int("Allow24bitOutput")
 // 			&& hw_caps.formats & (SFMT_S32 | SFMT_U32 | SFMT_U24 | SFMT_S24)) {
 // 		logit ("Disabling 24bit and 32bit modes because Allow24bitOutput is set "

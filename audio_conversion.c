@@ -523,7 +523,6 @@ static void change_sign (char *buf, const size_t size, long *fmt)
 {
 	char fmt_name[SFMT_STR_MAX];
 
-	debug("Changing sign");
 	switch (*fmt & SFMT_MASK_FORMAT) {
 		case SFMT_S8:
 		case SFMT_U8:
@@ -600,7 +599,7 @@ int audio_conv_new (struct audio_conversion *conv,
 	if (from->channels != to->channels) {
 
 		/* the only conversion we can do */
-		if (!(from->channels == 1 && to->channels == 2)) {
+		if (!((from->channels == 1 || from->channels == 6) && to->channels == 2)) {
 			error ("Can't change number of channels (%d to %d)!",
 			        from->channels, to->channels);
 			return 0;
@@ -757,6 +756,60 @@ static char *mono_to_stereo (const char *mono, const size_t size,
 
 	return stereo;
 }
+
+/* DPL downmix: 5.1 -> stereo */
+static char *ch6_to_stereo (const char *ch6, const size_t size,
+		const long format)
+{
+	debug("Downmixing from 5.1 to 2.0");
+	int Bps = sfmt_Bps (format);
+	size_t i;
+	int j,k;
+	char *stereo;
+
+	stereo = (char *)xmalloc (size / 3);
+	float a[2][6]; //downmix matrix
+a[0][0] = 1.0; a[0][1]=0.707; a[0][2]=0; a[0][3]=-0.8165; a[0][4]= -0.5774; a[0][5]=0.707;
+a[1][0] = 0; a[1][1]=0.707; a[1][2]=1.0; a[1][3]= 0.5774; a[1][4]=0.8165; a[1][5]=0.707;
+	const float normalization = 0.2626;
+
+	if (format & SFMT_S16)
+	{  
+	debug("Downmixing from 5.1 to 2.0: S16");
+
+	int16_t sample_in[6];
+	int16_t sample_out[2];
+
+	for (i = 0; i < size; i += 6*Bps) {
+		memcpy(&sample_in,ch6 + i,Bps*6);
+		sample_out[0]=0; sample_out[1]=0;
+		for (j=0; j<2; j++)
+		    for (k=0; k<6; k++)
+		      sample_out[j]+=a[j][k]*sample_in[k]*normalization;
+		memcpy (stereo + (i /3), sample_out, 2*Bps);
+	}
+	}
+
+	if (format & SFMT_FLOAT)
+	{  
+	debug("Downmixing from 5.1 to 2.0: FLOAT");
+
+	float sample_in[6];
+	float sample_out[2];
+
+	for (i = 0; i < size; i += 6*Bps) {
+		memcpy(&sample_in,ch6 + i,Bps*6);
+		sample_out[0]=0; sample_out[1]=0;
+		for (j=0; j<2; j++)
+		    for (k=0; k<6; k++)
+			  sample_out[j]+=(a[j][k]*sample_in[k]*normalization);
+		memcpy (stereo + (i / 3), sample_out, 2*Bps);
+	}
+	}
+
+	return stereo;
+}
+
 
 static int16_t *s32_to_s16 (int32_t *in, const size_t samples)
 {
@@ -1001,6 +1054,18 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 	}
 
+	if (conv->from.channels == 6 && conv->to.channels == 2) {
+		char *new_sound;
+
+		new_sound = ch6_to_stereo (curr_sound, *conv_len,
+				conv->from.fmt);
+		*conv_len /= 3;
+
+		if (curr_sound != buf)
+			free (curr_sound);
+		curr_sound = new_sound;
+	}
+	
 	return curr_sound;
 }
 

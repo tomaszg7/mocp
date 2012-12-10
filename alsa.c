@@ -80,7 +80,7 @@ static int fill_capabilities (struct output_driver_caps *caps)
 	snd_pcm_hw_params_t *hw_params;
 	snd_pcm_format_mask_t *format_mask;
 	int err;
-	unsigned val;
+	unsigned int val;
 
 	if ((err = snd_pcm_open(&handle, options_get_str("AlsaDevice"),
 					SND_PCM_STREAM_PLAYBACK,
@@ -121,6 +121,24 @@ static int fill_capabilities (struct output_driver_caps *caps)
 		return 0;
 	}
 	caps->max_channels = val;
+	snd_pcm_hw_params_set_rate_resample (handle, hw_params, 0);
+		if ((err = snd_pcm_hw_params_get_rate_min (hw_params, &val, 0)) < 0) {
+		error ("Can't get the minimum sample rate: %s",
+				snd_strerror(err));
+		snd_pcm_hw_params_free (hw_params);
+		snd_pcm_close (handle);
+		return 0;
+	}
+	caps->min_rate = val;
+
+	if ((err = snd_pcm_hw_params_get_rate_max (hw_params, &val, 0)) < 0) {
+		error ("Can't get the maximum sample rate: %s",
+				snd_strerror(err));
+		snd_pcm_hw_params_free (hw_params);
+		snd_pcm_close (handle);
+		return 0;
+	}
+	caps->max_rate = val;
 
 	if ((err = snd_pcm_format_mask_malloc(&format_mask)) < 0) {
 		error ("Can't allocate format mask: %s", snd_strerror(err));
