@@ -10,6 +10,9 @@ Daniel T. Borelli:
 	* Fixed miscellaneous coding errors.
 	* Assisted with testing.
 
+Gregory Maxwell:
+	* Provided patch for off_t in io_* functions.
+
 Morten Grunnet Buhl:
 	* Provided Yellow/Red theme.
 
@@ -44,6 +47,7 @@ Tomasz Golinski:
 	* Headed the effort to port MOC to OpenWRT.
 	* Provided signficant information on DTS, AAC and other formats.
 	* Also contributed much time in the refinement of feature ideas.
+	* Provided 24-bit format conversion bug fixes.
 
 Juho Hämäläinen:
 	* Added -Q (--format) FORMAT_STRING option to display file information.
@@ -201,6 +205,9 @@ Marien Zwart:
 "cbass":
 	* Fixed segfault when trying to play a file using FFmpeg.
 	* Migrated to newer FFmpeg API.
+
+"firejox"
+	* Fixed screen upsets due to UTF-8 character handing.
 
 "fluxid":
 	* Fixed incorrect setting for themes red channel value.
