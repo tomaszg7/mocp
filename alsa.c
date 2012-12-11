@@ -161,6 +161,17 @@ static int fill_capabilities (struct output_driver_caps *caps)
 		caps->formats |= SFMT_S24;
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U24))
 		caps->formats |= SFMT_U24;
+#ifdef WORDS_BIGENDIAN
+	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_S24_3BE))
+		caps->formats |= SFMT_S24_3;
+	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U24_3BE))
+		caps->formats |= SFMT_U24_3;
+#else
+	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_S24_3LE))
+		caps->formats |= SFMT_S24_3;
+	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U24_3LE))
+		caps->formats |= SFMT_U24_3;
+#endif
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_S32))
 		caps->formats |= SFMT_S32;
 	if (snd_pcm_format_mask_test(format_mask, SND_PCM_FORMAT_U32))

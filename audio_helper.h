@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 void swap_endianness_32(int32_t *buf, size_t size);
+void swap_endianness_24(int32_t *buf, size_t size);
 void swap_endianness_16(int16_t *buf, size_t size);
 
 int sample_size(long sfmt);

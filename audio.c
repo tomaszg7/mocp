@@ -142,6 +142,12 @@ char *sfmt_str (const long format, char *msg, const size_t buf_size)
 	if (format & SFMT_U24)
 		strncat (msg, ", 24-bit unsigned (as 32-bit samples)",
 				buf_size - strlen(msg) - 1);
+	if (format & SFMT_S24_3)
+		strncat (msg, ", 24-bit signed (in 3bytes format)",
+				buf_size - strlen(msg) - 1);
+	if (format & SFMT_U24_3)
+		strncat (msg, ", 24-bit unsigned (in 3bytes format)",
+				buf_size - strlen(msg) - 1);
 	if (format & SFMT_S32)
 		strncat (msg, ", 32-bit signed", buf_size - strlen(msg) - 1);
 	if (format & SFMT_U32)

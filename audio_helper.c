@@ -10,6 +10,10 @@
   ( ((i32&0x000000FF)<<24) | ((i32&0x0000FF00)<<8)| \
   ((i32&0x00FF0000)>>8) | ((i32&0xFF000000)>>24) )
 
+#define swap_24bit_endianness(i32) \
+  ( ((i32&0x000000FF)<<16) | ((i32&0x0000FF00)| \
+  ((i32&0x00FF0000)>>16) )
+
 #define swap_16bit_endianness(i16) \
   ( ((i16&0x00FF)<<8) | ((i16&0xFF00)>>8) )
 
@@ -29,6 +33,9 @@ int sample_size(long sfmt)
     case SFMT_U32:
     case SFMT_S32:
       return 4;
+    case SFMT_U24_3:
+    case SFMT_S24_3:
+      return 3;
     case SFMT_FLOAT:
       return sizeof(float);
     default:

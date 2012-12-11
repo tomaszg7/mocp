@@ -22,7 +22,9 @@ enum sfmt_fmt
 	SFMT_U24 =	0x00000020, /*!< unsigned 24-bit (MSB set to 0) */
 	SFMT_S32 =	0x00000040, /*!< signed 32-bit (for 24-bit data LSB is 0) */
 	SFMT_U32 =	0x00000080, /*!< unsigned 24-bit (for 24-bit data LSB is 0) */
-	SFMT_FLOAT =	0x00000100, /*!< float in range -1.0 to 1.0 */
+	SFMT_S24_3 =	0x00000100, /*!< signed 24-bit (in 3bytes format) */
+	SFMT_U24_3 =	0x00000200, /*!< unsigned 24-bit (in 3bytes format) */
+	SFMT_FLOAT =	0x00000400, /*!< float in range -1.0 to 1.0 */
 };
 
 /** Sample endianness.
@@ -223,7 +225,7 @@ struct hw_funcs
 		&& (p1).channels == (p2).channels && (p1).rate == (p2).rate)
 
 /* Maximum size of a string needed to hold the value returned by sfmt_str(). */
-#define SFMT_STR_MAX	265
+#define SFMT_STR_MAX	280
 
 char *sfmt_str (const long format, char *msg, const size_t buf_size);
 int sfmt_Bps (const long format);
