@@ -810,6 +810,22 @@ a[1][0] = 0; a[1][1]=0.707; a[1][2]=1.0; a[1][3]= 0.5774; a[1][4]=0.8165; a[1][5
 	return stereo;
 }
 
+static int8_t *s32_to_s24_3 (int32_t *in, const size_t samples)
+{
+	size_t i;
+	int8_t *new;
+
+	new = (int8_t *)xmalloc (samples * 3);
+
+	for (i = 0; i < samples; i++)
+	{
+		new[3*i] = (in[i]&0x0000FF00)>>8;
+		new[3*i+1] = (in[i]&0x00FF0000)>>16;
+		new[3*i+2] = (in[i]&0xFF000000)>>24;
+	}
+	return new;
+}
+
 
 static int16_t *s32_to_s16 (int32_t *in, const size_t samples)
 {
@@ -908,6 +924,31 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sfmt = sfmt_set_endian (curr_sfmt, SFMT_NE);
 	}
 
+	/* Special case (optimization): 32bit -> 24bit_3 */
+	if ((curr_sfmt & (SFMT_S32 | SFMT_U32)) &&
+	    (conv->to.fmt & (SFMT_S24_3 | SFMT_U24_3)) &&
+	    conv->from.rate == conv->to.rate) {
+		char *new_sound;
+
+		if ((curr_sfmt & SFMT_MASK_FORMAT) == SFMT_S32) {
+			new_sound = (char *)s32_to_s24_3 ((int32_t *)curr_sound,
+					*conv_len / 4);
+			curr_sfmt = sfmt_set_fmt (curr_sfmt, SFMT_S24_3);
+		}
+		else {
+			new_sound = (char *)s32_to_s24_3 ((int32_t *)curr_sound,
+					*conv_len / 4);
+			curr_sfmt = sfmt_set_fmt (curr_sfmt, SFMT_U24_3);
+		}
+
+		if (curr_sound != buf)
+			free (curr_sound);
+		curr_sound = new_sound;
+		*conv_len = *conv_len *3/ 4;
+
+		logit ("Fast conversion: 32bit -> 24bit_3!");
+	}
+	
 	/* Special case (optimization): if we only need to convert 32bit samples
 	 * to 16bit, we can do it very simply and quickly. */
 	if ((curr_sfmt & (SFMT_S32 | SFMT_U32)) &&

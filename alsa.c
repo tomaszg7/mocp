@@ -394,6 +394,21 @@ static int alsa_open (struct sound_params *sound_params)
 		case SFMT_U24:
 			params.format = SND_PCM_FORMAT_U24;
 			break;
+#ifdef WORDS_BIGENDIAN
+		case SFMT_S24_3:
+			params.format = SND_PCM_FORMAT_S24_3BE;
+			break;
+		case SFMT_U24_3:
+			params.format = SND_PCM_FORMAT_U24_3BE;
+			break;
+#else
+		case SFMT_S24_3:
+			params.format = SND_PCM_FORMAT_S24_3LE;
+			break;
+		case SFMT_U24_3:
+			params.format = SND_PCM_FORMAT_U24_3LE;
+			break;
+#endif
 		case SFMT_S32:
 			params.format = SND_PCM_FORMAT_S32;
 			break;

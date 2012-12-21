@@ -182,6 +182,9 @@ int sfmt_same_bps (const long fmt1, const long fmt2)
 	if (fmt1 & (SFMT_S24 | SFMT_U24)
 			&& fmt2 & (SFMT_S24 | SFMT_U24))
 		return 1;
+	if (fmt1 & (SFMT_S24_3 | SFMT_U24_3)
+			&& fmt2 & (SFMT_S24_3 | SFMT_U24_3))
+		return 1;
 	if (fmt1 & (SFMT_S32 | SFMT_U32)
 			&& fmt2 & (SFMT_S32 | SFMT_U32))
 		return 1;
@@ -279,7 +282,11 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S24;
 		else if (formats & SFMT_U24)
 			best = SFMT_U24;
-		else if (formats & SFMT_S16)
+		else if (formats & SFMT_S24_3)
+			best = SFMT_S24_3;
+		else if (formats & SFMT_U24_3)
+			best = SFMT_U24_3;
+ 		else if (formats & SFMT_S16)
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
 			best = SFMT_U16;
@@ -337,6 +344,10 @@ int sfmt_Bps (const long format)
 		case SFMT_S16:
 		case SFMT_U16:
 			Bps = 2;
+			break;
+		case SFMT_S24_3:
+		case SFMT_U24_3:
+			Bps = 3;
 			break;
 		case SFMT_S32:
 		case SFMT_U32:
@@ -1023,6 +1034,8 @@ static long decode_masked_formats (lists_t_strs *list)
 	if (lists_strs_exists(list,"U16")) fmt |= SFMT_U16;
 	if (lists_strs_exists(list,"S24")) fmt |= SFMT_S24;
 	if (lists_strs_exists(list,"U24")) fmt |= SFMT_U24;
+	if (lists_strs_exists(list,"S24_3")) fmt |= SFMT_S24_3;
+	if (lists_strs_exists(list,"U24_3")) fmt |= SFMT_U24_3;
 	if (lists_strs_exists(list,"S32")) fmt |= SFMT_S32;
 	if (lists_strs_exists(list,"U32")) fmt |= SFMT_U32;
 	if (lists_strs_exists(list,"FLOAT")) fmt |= SFMT_FLOAT;
