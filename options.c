@@ -655,7 +655,7 @@ void options_init ()
 	                 "ogg(vorbis,ffmpeg):oga(vorbis,ffmpeg):ogv(ffmpeg):"
 	                 "opus(opus,ffmpeg):"
 	                 "spx(speex):"
-	                 "application/ogg(vorbis):audio/ogg(vorbis)",
+	                 "application/ogg(vorbis,opus):audio/ogg(vorbis,opus)",
 	                 CHECK_FUNCTION);
 
 	add_symb ("ResampleMethod", "Linear",

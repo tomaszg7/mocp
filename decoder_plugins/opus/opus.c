@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <assert.h>
-#include <opus/opusfile.h>
+#include <opusfile.h>
 
 #define DEBUG
 
@@ -32,7 +32,7 @@
 struct opus_data
 {
 	struct io_stream *stream;
-	OggOpusFile *vf;
+	OggOpusFile *of;
 	int last_section;
 	opus_int32 bitrate;
 	opus_int32 avg_bitrate;
@@ -45,11 +45,12 @@ struct opus_data
 };
 
 
-static void get_comment_tags (OggOpusFile *vf, struct file_tags *info)
+static void get_comment_tags (OggOpusFile *of, struct file_tags *info)
 {
 	int i;
-	const OpusTags *comments = op_tags (vf, -1);
-	
+	const OpusTags *comments;
+
+	comments = op_tags (of, -1);
 	for (i = 0; i < comments->comments; i++) {
 		if (!strncasecmp(comments->user_comments[i], "title=",
 				 strlen ("title=")))
@@ -83,35 +84,47 @@ static char *opus_str_error (const int code)
 	char *err;
 
 	switch (code) {
+		case OP_FALSE:
+			err = "Request was not successful";
+			break;
+		case OP_EOF:
+			err = "End Of File";
+			break;
+		case OP_HOLE:
+			err = "Hole in stream";
+			break;
 		case OP_EREAD:
-			err = "read, seek, or tell operation failed";
-			break;
-		case OP_ENOTFORMAT:
-			err = "nor an Opus file";
-			break;
-		case OP_EVERSION:
-			err = "Opus version mismatch";
-			break;
-		case OP_EBADHEADER:
-			err = "invalid Opus bitstream header";
+			err = "An underlying read, seek, or tell operation failed.";
 			break;
 		case OP_EFAULT:
-			err = "NULL pointer, or internal memory allocation failed, or an internal library error was encountered";
-			break;
-		case OP_EINVAL:
-			err = "invalid parameters";
+			err = "Internal (Opus) logic fault";
 			break;
 		case OP_EIMPL:
-			err = "unimplemented feature";
+			err = "Unimplemented feature";
+			break;
+		case OP_EINVAL:
+			err = "Invalid argument";
+			break;
+		case OP_ENOTFORMAT:
+			err = "Not an Opus file";
+			break;
+		case OP_EBADHEADER:
+			err = "Invalid or corrupt header";
+			break;
+		case OP_EVERSION:
+			err = "Opus header version mismatch";
 			break;
 		case OP_EBADPACKET:
-			err = "bad packet";
+			err = "An audio packet failed to decode properly";
 			break;
 		case OP_ENOSEEK:
-			err = "unseekable streem";
+			err = "Requested seeking in unseekable stream";
+			break;
+		case OP_EBADTIMESTAMP:
+			err = "File timestamps fail sanity tests";
 			break;
 		default:
-			err = "unknown error";
+			err = "Unknown error";
 	}
 
 	return xstrdup (err);
@@ -122,42 +135,48 @@ static char *opus_str_error (const int code)
 static void opus_tags (const char *file_name, struct file_tags *info,
 		const int tags_sel)
 {
-	OggOpusFile *vf;
+	OggOpusFile *of;
 	int err_code;
 
 	// op_test() is faster than op_open(), but we can't read file time with it.
 	if (tags_sel & TAGS_TIME) {
-		vf=op_open_file(file_name, &err_code);
-		char *opus_err = opus_str_error (err_code);
- 		if (err_code  < 0) {
+                of = op_open_file(file_name,&err_code);
+		if (err_code < 0) {
+			char *opus_err = opus_str_error (err_code);
+
 			logit ("Can't open %s: %s", file_name, opus_err);
-			free(opus_err);
+			free (opus_err);
+			op_free(of);
+
 			return;
 		}
 	}
 	else {
-		vf=op_test_file(file_name,&err_code);
-		char *opus_err = opus_str_error (err_code);
+                of = op_open_file(file_name,&err_code);
 		if (err_code < 0) {
+			char *opus_err = opus_str_error (err_code);
+
 			logit ("Can't open %s: %s", file_name, opus_err);
-			free(opus_err);
+			free (opus_err);
+			op_free (of);
+
 			return;
 		}
 	}
 
 	if (tags_sel & TAGS_COMMENTS)
-		get_comment_tags (vf, info);
+		get_comment_tags (of, info);
 
 	if (tags_sel & TAGS_TIME) {
-		ogg_int64_t opus_time;
+	    ogg_int64_t opus_time;
 
-	    opus_time = op_pcm_total (vf, -1);
+	    opus_time = op_pcm_total (of, -1);
 	    if (opus_time >= 0)
 			info->time = opus_time / 48000;
-			debug("Duration tags: %d, samples %lld",info->time,opus_time);
+			debug("Duration tags: %d, samples %lld",info->time,(long long)opus_time);
 	}
 
-	op_free (vf);
+	op_free (of);
 }
 
 static int read_callback (void *datasource, unsigned char *ptr, int bytes)
@@ -166,13 +185,9 @@ static int read_callback (void *datasource, unsigned char *ptr, int bytes)
 
 	res = io_read (datasource, ptr, bytes);
 
-	/* libvorbisfile expects the read callback to return >= 0 with errno
-	 * set to non zero on error. */
 	if (res < 0) {
 		logit ("Read error");
-		if (errno == 0)
-			errno = 0xffff;
-		res = 0;
+		res = -1;
 	}
 
 	return res;
@@ -198,38 +213,41 @@ static opus_int64 tell_callback (void *datasource)
 
 static void opus_open_stream_internal (struct opus_data *data)
 {
-	int res=0;
+	int res;
 	OpusFileCallbacks callbacks = {
 		read_callback,
 		seek_callback,
 		tell_callback,
 		close_callback
 	};
+
 	data->tags = tags_new ();
-	data->vf = op_open_callbacks(data->stream, &callbacks, NULL, 0, &res);
+
+        data->of = op_open_callbacks(data->stream, &callbacks, NULL, 0, &res);
 	if (res < 0) {
 		char *opus_err = opus_str_error (res);
 
-		decoder_error (&data->error, ERROR_FATAL, 0, "%d",
-				res);
+		decoder_error (&data->error, ERROR_FATAL, 0, "%s",
+				opus_err);
 		debug ("op_open error: %s", opus_err);
 		free (opus_err);
-
+		op_free (data->of);
+		data->of = NULL;
 		io_close (data->stream);
 	}
 	else {
 		ogg_int64_t samples;
 		data->last_section = -1;
-		data->avg_bitrate = op_bitrate (data->vf, -1)/1000;
+		data->avg_bitrate = op_bitrate (data->of, -1) / 1000;
 		data->bitrate = data->avg_bitrate;
-		samples = op_pcm_total (data->vf, -1);
+		samples = op_pcm_total (data->of, -1);
 		if (samples == OP_EINVAL)
 			data->duration = -1;
 		else
 			data->duration =samples/48000;
 		debug("Duration: %d, samples %lld",data->duration,(long long)samples);
 		data->ok = 1;
-		get_comment_tags (data->vf, data->tags);
+		get_comment_tags (data->of, data->tags);
 	}
 }
 
@@ -246,7 +264,7 @@ static void *opus_open (const char *file)
 	data->stream = io_open (file, 1);
 	if (!io_ok(data->stream)) {
 		decoder_error (&data->error, ERROR_FATAL, 0,
-				"Can't load OGG: %s",
+				"Can't load Opus: %s",
 				io_strerror(data->stream));
 		io_close (data->stream);
 	}
@@ -254,6 +272,17 @@ static void *opus_open (const char *file)
 		opus_open_stream_internal (data);
 
 	return data;
+}
+
+static int opus_can_decode (struct io_stream *stream)
+{
+	char buf[36];
+
+	if (io_peek (stream, buf, 36) == 36 && !memcmp (buf, "OggS", 4)
+			&& !memcmp (buf + 28, "OpusHead", 8))
+		return 1;
+
+	return 0;
 }
 
 static void *opus_open_stream (struct io_stream *stream)
@@ -275,7 +304,7 @@ static void opus_close (void *prv_data)
 	struct opus_data *data = (struct opus_data *)prv_data;
 
 	if (data->ok) {
-		op_free (data->vf);
+		op_free (data->of);
 		io_close (data->stream);
 	}
 
@@ -287,11 +316,11 @@ static void opus_close (void *prv_data)
 
 static int opus_seek (void *prv_data, int sec)
 {
-   debug ("start");
- 	struct opus_data *data = (struct opus_data *)prv_data;
+	struct opus_data *data = (struct opus_data *)prv_data;
 
- 	assert (sec >= 0);
-	return op_pcm_seek (data->vf, sec * 48000) ? -1 : sec;
+	assert (sec >= 0);
+
+	return op_pcm_seek (data->of, sec * (ogg_int64_t)48000)<0 ? -1 : sec;
 }
 
 static int opus_decodeX (void *prv_data, char *buf, int buf_len,
@@ -305,11 +334,11 @@ static int opus_decodeX (void *prv_data, char *buf, int buf_len,
 	decoder_error_clear (&data->error);
 
 	while (1) {
-		#ifdef INTERNAL_FLOAT
-		    ret = op_read_float(data->vf, (float *)buf, buf_len/sizeof(float), &current_section);
-		#else
-		    ret = op_read(data->vf, (opus_int16 *)buf, buf_len/sizeof(opus_int16), &current_section);
-		#endif
+#if defined(OP_FIXED_POINT)
+		ret = op_read(data->of, (opus_int16 *)buf, buf_len/sizeof(opus_int16), &current_section);
+#else
+		ret = op_read_float(data->of, (float *)buf, buf_len/sizeof(float), &current_section);
+#endif
 		if (ret == 0)
 			return 0;
 		if (ret < 0) {
@@ -325,30 +354,26 @@ static int opus_decodeX (void *prv_data, char *buf, int buf_len,
 			data->tags_change = 1;
 			tags_free (data->tags);
 			data->tags = tags_new ();
-			get_comment_tags (data->vf, data->tags);
-		  
+			get_comment_tags (data->of, data->tags);
 		}
 
-		sound_params->channels = op_channel_count(data->vf, -1);
+		sound_params->channels = op_channel_count (data->of, current_section);
 		sound_params->rate = 48000;
-		#ifdef INTERNAL_FLOAT
-		  sound_params->fmt = SFMT_FLOAT;
-		#else
-		  sound_params->fmt = SFMT_S16 | SFMT_NE;
-		#endif		
-
-		  /* Update the bitrate information */
-		bitrate = op_bitrate_instant (data->vf)/1000;
+#if defined(OP_FIXED_POINT)
+		sound_params->fmt = SFMT_S16 | SFMT_NE;
+                ret *= sound_params->channels * sizeof(opus_int16);
+#else
+		sound_params->fmt = SFMT_FLOAT;
+                ret *= sound_params->channels * sizeof(float);
+#endif
+		/* Update the bitrate information */
+		bitrate = op_bitrate_instant (data->of);
 		if (bitrate > 0)
-			data->bitrate = bitrate;
+			data->bitrate = bitrate / 1000;
+
 		break;
 	}
-	debug("decoded: %d samples, %u bytes, buffer: %d",ret,(unsigned int)sizeof(float)*ret,buf_len);
-	#ifdef INTERNAL_FLOAT
-	return ret*sizeof(float)*sound_params->channels;
-	#else
-	return ret*sizeof(opus_int16)*sound_params->channels;
-	#endif
+	return ret;
 }
 
 static int opus_current_tags (void *prv_data, struct file_tags *tags)
@@ -414,7 +439,8 @@ static void opus_get_error (void *prv_data, struct decoder_error *error)
 
 static int opus_our_mime (const char *mime)
 {
-	return !strcasecmp (mime, "audio/opus");
+	return !strcasecmp (mime, "audio/ogg")
+		|| !strcasecmp (mime, "audio/ogg; codecs=opus");
 }
 
 static struct decoder opus_decoder = {
@@ -423,7 +449,7 @@ static struct decoder opus_decoder = {
 	NULL,
 	opus_open,
 	opus_open_stream,
-	NULL,//opus_can_decode,
+	opus_can_decode,
 	opus_close,
 	opus_decodeX,
 	opus_seek,

@@ -1,14 +1,14 @@
 dnl opus
 
 AC_ARG_WITH(opus, AS_HELP_STRING([--without-opus],
-                                   [Compile without Ogg Opus support]))
+                                   [Compile without Opus support]))
 
 	if test "x$with_opus" != "xno"
 	then
-		PKG_CHECK_MODULES(OPUS,
-			      [opusfile],
-			      [AC_SUBST(OPUS_LIBS)
-			       AC_SUBST(OPUS_CFLAGS)
+		PKG_CHECK_MODULES(OPUSFILE,
+			      [opusfile >= 0.1],
+			      [AC_SUBST(OPUSFILE_LIBS)
+			       AC_SUBST(OPUSFILE_CFLAGS)
 			       want_opus="yes"
 			       DECODER_PLUGINS="$DECODER_PLUGINS opus"],
 			      [true])
