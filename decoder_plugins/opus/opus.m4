@@ -12,6 +12,13 @@ AC_ARG_WITH(opus, AS_HELP_STRING([--without-opus],
 			       want_opus="yes"
 			       DECODER_PLUGINS="$DECODER_PLUGINS opus"],
 			      [true])
+		if test "x$want_opus" = "xyes"
+		then
+			AC_SEARCH_LIBS(op_read_float, opusfile,
+                        [AC_DEFINE([HAVE_OPUSFILE_FLOAT], 1,
+                                [Define to 1 if you have the `op_read_float' function.])])
+                fi
+ 
 	fi
 
 AM_CONDITIONAL([BUILD_opus], [test "$want_opus"])

@@ -334,10 +334,12 @@ static int opus_decodeX (void *prv_data, char *buf, int buf_len,
 	decoder_error_clear (&data->error);
 
 	while (1) {
-#if defined(OP_FIXED_POINT)
-		ret = op_read(data->of, (opus_int16 *)buf, buf_len/sizeof(opus_int16), &current_section);
-#else
+#ifdef HAVE_OPUSFILE_FLOAT
 		ret = op_read_float(data->of, (float *)buf, buf_len/sizeof(float), &current_section);
+debug("opus float!");
+#else
+		ret = op_read(data->of, (opus_int16 *)buf, buf_len/sizeof(opus_int16), &current_section);
+debug("opus fixed!");
 #endif
 		if (ret == 0)
 			return 0;
@@ -359,12 +361,12 @@ static int opus_decodeX (void *prv_data, char *buf, int buf_len,
 
 		sound_params->channels = op_channel_count (data->of, current_section);
 		sound_params->rate = 48000;
-#if defined(OP_FIXED_POINT)
-		sound_params->fmt = SFMT_S16 | SFMT_NE;
-                ret *= sound_params->channels * sizeof(opus_int16);
-#else
+#ifdef HAVE_OPUSFILE_FLOAT
 		sound_params->fmt = SFMT_FLOAT;
                 ret *= sound_params->channels * sizeof(float);
+#else
+		sound_params->fmt = SFMT_S16 | SFMT_NE;
+                ret *= sound_params->channels * sizeof(opus_int16);
 #endif
 		/* Update the bitrate information */
 		bitrate = op_bitrate_instant (data->of);
