@@ -209,6 +209,67 @@ static void float_to_s24 (const float *in, char *out,
 	}
 }
 
+static void float_to_u24_3 (const float *in, unsigned char *out, const size_t samples)
+{
+	size_t i;
+
+	assert (in != NULL);
+	assert (out != NULL);
+
+	for (i = 0; i < samples; i++)
+	{
+		int8_t *out_val = (int8_t *)(out + 3*i);
+		float f = in[i] * S24_MAX;
+		uint32_t out_i;
+
+		if (f >= S24_MAX)
+			out_i = U24_MAX;
+		else if (f <= S24_MIN)
+			out_i = 0;
+		else {
+#ifdef HAVE_LRINTF
+			out_i = (uint32_t)(lrintf(f) - S24_MIN);
+#else
+			out_i = (uint32_t)((int32_t)f - S24_MIN);
+#endif
+		    }
+		out_val[0] = (out_i&0x000000FF);
+		out_val[1] = (out_i&0x0000FF00)>>8;
+		out_val[2] = (out_i&0x00FF0000)>>16;
+	}
+}
+
+static void float_to_s24_3 (const float *in, char *out, const size_t samples)
+{
+	size_t i;
+
+	assert (in != NULL);
+	assert (out != NULL);
+
+	int32_t out_i;
+		for (i = 0; i < samples; i++)
+	{
+		int8_t *out_val = (int8_t *)(out + 3*i);
+		float f = in[i] * S24_MAX;
+
+		if (f >= S24_MAX)
+			out_i = S24_MAX;
+		else if (f <= S24_MIN)
+			out_i = S24_MIN;
+		else {
+#ifdef HAVE_LRINTF
+			out_i = lrintf(f);
+#else
+			out_i = (int32_t)f;
+#endif
+		    }
+		out_val[0] = (out_i&0x000000FF);
+		out_val[1] = (out_i&0x0000FF00)>>8;
+		out_val[2] = (out_i&0x00FF0000)>>16;
+	}
+}
+
+
 static void float_to_u32 (const float *in, unsigned char *out,
 		const size_t samples)
 {
@@ -466,6 +527,16 @@ static char *float_to_fixed (const float *buf, const size_t samples,
 			*new_size = samples * 4;
 			new_snd = (char *)xmalloc (*new_size);
 			float_to_s24 (buf, new_snd, samples);
+			break;
+		case SFMT_U24_3:
+			*new_size = samples * 3;
+			new_snd = (char *)xmalloc (*new_size);
+			float_to_u24_3 (buf, (unsigned char *)new_snd, samples);
+			break;
+		case SFMT_S24_3:
+			*new_size = samples * 3;
+			new_snd = (char *)xmalloc (*new_size);
+			float_to_s24_3 (buf, new_snd, samples);
 			break;
 		case SFMT_U32:
 			*new_size = samples * 4;
@@ -918,6 +989,9 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 
 	curr_sound = (char *)xmalloc (size);
 	memcpy (curr_sound, buf, size);
+
+	/*no decoder should return S24_3 or U24_3 samples */
+	assert(!(curr_sfmt & (SFMT_S24_3 | SFMT_U24_3)));
 
 	if (!(curr_sfmt & SFMT_NE)) {
 		swap_endian (curr_sound, *conv_len, curr_sfmt);
