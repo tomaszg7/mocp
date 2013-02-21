@@ -99,6 +99,7 @@ struct ffmpeg_data
 	bool okay; /* was this stream successfully opened? */
 	struct decoder_error error;
 	long fmt;
+	int sample_width;
 	int bitrate;            /* in bits per second */
 	int avg_bitrate;        /* in bits per second */
 #if SEEK_IN_DECODER
@@ -278,6 +279,34 @@ static void load_video_extns (lists_t_strs *list)
 	}
 }
 
+/* Handle FFmpeg's locking requirements. */
+#ifdef HAVE_LOCKMGR_REGISTER
+static int locking_cb (void **mutex, enum AVLockOp op)
+{
+	int result;
+
+	switch (op) {
+	case AV_LOCK_CREATE:
+		*mutex = xmalloc (sizeof (pthread_mutex_t));
+		result = pthread_mutex_init (*mutex, NULL);
+		break;
+	case AV_LOCK_OBTAIN:
+		result = pthread_mutex_lock (*mutex);
+		break;
+	case AV_LOCK_RELEASE:
+		result = pthread_mutex_unlock (*mutex);
+		break;
+	case AV_LOCK_DESTROY:
+		result = pthread_mutex_destroy (*mutex);
+		free (*mutex);
+		*mutex = NULL;
+		break;
+	}
+
+	return result;
+}
+#endif
+
 /* Here we attempt to determine if FFmpeg/LibAV has trashed the 'duration'
  * and 'bit_rate' fields in AVFormatContext for large files.  Determining
  * whether or not they are likely to be valid is imprecise and will vary
@@ -312,6 +341,10 @@ static bool is_timing_broken (AVFormatContext *ic)
 
 static void ffmpeg_init ()
 {
+#ifdef HAVE_LOCKMGR_REGISTER
+	int rc;
+#endif
+
 #ifdef DEBUG
 	av_log_set_level (AV_LOG_INFO);
 #else
@@ -324,10 +357,20 @@ static void ffmpeg_init ()
 	supported_extns = lists_strs_new (16);
 	load_audio_extns (supported_extns);
 	load_video_extns (supported_extns);
+
+#ifdef HAVE_LOCKMGR_REGISTER
+	rc = av_lockmgr_register (locking_cb);
+	if (rc < 0)
+		fatal ("Lock manager initialisation failed");
+#endif
 }
 
 static void ffmpeg_destroy ()
 {
+#ifdef HAVE_LOCKMGR_REGISTER
+	av_lockmgr_register (NULL);
+#endif
+
 	av_log_set_level (AV_LOG_QUIET);
 	ffmpeg_log_repeats (NULL);
 
@@ -477,12 +520,16 @@ static long fmt_from_codec (struct ffmpeg_data *data)
 		if (!strcmp (data->ic->iformat->name, "wav")) {
 			switch (data->enc->codec_id) {
 			case CODEC_ID_PCM_S8:
+#if HAVE_DECL_CODEC_ID_PCM_S8_PLANAR
+			case CODEC_ID_PCM_S8_PLANAR:
+#endif
 				result = SFMT_S8;
 				break;
 			case CODEC_ID_PCM_U8:
 				result = SFMT_U8;
 				break;
 			case CODEC_ID_PCM_S16LE:
+			case CODEC_ID_PCM_S16LE_PLANAR:
 			case CODEC_ID_PCM_S16BE:
 				result = SFMT_S16;
 				break;
@@ -517,15 +564,27 @@ static long fmt_from_sample_fmt (struct ffmpeg_data *data)
 
 	switch (data->enc->sample_fmt) {
 	case AV_SAMPLE_FMT_U8:
+#if HAVE_DECL_AV_SAMPLE_FMT_U8P
+	case AV_SAMPLE_FMT_U8P:
+#endif
 		result = SFMT_U8;
 		break;
 	case AV_SAMPLE_FMT_S16:
+#if HAVE_DECL_AV_SAMPLE_FMT_S16P
+	case AV_SAMPLE_FMT_S16P:
+#endif
 		result = SFMT_S16;
 		break;
 	case AV_SAMPLE_FMT_S32:
+#if HAVE_DECL_AV_SAMPLE_FMT_S32P
+	case AV_SAMPLE_FMT_S32P:
+#endif
 		result = SFMT_S32;
 		break;
 	case AV_SAMPLE_FMT_FLT:
+#if HAVE_DECL_AV_SAMPLE_FMT_FLTP
+	case AV_SAMPLE_FMT_FLTP:
+#endif
 		result = SFMT_FLOAT;
 		break;
 	default:
@@ -624,6 +683,7 @@ static void *ffmpeg_open (const char *file)
 	data->stream = NULL;
 	data->enc = NULL;
 	data->codec = NULL;
+	data->sample_width = 0;
 	data->bitrate = 0;
 	data->avg_bitrate = 0;
 
@@ -730,10 +790,18 @@ static void *ffmpeg_open (const char *file)
 	if (data->fmt == 0)
 		data->fmt = fmt_from_sample_fmt (data);
 	if (data->fmt == 0) {
+#ifdef HAVE_AV_GET_SAMPLE_FMT_NAME
+		decoder_error (&data->error, ERROR_FATAL, 0,
+		               "Cannot get sample size from unknown sample format: %s",
+		               av_get_sample_fmt_name (data->enc->sample_fmt));
+#else
 		decoder_error (&data->error, ERROR_FATAL, 0,
 		               "Unsupported sample size!");
+#endif
+		avcodec_close (data->enc);
 		goto end;
 	}
+	data->sample_width = sfmt_Bps (data->fmt);
 	if (data->codec->capabilities & CODEC_CAP_DELAY)
 		data->delay = true;
 	data->seek_broken = is_seek_broken (data);
@@ -974,12 +1042,14 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
                           char *buf, int buf_len)
 {
 	int filled = 0;
+	AVFrame *frame;
+
+	frame = avcodec_alloc_frame ();
 
 	do {
 		int len, got_frame, is_planar, plane_size, data_size, copied;
-		AVFrame frame;
 
-		len = avcodec_decode_audio4 (data->enc, &frame, &got_frame, pkt);
+		len = avcodec_decode_audio4 (data->enc, frame, &got_frame, pkt);
 
 		if (len < 0)  {
 			/* skip frame */
@@ -999,32 +1069,45 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
 
 		is_planar = av_sample_fmt_is_planar (data->enc->sample_fmt);
 		data_size = av_samples_get_buffer_size (&plane_size,
-		                                        data->enc->channels,                                                   frame.nb_samples,
+		                                        data->enc->channels,
+		                                        frame->nb_samples,
 		                                        data->enc->sample_fmt, 1);
 
 		if (data_size == 0)
 			continue;
 
-		copied = copy_or_buffer (data, (char *)frame.extended_data[0],
-		                         plane_size, buf, buf_len);
-		buf += copied;
-		filled += copied;
-		buf_len -= copied;
+		if (is_planar && data->enc->channels > 1) {
+			int offset, ch;
 
-        if (is_planar && data->enc->channels > 1) {
-			int ch;
-
-            for (ch = 1; ch < data->enc->channels; ch += 1) {
-				copied = copy_or_buffer (data, (char *)frame.extended_data[ch],
-				                         plane_size, buf, buf_len);
-				buf += copied;
-				filled += copied;
-				buf_len -= copied;
-            }
-        }
+			for (offset = 0; offset < plane_size; offset += data->sample_width) {
+				for (ch = 0; ch < data->enc->channels; ch += 1) {
+					copied = copy_or_buffer (data,
+					                         (char *)frame->extended_data[ch]
+					                                               + offset,
+				                             data->sample_width, buf, buf_len);
+					buf += copied;
+					filled += copied;
+					buf_len -= copied;
+				}
+			}
+		}
+		else {
+			copied = copy_or_buffer (data, (char *)frame->extended_data[0],
+		                             plane_size, buf, buf_len);
+			buf += copied;
+			filled += copied;
+			buf_len -= copied;
+		}
 
 		debug ("Copying %dB (%dB filled)", data_size, filled);
 	} while (pkt->size > 0);
+
+	avcodec_get_frame_defaults (frame);
+#ifdef HAVE_AVCODEC_FREE_FRAME
+	avcodec_free_frame (&frame);
+#else
+	av_freep (&frame);
+#endif
 
 	return filled;
 }

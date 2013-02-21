@@ -88,6 +88,25 @@ then
 		                 [#include <libavcodec/avcodec.h>])
 		AC_CHECK_DECLS([AV_CODEC_ID_OPUS], , ,
 		                 [#include <libavcodec/avcodec.h>])
+		AC_SEARCH_LIBS(avcodec_free_frame, avcodec,
+			[AC_DEFINE([HAVE_AVCODEC_FREE_FRAME], 1,
+				[Define to 1 if you have the `avcodec_free_frame' function.])])
+		AC_CHECK_DECLS([CODEC_ID_PCM_S8_PLANAR], , ,
+		                 [#include <libavcodec/avcodec.h>])
+		AC_CHECK_DECLS([AV_SAMPLE_FMT_U8P], , ,
+		                 [#include <libavcodec/avcodec.h>])
+		AC_CHECK_DECLS([AV_SAMPLE_FMT_S16P], , ,
+		                 [#include <libavcodec/avcodec.h>])
+		AC_CHECK_DECLS([AV_SAMPLE_FMT_S32P], , ,
+		                 [#include <libavcodec/avcodec.h>])
+		AC_CHECK_DECLS([AV_SAMPLE_FMT_FLTP], , ,
+		                 [#include <libavcodec/avcodec.h>])
+		AC_SEARCH_LIBS(av_get_sample_fmt_name, avutil,
+			[AC_DEFINE([HAVE_AV_GET_SAMPLE_FMT_NAME], 1,
+				[Define to 1 if you have the `av_get_sample_fmt_name' function.])])
+		AC_SEARCH_LIBS(av_lockmgr_register, avcodec,
+			[AC_DEFINE([HAVE_LOCKMGR_REGISTER], 1,
+				[Define to 1 if you have the `av_lockmgr_register' function.])])
 		CPPFLAGS="$save_CPPFLAGS"
 		CFLAGS="$save_CFLAGS"
 		LIBS="$save_LIBS"
