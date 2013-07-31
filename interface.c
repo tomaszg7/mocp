@@ -720,6 +720,8 @@ static void update_curr_tags ()
 		curr_file.tags = get_data_tags ();
 
 		if (curr_file.tags->title) {
+			if (curr_file.title)
+				free (curr_file.title);
 			curr_file.title = build_title (curr_file.tags);
 			iface_set_played_file_title (curr_file.title);
 		}
@@ -2199,7 +2201,7 @@ static char *strip_white_spaces (const char *str)
 	n = strlen (str);
 
 	/* Strip trailing. */
-	while (isblank(str[n-1]))
+	while (n > 0 && isblank(str[n-1]))
 		n--;
 
 	/* Strip leading whitespace. */
@@ -2214,7 +2216,7 @@ static char *strip_white_spaces (const char *str)
 		clean[n] = 0;
 	}
 	else
-		clean = strdup ("");
+		clean = xstrdup ("");
 
 	return clean;
 }
@@ -4179,7 +4181,7 @@ void interface_cmdline_formatted_info (const int server_sock,
 	char file_bitrate_str[4];
 	char file_rate_str[3];
 
-	char *str;
+	char *fmt, *str;
 	info_t str_info;
 
 	srv_sock = server_sock;	/* the interface is not initialized, so set it
@@ -4203,9 +4205,6 @@ void interface_cmdline_formatted_info (const int server_sock,
 	str_info.currentsec = curr_time_sec_str;
 	str_info.bitrate = file_bitrate_str;
 	str_info.rate = file_rate_str;
-
-	/* string with formatting tags */
-	str = xstrdup(format_str);
 
 	if (curr_file.state == STATE_STOP)
 		str_info.state = "STOP";
@@ -4267,14 +4266,10 @@ void interface_cmdline_formatted_info (const int server_sock,
 
 		str_info.file = curr_file.file;
 
-		if (curr_file.tags) {
-			str_info.artist =
-					curr_file.tags->artist ? curr_file.tags->artist : "";
-			str_info.song =
-					curr_file.tags->title ? curr_file.tags->title : "";
-			str_info.album =
-					curr_file.tags->album ? curr_file.tags->album : "";
-		}
+		str_info.artist =
+					curr_file.tags->artist ? curr_file.tags->artist : NULL;
+		str_info.song = curr_file.tags->title ? curr_file.tags->title : NULL;
+		str_info.album = curr_file.tags->album ? curr_file.tags->album : NULL;
 
 		if (curr_file.tags->time != -1)
 			snprintf(time_sec_str, 5, "%d", curr_file.tags->time);
@@ -4284,34 +4279,41 @@ void interface_cmdline_formatted_info (const int server_sock,
 		snprintf(file_rate_str, 3, "%d", curr_file.rate);
 	}
 
-	str = str_repl(str, "%state", str_info.state);
-	str = str_repl(str, "%file",
-			str_info.file ? str_info.file : "");
-	str = str_repl(str, "%title",
-			str_info.title ? str_info.title : "");
-	str = str_repl(str, "%artist",
-			str_info.artist ? str_info.artist : "");
-	str = str_repl(str, "%song",
-			str_info.song ? str_info.song : "");
-	str = str_repl(str, "%album",
-			str_info.album ? str_info.album : "");
-	str = str_repl(str, "%tt",
-			str_info.totaltime ? str_info.totaltime : "");
-	str = str_repl(str, "%tl",
-			str_info.timeleft ? str_info.timeleft : "");
-	str = str_repl(str, "%ts",
-			str_info.totalsec ? str_info.totalsec : "");
-	str = str_repl(str, "%ct",
-			str_info.currenttime ? str_info.currenttime : "");
-	str = str_repl(str, "%cs",
-			str_info.currentsec ? str_info.currentsec : "");
-	str = str_repl(str, "%b",
-			str_info.bitrate ? str_info.bitrate : "");
-	str = str_repl(str, "%r",
-			str_info.rate ? str_info.rate : "");
-	str = str_repl(str, "\\n", "\n");
+	/* string with formatting tags */
+	fmt = xstrdup(format_str);
 
-	str = build_title_with_format (curr_file.tags, str);
+	fmt = str_repl(fmt, "%state", str_info.state);
+	fmt = str_repl(fmt, "%file",
+			str_info.file ? str_info.file : "");
+	fmt = str_repl(fmt, "%title",
+			str_info.title ? str_info.title : "");
+	fmt = str_repl(fmt, "%artist",
+			str_info.artist ? str_info.artist : "");
+	fmt = str_repl(fmt, "%song",
+			str_info.song ? str_info.song : "");
+	fmt = str_repl(fmt, "%album",
+			str_info.album ? str_info.album : "");
+	fmt = str_repl(fmt, "%tt",
+			str_info.totaltime ? str_info.totaltime : "");
+	fmt = str_repl(fmt, "%tl",
+			str_info.timeleft ? str_info.timeleft : "");
+	fmt = str_repl(fmt, "%ts",
+			str_info.totalsec ? str_info.totalsec : "");
+	fmt = str_repl(fmt, "%ct",
+			str_info.currenttime ? str_info.currenttime : "");
+	fmt = str_repl(fmt, "%cs",
+			str_info.currentsec ? str_info.currentsec : "");
+	fmt = str_repl(fmt, "%b",
+			str_info.bitrate ? str_info.bitrate : "");
+	fmt = str_repl(fmt, "%r",
+			str_info.rate ? str_info.rate : "");
+	fmt = str_repl(fmt, "\\n", "\n");
+
+	str = build_title_with_format (curr_file.tags, fmt);
+
+	printf("%s\n", str);
+	free(str);
+	free(fmt);
 
 	if (str_info.title)
 		free(str_info.title);
@@ -4323,6 +4325,4 @@ void interface_cmdline_formatted_info (const int server_sock,
 	plist_free (playlist);
 	plist_free (queue);
 
-	printf("%s\n", str);
-	free(str);
 }
