@@ -2674,7 +2674,7 @@ static void set_startup_message (struct info_win *w)
 	w->current_message->timeout = time (NULL);
 	w->current_message->timeout += options_get_int ("MessageLingerTime");
 
-	if (!key_was_redefined (KEY_CMD_HELP)) {
+	if (is_help_still_h ()) {
 		struct queued_message *msg;
 
 		msg = queued_message_create (NORMAL_MSG);
@@ -3619,6 +3619,14 @@ static void info_win_resize (struct info_win *w)
 
 void windows_init ()
 {
+	if (getenv ("ESCDELAY") == NULL) {
+#ifdef HAVE_SET_ESCDELAY
+		set_escdelay (25);
+#else
+		setenv ("ESCDELAY", "25", 0);
+#endif
+	}
+
 	utf8_init ();
 	if (!initscr ())
 		fatal ("Can't initialize terminal!");
@@ -3843,7 +3851,7 @@ void iface_get_key (struct iface_key *k)
 	if ((ch = wgetch(main_win.win)) == (wint_t)ERR)
 		interface_fatal ("wgetch() failed!");
 
-	if (ch < 32 && ch != '\n' && ch != '\t') {
+	if (ch < 32 && ch != '\n' && ch != '\t' && ch != KEY_ESCAPE) {
 		/* Unprintable, generally control sequences */
 		k->type = IFACE_KEY_FUNCTION;
 		k->key.func = ch;

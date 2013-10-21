@@ -648,10 +648,10 @@ void options_init ()
 	                 "aac(aac,ffmpeg):m4a(ffmpeg):"
 	                 "mpc(musepack,*,ffmpeg):mpc8(musepack,*,ffmpeg):"
 	                 "sid(sidplay2):mus(sidplay2):"
-	                 "wav(sndfile,*,modplug,ffmpeg):"
+	                 "wav(sndfile,*,ffmpeg):"
 	                 "wv(wavpack,*,ffmpeg):"
 	                 "audio/aac(aac):audio/aacp(aac):audio/m4a(ffmpeg):"
-	                 "audio/wav(sndfile,*,modplug):"
+	                 "audio/wav(sndfile,*):"
 	                 "ogg(vorbis,ffmpeg):oga(vorbis,ffmpeg):ogv(ffmpeg):"
 	                 "opus(opus,ffmpeg):"
 	                 "spx(speex):"
@@ -927,7 +927,7 @@ static char *substitute_variable (const char *name_in, const char *value_in)
 				break;
 			}
 		}
-		if (value && strlen (value))
+		if (value && value[0])
 			lists_strs_append (strs, value);
 		else if (dflt)
 			lists_strs_append (strs, dflt);

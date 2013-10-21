@@ -53,6 +53,7 @@
 	  - Introduced variable substitution
 	  - Introduced symbol and boolean option types
 	  - Improved security of the configuration file
+	  - Automatic clearing of an overridden default key binding
 	* Changed configuration file options:
 	  - Layout# options moved to a list and function-like syntax
 	  - SoundDriver option moved to a list syntax
@@ -121,6 +122,7 @@
 	  - Fixed Ogg/Vorbis stream detection in the Vorbis decoder
 	  - Fixed 'LRINTF error' raised when reconfiguring MOC
 	  - Handle backspace key properly
+	  - Fixed client interface meta-key handling
 	  - Fixed pthread stack overflow segfault on OpenBSD.
 	  - Fixed segfault when text entry history becomes full
 	  - Fixed segfault processing playlists with relative paths
@@ -459,8 +461,8 @@
 
 2.2.0
 	* Added support for FLAC audio format.
-	* Added suport for various file formats like au, aiff, voc, and more
-	  using libsndfile. This also provides better support for waves.
+	* Added support for various file formats like au, aiff, voc and more
+	  using libsndfile. This also provides better support for wav files.
 	* Custom keymaps can be used.
 	* Synchronizing the playlist between clients (interface instances).
 	* Going to a directory by typing the path with file-name completion

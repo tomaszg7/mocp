@@ -224,7 +224,8 @@ then
 	      EXTRA_OBJS="$EXTRA_OBJS alsa.o"
 	      AC_DEFINE([HAVE_ALSA], 1, [Define if you have ALSA.])
 	      EXTRA_LIBS="$EXTRA_LIBS $ALSA_LIBS"
-	      CFLAGS="$CFLAGS $ALSA_CFLAGS"],
+	      CFLAGS="$CFLAGS $ALSA_CFLAGS"
+	      need_usleep="yes"],
 	     [true])
 fi
 
@@ -241,7 +242,8 @@ then
 			   CFLAGS="$CFLAGS $JACK_CFLAGS"
 			   AC_SEARCH_LIBS(jack_client_open, jack,
 			       [AC_DEFINE([HAVE_JACK_CLIENT_OPEN], 1,
-			           [Define to 1 if you have the `jack_client_open' function.])])],
+			           [Define to 1 if you have the `jack_client_open' function.])])
+			   need_usleep="yes"],
 			  [true])
 fi
 
@@ -271,6 +273,7 @@ else
 		COMPILE_DEBUG='yes'
 	fi
 	EXTRA_OBJS="$EXTRA_OBJS null_out.o md5.o"
+	need_usleep="yes"
 fi
 
 AC_FUNC_MALLOC
@@ -295,6 +298,10 @@ dnl optional functions
 AC_CHECK_FUNCS([strcasestr strerror_r syslog])
 AC_CHECK_FUNCS([getrlimit pthread_attr_getstacksize])
 AX_CHECK_UNAME_SYSCALL
+if test "x$need_usleep" = "xyes"
+then
+	AC_CHECK_FUNC([usleep], , AC_MSG_ERROR([No usleep() function found.]))
+fi
 
 dnl MIME magic
 AC_ARG_WITH(magic, AS_HELP_STRING([--without-magic],
@@ -338,7 +345,13 @@ dnl ncurses
 MP_WITH_CURSES
 if test -z "$CURSES_LIB"
 then
-		AC_MSG_ERROR([You need curses/ncurses library and header files.])
+	AC_MSG_ERROR([You need curses/ncurses library and header files.])
+else
+	AC_CHECK_LIB([$CURSES_LIB], [set_escdelay],
+		AC_DEFINE([HAVE_SET_ESCDELAY], 1, [Define if you have set_escdelay.]),
+		[AC_CHECK_FUNC([setenv], ,
+			AC_MSG_ERROR([Required function setenv not found.]))])
+	EXTRA_LIBS="$EXTRA_LIBS -l$CURSES_LIB"
 fi
 
 dnl popt
@@ -415,7 +428,6 @@ fi
 dnl Check for XZ.
 AC_CHECK_PROG([XZ_MISSING], [xz], [no], [yes])
 
-EXTRA_LIBS="$EXTRA_LIBS $CURSES_LIB"
 AC_SUBST(EXTRA_LIBS)
 AC_SUBST(EXTRA_DISTS)
 

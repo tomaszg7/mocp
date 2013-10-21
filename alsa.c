@@ -15,6 +15,11 @@
 # include "config.h"
 #endif
 
+/* _XOPEN_SOURCE is known to break compilation under OpenBSD. */
+#ifndef OPENBSD
+# define _XOPEN_SOURCE  500 /* for usleep() */
+#endif
+
 #define DEBUG
 
 #include <stdlib.h>
@@ -604,6 +609,7 @@ static int play_buf_chunks ()
 
 static void alsa_close ()
 {
+	snd_pcm_sframes_t delay;
 
 	assert (handle != NULL);
 
@@ -619,11 +625,19 @@ static void alsa_close ()
 		play_buf_chunks ();
 	}
 
+	/* Wait for ALSA buffers to empty.
+	 * Do not be tempted to use snd_pcm_nonblock() and snd_pcm_drain()
+	 * here; there are two bugs in ALSA which make it a bad idea (see
+	 * the SVN commit log for r2550).  Instead we sleep for the duration
+	 * of the still unplayed samples. */
+	if (snd_pcm_delay (handle, &delay) == 0)
+		usleep ((delay * 1000 / params.rate) * 1000);
+	snd_pcm_close (handle);
+	logit ("ALSA device closed");
+
 	params.format = 0;
 	params.rate = 0;
 	params.channels = 0;
-	snd_pcm_close (handle);
-	logit ("ALSA device closed");
 	handle = NULL;
 }
 

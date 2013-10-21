@@ -11,6 +11,14 @@
  *
  */
 
+/*
+ *		"The main problem is that external projects who want to
+ *		 support both FFmpeg and LibAV are just fucked, and this
+ *		 only because LibAV doesn't care a second about their users."
+ *
+ *		-- http://blog.pkh.me/p/13-the-ffmpeg-libav-situation.html
+*/
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -74,8 +82,88 @@
 #define AV_SAMPLE_FMT_FLT  SAMPLE_FMT_FLT
 #endif
 
+#if !HAVE_DECL_CODEC_ID_MP2 && HAVE_DECL_AV_CODEC_ID_MP2
+#define CODEC_ID_MP2 AV_CODEC_ID_MP2
+#endif
+
 #if !HAVE_DECL_CODEC_ID_OPUS && HAVE_DECL_AV_CODEC_ID_OPUS
 #define CODEC_ID_OPUS AV_CODEC_ID_OPUS
+#endif
+
+#if !HAVE_DECL_CODEC_ID_SPEEX && HAVE_DECL_AV_CODEC_ID_SPEEX
+#define CODEC_ID_SPEEX AV_CODEC_ID_SPEEX
+#endif
+
+#if !HAVE_DECL_CODEC_ID_THEORA && HAVE_DECL_AV_CODEC_ID_THEORA
+#define CODEC_ID_THEORA AV_CODEC_ID_THEORA
+#endif
+
+#if !HAVE_DECL_CODEC_ID_VORBIS && HAVE_DECL_AV_CODEC_ID_VORBIS
+#define CODEC_ID_VORBIS AV_CODEC_ID_VORBIS
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S8
+#define CODEC_ID_PCM_S8 AV_CODEC_ID_PCM_S8
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S8_PLANAR && HAVE_DECL_AV_CODEC_ID_PCM_S8_PLANAR
+#define CODEC_ID_PCM_S8_PLANAR AV_CODEC_ID_PCM_S8_PLANAR
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U8
+#define CODEC_ID_PCM_U8 AV_CODEC_ID_PCM_U8
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S16LE
+#define CODEC_ID_PCM_S16LE AV_CODEC_ID_PCM_S16LE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S16LE_PLANAR && HAVE_DECL_AV_CODEC_ID_PCM_S16LE_PLANAR
+#define CODEC_ID_PCM_S16LE_PLANAR AV_CODEC_ID_PCM_S16LE_PLANAR
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S16BE
+#define CODEC_ID_PCM_S16BE AV_CODEC_ID_PCM_S16BE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U16LE
+#define CODEC_ID_PCM_U16LE AV_CODEC_ID_PCM_U16LE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U16BE
+#define CODEC_ID_PCM_U16BE AV_CODEC_ID_PCM_U16BE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S24LE
+#define CODEC_ID_PCM_S24LE AV_CODEC_ID_PCM_S24LE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S24BE
+#define CODEC_ID_PCM_S24BE AV_CODEC_ID_PCM_S24BE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U24LE
+#define CODEC_ID_PCM_U24LE AV_CODEC_ID_PCM_U24LE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U24BE
+#define CODEC_ID_PCM_U24BE AV_CODEC_ID_PCM_U24BE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S32LE
+#define CODEC_ID_PCM_S32LE AV_CODEC_ID_PCM_S32LE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_S32BE
+#define CODEC_ID_PCM_S32BE AV_CODEC_ID_PCM_S32BE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U32LE
+#define CODEC_ID_PCM_U32LE AV_CODEC_ID_PCM_U32LE
+#endif
+
+#if !HAVE_DECL_CODEC_ID_PCM_U32BE
+#define CODEC_ID_PCM_U32BE AV_CODEC_ID_PCM_U32BE
 #endif
 
 struct ffmpeg_data
@@ -237,8 +325,11 @@ static void load_audio_extns (lists_t_strs *list)
 		if (avcodec_find_decoder (CODEC_ID_VORBIS))
 			lists_strs_append (list, "oga");
 #if HAVE_DECL_CODEC_ID_OPUS || HAVE_DECL_AV_CODEC_ID_OPUS
+  /* The LibAV libraries will tell us they support Opus... but they lie. */
+  #if defined(HAVE_FFMPEG)
 		if (avcodec_find_decoder (CODEC_ID_OPUS))
 			lists_strs_append (list, "opus");
+  #endif
 #endif
 		if (avcodec_find_decoder (CODEC_ID_THEORA))
 			lists_strs_append (list, "ogv");
@@ -301,6 +392,12 @@ static int locking_cb (void **mutex, enum AVLockOp op)
 		free (*mutex);
 		*mutex = NULL;
 		break;
+	default:
+		/* We could return -1 here, but examination of the FFmpeg
+		 * code shows that return code testing is erratic, so we'll
+		 * take charge and complain loudly if FFmpeg/LibAV's API
+		 * changes.  This way we don't end up chasing phantoms. */
+		fatal ("Unexpected FFmpeg lock request received: %d", op);
 	}
 
 	return result;
@@ -520,7 +617,7 @@ static long fmt_from_codec (struct ffmpeg_data *data)
 		if (!strcmp (data->ic->iformat->name, "wav")) {
 			switch (data->enc->codec_id) {
 			case CODEC_ID_PCM_S8:
-#if HAVE_DECL_CODEC_ID_PCM_S8_PLANAR
+#if HAVE_DECL_CODEC_ID_PCM_S8_PLANAR || HAVE_DECL_AV_CODEC_ID_PCM_S8_PLANAR
 			case CODEC_ID_PCM_S8_PLANAR:
 #endif
 				result = SFMT_S8;
@@ -529,7 +626,9 @@ static long fmt_from_codec (struct ffmpeg_data *data)
 				result = SFMT_U8;
 				break;
 			case CODEC_ID_PCM_S16LE:
+#if HAVE_DECL_CODEC_ID_PCM_S16LE_PLANAR || HAVE_DECL_AV_CODEC_ID_PCM_S16LE_PLANAR
 			case CODEC_ID_PCM_S16LE_PLANAR:
+#endif
 			case CODEC_ID_PCM_S16BE:
 				result = SFMT_S16;
 				break;
@@ -631,6 +730,21 @@ static bool is_seek_broken (struct ffmpeg_data *data)
 	return false;
 }
 
+#ifdef HAVE_STRUCT_AVCODECCONTEXT_REQUEST_CHANNELS
+/* This warning reset suppresses a deprecation warning message
+ * for the AVCodecContext's 'request_channels' field. */
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+static inline void set_request_channels (AVCodecContext *enc, int channels)
+{
+	enc->request_channels = channels;
+}
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
+#endif
+#endif
+
 /* Downmix multi-channel audios to stereo. */
 static void set_downmixing (struct ffmpeg_data *data)
 {
@@ -659,7 +773,7 @@ static void set_downmixing (struct ffmpeg_data *data)
 	 * help (in the absence of proper documentation).
 	 */
 
-	data->enc->request_channels = 2;
+	set_request_channels (data->enc, 2);
 
 #ifdef AV_CH_LAYOUT_STEREO_DOWNMIX
 	data->enc->request_channel_layout = AV_CH_LAYOUT_STEREO_DOWNMIX;
