@@ -344,8 +344,7 @@ static long sfmt_best_matching (const long formats_with_endian,
 #ifdef DEBUG
 	debug ("Chose %s as the best matching %s",
 			sfmt_str(best, fmt_name1, sizeof(fmt_name1)),
-			sfmt_str(req_with_endian, fmt_name2,
-				sizeof(fmt_name2)));
+			sfmt_str(req_with_endian, fmt_name2, sizeof(fmt_name2)));
 #endif
 
 	return best;
@@ -815,12 +814,9 @@ int audio_open (struct sound_params *sound_params)
 			req_sound_params.fmt);
 
 	/* number of channels */
-	if (req_sound_params.channels > hw_caps.max_channels)
-		driver_sound_params.channels = hw_caps.max_channels;
-	else if (req_sound_params.channels < hw_caps.min_channels)
-		driver_sound_params.channels = hw_caps.min_channels;
-	else
-		driver_sound_params.channels = req_sound_params.channels;
+	driver_sound_params.channels = CLAMP(hw_caps.min_channels,
+	                                     req_sound_params.channels,
+	                                     hw_caps.max_channels);
 
 	res = hw.open (&driver_sound_params);
 
@@ -1075,7 +1071,6 @@ void audio_initialize ()
 	assert (sound_format_ok(hw_caps.formats));
 
 	print_output_capabilities (&hw_caps);
-
 	masked_formats=decode_masked_formats(options_get_list("MaskOutputFormats"));
 	if(masked_formats&hw_caps.formats)
 	{

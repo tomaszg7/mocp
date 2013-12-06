@@ -954,8 +954,7 @@ static bool parse_layout (struct main_win_layout *l, lists_t_strs *fmt)
 			goto err;
 		}
 		if (p.y + p.height > LINES - 4) {
-			logit ("Y + height is more than LINES - 4 (%d)",
-					LINES - 4);
+			logit ("Y + height is more than LINES - 4 (%d)", LINES - 4);
 			goto err;
 		}
 
@@ -1041,7 +1040,7 @@ static char *make_menu_title (const char *plist_title,
 				char *old_title = title;
 
 				title = xstrdup (slash + 1);
-		                free (old_title);
+				free (old_title);
 			}
 		}
 	}
@@ -3870,9 +3869,11 @@ void iface_get_key (struct iface_key *k)
 		if (wget_wch(main_win.win, &ch) == ERR)
 			interface_fatal ("wget_wch() failed!");
 #endif
+
 		/* Recognize meta sequences */
 		if (ch == KEY_ESCAPE) {
-			if((meta = wgetch(main_win.win)) != ERR)
+			meta = wgetch (main_win.win);
+			if (meta != ERR)
 				ch = meta | META_KEY_FLAG;
 			k->type = IFACE_KEY_FUNCTION;
 			k->key.func = ch;

@@ -843,7 +843,7 @@ static void *ffmpeg_open (const char *file)
 	/* When FFmpeg and LibAV misidentify a file's codec (and they do)
 	 * then hopefully this will save MOC from wanton destruction. */
 	extn = ext_pos (file);
-	if (extn && !strcmp (extn, "wav")
+	if (extn && !strcasecmp (extn, "wav")
 	         && strcmp (data->ic->iformat->name, "wav")) {
 		decoder_error (&data->error, ERROR_FATAL, 0,
 		               "Format possibly misidentified as '%s' by FFmpeg/LibAV",
@@ -931,7 +931,9 @@ static void *ffmpeg_open (const char *file)
 		avcodec_close (data->enc);
 		goto end;
 	}
+
 	data->sample_width = sfmt_Bps (data->fmt);
+
 	if (data->codec->capabilities & CODEC_CAP_DELAY)
 		data->delay = true;
 	data->seek_broken = is_seek_broken (data);
@@ -1137,7 +1139,7 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
 		                            &data_size, pkt->data, pkt->size);
 #endif
 
-		if (len < 0)  {
+		if (len < 0) {
 			/* skip frame */
 			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream!");
 			break;
@@ -1182,7 +1184,7 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
 
 		len = avcodec_decode_audio4 (data->enc, frame, &got_frame, pkt);
 
-		if (len < 0)  {
+		if (len < 0) {
 			/* skip frame */
 			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream!");
 			break;

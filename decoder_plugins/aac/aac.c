@@ -56,7 +56,6 @@ struct aac_data
 	int ok; /* was this stream successfully opened? */
 	struct decoder_error error;
 
-	int in_bytes_counter;
 	int bitrate;
 	int avg_bitrate;
 	int duration;
@@ -91,7 +90,6 @@ static int buffer_fill (struct aac_data *data)
 	if (n == 0)
 		return 0;
 
-	data->in_bytes_counter += n;
 	data->rbuf_len += n;
 	return 1;
 }
@@ -226,7 +224,7 @@ static int aac_count_time (struct aac_data *data)
 	}
 
 	if (io_seek(data->stream, saved_pos, SEEK_SET) == (off_t)-1) {
-		logit ("Can't seek after couting time");
+		logit ("Can't seek after counting time");
 		return -1;
 	}
 
@@ -409,9 +407,8 @@ static void aac_info (const char *file_name,
 		struct aac_data *data;
 
 		data = aac_open_internal (NULL, file_name);
-		if (data->ok) {
+		if (data->ok)
 			info->time = aac_count_time (data);
-		}
 		aac_close (data);
 	}
 }
@@ -448,8 +445,6 @@ static int decode_one_frame (struct aac_data *data, void *buffer, int count)
 	NeAACDecFrameInfo frame_info;
 	char *sample_buf;
 	int bytes, rc;
-
-	data->in_bytes_counter = 0;
 
 	rc = buffer_fill_frame (data);
 	if (rc <= 0)
@@ -518,10 +513,9 @@ static int aac_decode (void *prv_data, char *buf, int buf_len,
 
 	/* use overflow from previous call (if any) */
 	if (data->overflow_buf_len) {
-		int len = data->overflow_buf_len;
+		int len;
 
-		if (len > buf_len)
-			len = buf_len;
+		len = MIN(data->overflow_buf_len, buf_len);
 
 		memcpy (buf, data->overflow_buf, len);
 		data->overflow_buf += len;
@@ -555,8 +549,6 @@ static int aac_get_duration (void *prv_data)
 	struct aac_data *data = (struct aac_data *)prv_data;
 
 	return data->duration;
-
-	return -1;
 }
 
 static void aac_get_name (const char *file ATTR_UNUSED, char buf[4])

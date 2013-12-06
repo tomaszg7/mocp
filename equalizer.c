@@ -28,6 +28,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
@@ -49,7 +50,7 @@
 
 #include "common.h"
 #include "audio.h"
-#include "audio_helper.h"
+#include "audio_conversion.h"
 #include "options.h"
 #include "log.h"
 #include "files.h"
@@ -708,7 +709,7 @@ void equalizer_process_buffer(char *buf, size_t size, const struct sound_params 
   long sound_endianness = sound_params->fmt & SFMT_MASK_ENDIANNESS;
   long sound_format = sound_params->fmt & SFMT_MASK_FORMAT;
 
-  int samplesize = sample_size(sound_format);
+  int samplesize = sfmt_Bps(sound_format);
   int is_float = (sound_params->fmt & SFMT_MASK_FORMAT) == SFMT_FLOAT;
 
   int need_endianness_swap = 0;
@@ -718,14 +719,16 @@ void equalizer_process_buffer(char *buf, size_t size, const struct sound_params 
     need_endianness_swap = 1;
   }
 
+  assert (size % (samplesize * sound_params->channels) == 0);
+
   /* setup samples to perform arithmetic */
   if(need_endianness_swap)
   {
     debug ("Converting endianness before mixing");
     if(samplesize == 4)
-      swap_endianness_32((int32_t *)buf, size / sizeof(int32_t));
+      audio_conv_bswap_32((int32_t *)buf, size / sizeof(int32_t));
     else
-      swap_endianness_16((int16_t *)buf, size / sizeof(int16_t));
+      audio_conv_bswap_16((int16_t *)buf, size / sizeof(int16_t));
   }
 
   switch(sound_format)
@@ -764,9 +767,9 @@ void equalizer_process_buffer(char *buf, size_t size, const struct sound_params 
   {
     debug ("Restoring endianness after mixing");
     if(samplesize == 4)
-      swap_endianness_32((int32_t *)buf, size / sizeof(int32_t));
+      audio_conv_bswap_32((int32_t *)buf, size / sizeof(int32_t));
     else
-      swap_endianness_16((int16_t *)buf, size / sizeof(int16_t));
+      audio_conv_bswap_16((int16_t *)buf, size / sizeof(int16_t));
   }
 }
 

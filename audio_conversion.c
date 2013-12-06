@@ -52,7 +52,6 @@
 #include "log.h"
 #include "options.h"
 #include "compat.h"
-#include "audio_helper.h"
 
 static void float_to_u8 (const float *in, unsigned char *out, const size_t samples)
 {
@@ -128,8 +127,7 @@ static void float_to_u16 (const float *in, unsigned char *out,
 	}
 }
 
-static void float_to_s16 (const float *in, char *out,
-		const size_t samples)
+static void float_to_s16 (const float *in, char *out, const size_t samples)
 {
 	size_t i;
 
@@ -297,8 +295,7 @@ static void float_to_u32 (const float *in, unsigned char *out,
 	}
 }
 
-static void float_to_s32 (const float *in, char *out,
-		const size_t samples)
+static void float_to_s32 (const float *in, char *out, const size_t samples)
 {
 	size_t i;
 
@@ -336,8 +333,7 @@ static void u8_to_float (const unsigned char *in, float *out,
 		out[i] = (((int)*in++) + INT8_MIN) / (float)(INT8_MAX + 1);
 }
 
-static void s8_to_float (const char *in, float *out,
-		const size_t samples)
+static void s8_to_float (const char *in, float *out, const size_t samples)
 {
 	size_t i;
 
@@ -361,8 +357,7 @@ static void u16_to_float (const unsigned char *in, float *out,
 		out[i] = ((int)*in_16++ + INT16_MIN) / (float)(INT16_MAX + 1);
 }
 
-static void s16_to_float (const char *in, float *out,
-		const size_t samples)
+static void s16_to_float (const char *in, float *out, const size_t samples)
 {
 	size_t i;
 	const int16_t *in_16 = (int16_t *)in;
@@ -414,8 +409,7 @@ static void u32_to_float (const unsigned char *in, float *out,
 		out[i] = ((float)*in_32++ + (float)INT32_MIN) / ((float)INT32_MAX + 1.0);
 }
 
-static void s32_to_float (const char *in, float *out,
-		const size_t samples)
+static void s32_to_float (const char *in, float *out, const size_t samples)
 {
 	size_t i;
 	const int32_t *in_32 = (int32_t *)in;
@@ -564,6 +558,7 @@ static void change_sign_8 (uint8_t *buf, const size_t samples)
 	for (i = 0; i < samples; i++)
 		*buf++ ^= 1 << 7;
 }
+
 static void change_sign_16 (uint16_t *buf, const size_t samples)
 {
 	size_t i;
@@ -634,6 +629,21 @@ static void change_sign (char *buf, const size_t size, long *fmt)
 	}
 }
 
+void audio_conv_bswap_16 (int16_t *buf, const size_t num)
+{
+	size_t i;
+
+	for (i = 0; i < num; i++)
+		buf[i] = bswap_16 (buf[i]);
+}
+
+void audio_conv_bswap_32 (int32_t *buf, const size_t num)
+{
+	size_t i;
+
+	for (i = 0; i < num; i++)
+		buf[i] = bswap_32 (buf[i]);
+}
 
 /* Swap endianness of fixed point samples. */
 static void swap_endian (char *buf, const size_t size, const long fmt)
@@ -644,13 +654,13 @@ static void swap_endian (char *buf, const size_t size, const long fmt)
 	switch (fmt & SFMT_MASK_FORMAT) {
 		case SFMT_S16:
 		case SFMT_U16:
-			swap_endianness_16 ((int16_t *)buf, size / 2);
+			audio_conv_bswap_16 ((int16_t *)buf, size / 2);
 			break;
 		case SFMT_S24:
 		case SFMT_U24:
 		case SFMT_S32:
 		case SFMT_U32:
-			swap_endianness_32 ((int32_t *)buf, size / 4);
+			audio_conv_bswap_32 ((int32_t *)buf, size / 4);
 			break;
 		default:
 			error ("Can't convert to native endian!");
@@ -725,8 +735,7 @@ int audio_conv_new (struct audio_conversion *conv,
 
 #ifdef HAVE_SAMPLERATE
 static float *resample_sound (struct audio_conversion *conv, const float *buf,
-		const size_t samples, const int nchannels,
-		size_t *resampled_samples)
+		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
 	SRC_DATA resample_data;
 	float *output;
