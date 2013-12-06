@@ -78,56 +78,56 @@ static void get_comment_tags (OggOpusFile *of, struct file_tags *info)
 	}
 }
 
-/* Return a malloc()ed description of an op_*() error. */
-static char *opus_str_error (const int code)
+/* Return a description of an op_*() error. */
+static const char *opus_str_error (const int code)
 {
-	char *err;
+	const char *result;
 
 	switch (code) {
 		case OP_FALSE:
-			err = "Request was not successful";
+			result = "Request was not successful";
 			break;
 		case OP_EOF:
-			err = "End Of File";
+			result = "End Of File";
 			break;
 		case OP_HOLE:
-			err = "Hole in stream";
+			result = "Hole in stream";
 			break;
 		case OP_EREAD:
-			err = "An underlying read, seek, or tell operation failed.";
+			result = "An underlying read, seek, or tell operation failed.";
 			break;
 		case OP_EFAULT:
-			err = "Internal (Opus) logic fault";
+			result = "Internal (Opus) logic fault";
 			break;
 		case OP_EIMPL:
-			err = "Unimplemented feature";
+			result = "Unimplemented feature";
 			break;
 		case OP_EINVAL:
-			err = "Invalid argument";
+			result = "Invalid argument";
 			break;
 		case OP_ENOTFORMAT:
-			err = "Not an Opus file";
+			result = "Not an Opus file";
 			break;
 		case OP_EBADHEADER:
-			err = "Invalid or corrupt header";
+			result = "Invalid or corrupt header";
 			break;
 		case OP_EVERSION:
-			err = "Opus header version mismatch";
+			result = "Opus header version mismatch";
 			break;
 		case OP_EBADPACKET:
-			err = "An audio packet failed to decode properly";
+			result = "An audio packet failed to decode properly";
 			break;
 		case OP_ENOSEEK:
-			err = "Requested seeking in unseekable stream";
+			result = "Requested seeking in unseekable stream";
 			break;
 		case OP_EBADTIMESTAMP:
-			err = "File timestamps fail sanity tests";
+			result = "File timestamps fail sanity tests";
 			break;
 		default:
-			err = "Unknown error";
+			result = "Unknown error";
 	}
 
-	return xstrdup (err);
+	return result;
 }
 
 
@@ -142,10 +142,7 @@ static void opus_tags (const char *file_name, struct file_tags *info,
 	if (tags_sel & TAGS_TIME) {
                 of = op_open_file(file_name,&err_code);
 		if (err_code < 0) {
-			char *opus_err = opus_str_error (err_code);
-
-			logit ("Can't open %s: %s", file_name, opus_err);
-			free (opus_err);
+			logit ("Can't open %s: %s", file_name, opus_str_error (err_code));
 			op_free(of);
 
 			return;
@@ -154,10 +151,7 @@ static void opus_tags (const char *file_name, struct file_tags *info,
 	else {
                 of = op_open_file(file_name,&err_code);
 		if (err_code < 0) {
-			char *opus_err = opus_str_error (err_code);
-
-			logit ("Can't open %s: %s", file_name, opus_err);
-			free (opus_err);
+			logit ("Can't open %s: %s", file_name, opus_str_error (err_code));
 			op_free (of);
 
 			return;
@@ -225,12 +219,10 @@ static void opus_open_stream_internal (struct opus_data *data)
 
         data->of = op_open_callbacks(data->stream, &callbacks, NULL, 0, &res);
 	if (res < 0) {
-		char *opus_err = opus_str_error (res);
+		const char *opus_err = opus_str_error (res);
 
-		decoder_error (&data->error, ERROR_FATAL, 0, "%s",
-				opus_err);
+		decoder_error (&data->error, ERROR_FATAL, 0, "%s", opus_err);
 		debug ("op_open error: %s", opus_err);
-		free (opus_err);
 		op_free (data->of);
 		data->of = NULL;
 		io_close (data->stream);
