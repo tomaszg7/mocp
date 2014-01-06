@@ -51,15 +51,15 @@ static void wav_data_init (struct wavpack_data *data)
 {
 	data->sample_num = WavpackGetNumSamples (data->wpc);
 	data->sample_rate = WavpackGetSampleRate (data->wpc);
-	data->channels = WavpackGetReducedChannels (data->wpc);
+	data->channels = WavpackGetNumChannels (data->wpc);
 	data->duration = data->sample_num / data->sample_rate;
 	data->mode = WavpackGetMode (data->wpc);
 	data->avg_bitrate = WavpackGetAverageBitrate (data->wpc, 1) / 1000;
 
 	data->ok = 1;
-	debug ("File opened. S_n %d. S_r %d. Time %d. Avg_Bitrate %d.",
+	debug ("File opened. S_num %d. S_rate %d. Time %d. Avg_Bitrate %d. Channels %d",
 		data->sample_num, data->sample_rate,
-		data->duration, data->avg_bitrate
+		data->duration, data->avg_bitrate, data->channels
 		);
 }
 
@@ -71,7 +71,7 @@ static void *wav_open (const char *file)
 	data->ok = 0;
 	decoder_error_init (&data->error);
 
-	int o_flags = OPEN_2CH_MAX | OPEN_WVC;
+	int o_flags = OPEN_WVC;
 
 	char wv_error[100];
 
@@ -200,15 +200,16 @@ static int wav_decode (void *prv_data, char *buf, int buf_len,
 		struct sound_params *sound_params)
 {
 	struct wavpack_data *data = (struct wavpack_data *)prv_data;
-	int ret, i, s_num, iBps, oBps;
+	int ret, i, s_num, Bps, iBps, oBps;
 
 	int8_t * buf8 = (int8_t *)buf;
 	int16_t * buf16 = (int16_t *)buf;
 	int32_t * buf32 = (int32_t *)buf;
 
 
-	iBps = data->channels * WavpackGetBytesPerSample (data->wpc);
-	oBps = (iBps == 6) ? 8 : iBps;
+	Bps = WavpackGetBytesPerSample (data->wpc);
+	iBps = data->channels * Bps;
+	oBps = (Bps == 3) ? 4 * data->channels : iBps;
 	s_num = buf_len / oBps;
 
 	decoder_error_clear (&data->error);
@@ -228,7 +229,7 @@ static int wav_decode (void *prv_data, char *buf, int buf_len,
 		memcpy (buf, dbuf, ret * oBps);
 	} else	{
 		debug ("iBps %d", iBps);
-		switch (iBps / data->channels){
+		switch (Bps){
 		case 4: for (i = 0; i < ret * data->channels; i++)
 				buf32[i] = dbuf[i];
 			sound_params->fmt = SFMT_S32 | SFMT_NE;
