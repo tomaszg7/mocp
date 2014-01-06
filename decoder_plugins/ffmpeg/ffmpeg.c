@@ -901,7 +901,7 @@ static void *ffmpeg_open (const char *file)
 	}
 #endif
 
-	set_downmixing (data);
+//	set_downmixing (data);
 	if (data->codec->capabilities & CODEC_CAP_TRUNCATED)
 		data->enc->flags |= CODEC_FLAG_TRUNCATED;
 
