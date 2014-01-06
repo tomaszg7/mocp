@@ -481,6 +481,8 @@ static int alsa_open (struct sound_params *sound_params)
 		return 0;
 	}
 
+	logit ("Set channels to %d", sound_params->channels);
+
 	if ((err = snd_pcm_hw_params_get_buffer_time_max(hw_params,
 					&buffer_time, 0)) < 0) {
 		error ("Can't get maximum buffer time: %s", snd_strerror(err));

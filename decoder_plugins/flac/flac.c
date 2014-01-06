@@ -20,7 +20,7 @@
 #include <stdlib.h>
 #include <strings.h>
 
-/*#define DEBUG*/
+#define DEBUG
 
 #include "common.h"
 #include "audio.h"
@@ -37,7 +37,7 @@
 #undef LEGACY_FLAC
 #endif
 
-#define MAX_SUPPORTED_CHANNELS		2
+#define MAX_SUPPORTED_CHANNELS		6
 
 #define SAMPLES_PER_WRITE		512
 #define SAMPLE_BUFFER_SIZE ((FLAC__MAX_BLOCK_SIZE + SAMPLES_PER_WRITE) * MAX_SUPPORTED_CHANNELS * (32/8))
@@ -101,14 +101,14 @@ static size_t pack_pcm_signed (FLAC__byte *data,
 					data[0] = sample;
 					break;
 				case 16:
-					data[1] = (FLAC__byte)(sample >> 8);
-					data[0] = (FLAC__byte)sample;
+					data[0] = (FLAC__byte)(sample >> 8);
+					data[1] = (FLAC__byte)sample;
 					break;
 				case 32:
-					data[3] = (FLAC__byte)(sample >> 16);
-					data[2] = (FLAC__byte)(sample >> 8);
-					data[1] = (FLAC__byte)sample;
-					data[0] = 0;
+					data[0] = (FLAC__byte)(sample >> 16);
+					data[1] = (FLAC__byte)(sample >> 8);
+					data[2] = (FLAC__byte)sample;
+					data[3] = 0;
 					break;
 			}
 
@@ -405,6 +405,8 @@ static void *flac_open_internal (const char *file, const int buffered)
 	data->ok = 1;
 	data->avg_bitrate = data->bits_per_sample * data->sample_rate;
 
+	debug ("File opened. Channels %d. Samplerate %d. Duration %d. Avg_Bitrate %d.", data->channels, data->sample_rate,
+		data->length, data->avg_bitrate);
 	return data;
 }
 
@@ -579,10 +581,10 @@ static int flac_decode (void *void_data, char *buf, int buf_len,
 			sound_params->fmt = SFMT_S8;
 			break;
 		case 2:
-			sound_params->fmt = SFMT_S16 | SFMT_LE;
+			sound_params->fmt = SFMT_S16 | SFMT_BE;
 			break;
 		case 3:
-			sound_params->fmt = SFMT_S32 | SFMT_LE;
+			sound_params->fmt = SFMT_S32 | SFMT_BE;
 			break;
 	}
 

@@ -650,6 +650,7 @@ static void swap_endian (char *buf, const size_t size, const long fmt)
 {
 	if ((fmt & (SFMT_S8 | SFMT_U8 | SFMT_FLOAT)))
 		return;
+        debug("Swapping endianness");
 
 	switch (fmt & SFMT_MASK_FORMAT) {
 		case SFMT_S16:
@@ -869,8 +870,7 @@ a[1][0] = 0; a[1][1]=0.707; a[1][2]=1.0; a[1][3]= 0.5774; a[1][4]=0.8165; a[1][5
 		memcpy (stereo + (i /3), sample_out, 2*Bps);
 	}
 	}
-
-	if (format & SFMT_FLOAT)
+	else if (format & SFMT_FLOAT)
 	{  
 	debug("Downmixing from 5.1 to 2.0: FLOAT");
 
@@ -886,7 +886,27 @@ a[1][0] = 0; a[1][1]=0.707; a[1][2]=1.0; a[1][3]= 0.5774; a[1][4]=0.8165; a[1][5
 		memcpy (stereo + (i / 3), sample_out, 2*Bps);
 	}
 	}
+	else if (format & SFMT_S32)
+	{  
+	debug("Downmixing from 5.1 to 2.0: S32");
 
+	int32_t sample_in[6];
+	int32_t sample_out[2];
+
+	for (i = 0; i < size; i += 6*Bps) {
+		memcpy(&sample_in,ch6 + i,Bps*6);
+		sample_out[0]=0; sample_out[1]=0;
+		for (j=0; j<2; j++)
+		    for (k=0; k<6; k++)
+			  sample_out[j]+=(a[j][k]*sample_in[k]*normalization);
+		memcpy (stereo + (i / 3), sample_out, 2*Bps);
+	}
+	}
+	else
+	{
+	error("Can't downsample that sample format yet.");
+	abort ();
+	}
 	return stereo;
 }
 
