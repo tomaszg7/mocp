@@ -17,12 +17,6 @@
 
 #include <stdio.h>
 #include <string.h>
-#ifdef HAVE_STDINT_H
-# include <stdint.h>
-#endif
-#ifdef HAVE_INTTYPES_H
-# include <inttypes.h>
-#endif
 #include <assert.h>
 
 #include <neaacdec.h>
@@ -73,7 +67,7 @@ static void *buffer_data (struct aac_data *data)
 
 static int buffer_fill (struct aac_data *data)
 {
-	int32_t n;
+	ssize_t n;
 
 	if (data->rbuf_pos > 0) {
 		data->rbuf_len = buffer_length (data);
@@ -163,7 +157,7 @@ static int buffer_fill_frame(struct aac_data *data)
 		for (n = 0; n < len - 5; n++) {
 			/* give up after 32KB */
 			if (max-- == 0) {
-				logit ("no frame found!\n");
+				logit ("no frame found!");
 				/* FIXME: set errno? */
 				return -1;
 			}
@@ -196,8 +190,7 @@ static int aac_count_time (struct aac_data *data)
 {
 	NeAACDecFrameInfo frame_info;
 	int samples = 0, bytes = 0, frames = 0;
-	off_t file_size;
-	long saved_pos;
+	off_t file_size, saved_pos;
 
 	file_size = io_file_size (data->stream);
 	if (file_size == -1)
@@ -223,7 +216,7 @@ static int aac_count_time (struct aac_data *data)
 		buffer_consume (data, frame_info.bytesconsumed);
 	}
 
-	if (io_seek(data->stream, saved_pos, SEEK_SET) == (off_t)-1) {
+	if (io_seek(data->stream, saved_pos, SEEK_SET) == -1) {
 		logit ("Can't seek after counting time");
 		return -1;
 	}
@@ -318,7 +311,7 @@ static void *aac_open_internal (struct io_stream *stream, const char *fname)
 	/*NeAACDecInitDRM(data->decoder, data->sample_rate, data->channels);*/
 
 	if (fname) {
-		ssize_t file_size;
+		off_t file_size;
 
 		data->duration = aac_count_time (data);
 		file_size = io_file_size (data->stream);

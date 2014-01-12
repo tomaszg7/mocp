@@ -16,6 +16,7 @@
 #include "config.h"
 #endif
 
+#include <inttypes.h>
 #include <string.h>
 #include <strings.h>
 #include <stdio.h>
@@ -90,7 +91,7 @@ static mpc_bool_t seek_callback (mpc_reader *t, mpc_int32_t offset)
 	struct musepack_data *data = t->data;
 #endif
 
-	debug ("Seek request to %ld", (long)offset);
+	debug ("Seek request to %"PRId32, offset);
 
 	return io_seek(data->stream, offset, SEEK_SET) >= 0 ? 1 : 0;
 }
@@ -109,7 +110,7 @@ static mpc_int32_t tell_callback (mpc_reader *t)
 
 	debug ("tell callback");
 
-	return io_tell (data->stream);
+	return (mpc_int32_t)io_tell (data->stream);
 }
 
 #ifdef MPC_IS_OLD_API
@@ -126,7 +127,7 @@ static mpc_int32_t get_size_callback (mpc_reader *t)
 
 	debug ("size callback");
 
-	return io_file_size (data->stream);
+	return (mpc_int32_t)io_file_size (data->stream);
 }
 
 #ifdef MPC_IS_OLD_API
@@ -146,7 +147,6 @@ static mpc_bool_t canseek_callback (mpc_reader *t)
 
 static void musepack_open_stream_internal (struct musepack_data *data)
 {
-
 	data->reader.read = read_callback;
 	data->reader.seek = seek_callback;
 	data->reader.tell = tell_callback;
@@ -207,9 +207,17 @@ static void *musepack_open (const char *file)
 				"Can't open file: %s",
 				io_strerror(data->stream));
 		io_close (data->stream);
+		return data;
 	}
-	else
-		musepack_open_stream_internal (data);
+
+	/* This a restriction placed on us by the Musepack API. */
+	if (io_file_size (data->stream) > INT32_MAX) {
+		decoder_error (&data->error, ERROR_FATAL, 0, "File too large!");
+		io_close (data->stream);
+		return data;
+	}
+
+	musepack_open_stream_internal (data);
 
 	return data;
 }
@@ -337,7 +345,7 @@ static int musepack_decode (void *prv_data, char *buf, int buf_len,
 		size_t to_copy = MIN((unsigned)buf_len,
 				data->remain_buf_len * sizeof(float));
 
-		debug ("Copying %ld bytes from the remain buf", (long)to_copy);
+		debug ("Copying %zu bytes from the remain buf", to_copy);
 
 		memcpy (buf, data->remain_buf, to_copy);
 		if (to_copy / sizeof(float) < data->remain_buf_len) {
@@ -401,7 +409,7 @@ static int musepack_decode (void *prv_data, char *buf, int buf_len,
 	if (bytes_from_decoder >= buf_len) {
 		size_t to_copy = MIN (buf_len, bytes_from_decoder);
 
-		debug ("Copying %ld bytes", (long)to_copy);
+		debug ("Copying %zu bytes", to_copy);
 
 		memcpy (buf, decode_buf, to_copy);
 		data->remain_buf_len = (bytes_from_decoder - to_copy)
@@ -413,8 +421,7 @@ static int musepack_decode (void *prv_data, char *buf, int buf_len,
 		decoded = to_copy;
 	}
 	else {
-		debug ("Copying whole decoded sound (%ld bytes)",
-				(long)bytes_from_decoder);
+		debug ("Copying whole decoded sound (%d bytes)", bytes_from_decoder);
 		memcpy (buf, decode_buf, bytes_from_decoder);
 		decoded = bytes_from_decoder;
 	}

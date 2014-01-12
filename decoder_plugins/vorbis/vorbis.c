@@ -13,6 +13,8 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
+#include <inttypes.h>
 #include <string.h>
 #include <strings.h>
 #include <stdio.h>
@@ -192,10 +194,10 @@ static size_t read_callback (void *ptr, size_t size, size_t nmemb,
 
 static int seek_callback (void *datasource, ogg_int64_t offset, int whence)
 {
-	debug ("Seek request to %ld (%s)", (long)offset,
+	debug ("Seek request to %"PRId64" (%s)", offset,
 			whence == SEEK_SET ? "SEEK_SET"
 			: (whence == SEEK_CUR ? "SEEK_CUR" : "SEEK_END"));
-	return io_seek (datasource, offset, whence);
+	return io_seek (datasource, offset, whence) == -1 ? -1 : 0;
 }
 
 static int close_callback (void *datasource ATTR_UNUSED)
@@ -205,7 +207,7 @@ static int close_callback (void *datasource ATTR_UNUSED)
 
 static long tell_callback (void *datasource)
 {
-	return io_tell (datasource);
+	return (long)io_tell (datasource);
 }
 
 static void vorbis_open_stream_internal (struct vorbis_data *data)
@@ -257,12 +259,19 @@ static void *vorbis_open (const char *file)
 	data->stream = io_open (file, 1);
 	if (!io_ok(data->stream)) {
 		decoder_error (&data->error, ERROR_FATAL, 0,
-				"Can't load OGG: %s",
-				io_strerror(data->stream));
+		               "Can't load OGG: %s", io_strerror(data->stream));
 		io_close (data->stream);
+		return data;
 	}
-	else
-		vorbis_open_stream_internal (data);
+
+	/* This a restriction placed on us by the vorbisfile API. */
+	if (io_file_size (data->stream) > LONG_MAX) {
+		decoder_error (&data->error, ERROR_FATAL, 0, "File too large!");
+		io_close (data->stream);
+		return data;
+	}
+
+	vorbis_open_stream_internal (data);
 
 	return data;
 }
@@ -347,7 +356,7 @@ static int vorbis_decode (void *prv_data, char *buf, int buf_len,
 			return 0;
 		if (ret < 0) {
 			decoder_error (&data->error, ERROR_STREAM, 0,
-					"Error in the stream!");
+			               "Error in the stream!");
 			continue;
 		}
 

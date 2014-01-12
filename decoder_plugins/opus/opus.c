@@ -13,6 +13,8 @@
 #include "config.h"
 #endif
 
+#include <limits.h>
+#include <inttypes.h>
 #include <string.h>
 #include <strings.h>
 #include <stdio.h>
@@ -189,7 +191,7 @@ static int read_callback (void *datasource, unsigned char *ptr, int bytes)
 
 static int seek_callback (void *datasource, opus_int64 offset, int whence)
 {
- 	debug ("Seek request to %ld (%s)", (long)offset,
+ 	debug ("Seek request to %"PRId64" (%s)", offset,
  			whence == SEEK_SET ? "SEEK_SET"
  			: (whence == SEEK_CUR ? "SEEK_CUR" : "SEEK_END"));
  	return io_seek (datasource, offset, whence)<0 ? -1 : 0;
@@ -202,7 +204,7 @@ static int close_callback (void *datasource ATTR_UNUSED)
 
 static opus_int64 tell_callback (void *datasource)
 {
-	return io_tell (datasource);
+	return (opus_int64)io_tell (datasource);
 }
 
 static void opus_open_stream_internal (struct opus_data *data)
@@ -256,8 +258,7 @@ static void *opus_open (const char *file)
 	data->stream = io_open (file, 1);
 	if (!io_ok(data->stream)) {
 		decoder_error (&data->error, ERROR_FATAL, 0,
-				"Can't load Opus: %s",
-				io_strerror(data->stream));
+				"Can't load Opus: %s", io_strerror(data->stream));
 		io_close (data->stream);
 	}
 	else
