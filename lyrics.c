@@ -91,10 +91,12 @@ void lyrics_autoload (const char *filename)
 		return;
 	}
 
+/*
 	if (!options_get_bool ("AutoLoadLyrics")) {
 		lyrics_message = "[Lyrics not autoloaded!]";
 		return;
 	}
+*/
 
 	if (is_url (filename)) {
 		lyrics_message = "[Lyrics from URL is not supported!]";

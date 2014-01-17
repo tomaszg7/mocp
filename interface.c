@@ -799,7 +799,8 @@ static void update_curr_file ()
 		iface_set_played_file (file);
 		iface_set_played_file_title (curr_file.title);
 		/* Try to load the lyrics of the new file. */
-		iface_load_lyrics (file);
+		if (options_get_int("AutoloadLyrics"))
+			iface_load_lyrics (file);
 		/* Silent seeking makes no sense if the playing file has changed. */
 		silent_seek_pos = -1;
 		iface_set_curr_time (curr_file.curr_time);
