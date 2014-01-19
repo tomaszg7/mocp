@@ -4272,7 +4272,7 @@ int iface_in_lyrics ()
 
 void iface_switch_to_lyrics ()
 {
-	if (!options_get_int("AutoloadLyrics"))
+	if (!options_get_bool("AutoloadLyrics"))
 		iface_load_lyrics (main_win.curr_file);
 	main_win_switch_to_lyrics (&main_win);
 	iface_refresh_screen ();
