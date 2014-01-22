@@ -191,7 +191,7 @@ static int read_callback (void *datasource, unsigned char *ptr, int bytes)
 
 static int seek_callback (void *datasource, opus_int64 offset, int whence)
 {
- 	debug ("Seek request to %"PRId64" (%s)", offset,
+ 	debug ("Seek request to %"PRId64" (%s)", (int64_t)offset,
  			whence == SEEK_SET ? "SEEK_SET"
  			: (whence == SEEK_CUR ? "SEEK_CUR" : "SEEK_END"));
  	return io_seek (datasource, offset, whence)<0 ? -1 : 0;

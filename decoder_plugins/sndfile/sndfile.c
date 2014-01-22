@@ -132,7 +132,7 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 		    * sizeof(int) * data->snd_info.channels;
 	}
 #else
-	switch sizeof(int) {
+	switch (sizeof(int)) {
 		case 4:
 		    sound_params->fmt = SFMT_S32 & SFMT_NE;
 		    break;
