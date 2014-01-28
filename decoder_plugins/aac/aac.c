@@ -115,7 +115,7 @@ static int parse_frame (const unsigned char data[6])
 {
 	int len;
 
-	/* http://www.audiocoding.com/modules/wiki/?page=ADTS */
+	/* http://wiki.multimedia.cx/index.php?title=ADTS */
 
 	/* first 12 bits must be set */
 	if (data[0] != 0xFF)
@@ -356,9 +356,8 @@ static char *get_tag (struct id3_tag *tag, const char *what)
 	frame = id3_tag_findframe (tag, what, 0);
 	if (frame && (field = &frame->fields[1])) {
 		ucs4 = id3_field_getstrings (field, 0);
-		if (ucs4) {
+		if (ucs4)
 			comm = (char *)id3_ucs4_utf8duplicate (ucs4);
-		}
 	}
 
 	return comm;

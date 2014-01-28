@@ -294,18 +294,30 @@ static void load_audio_extns (lists_t_strs *list)
 		{"ac3", "ac3"},
 		{"ape", "ape"},
 		{"au", "au"},
+		{"ay", "libgme"},
 		{"dts", "dts"},
 		{"eac3", "eac3"},
 		{"fla", "flac"},
 		{"flac", "flac"},
+		{"gbs", "libgme"},
+		{"gym", "libgme"},
+		{"hes", "libgme"},
+		{"kss", "libgme"},
 		{"mka", "matroska"},
 		{"mp2", "mpeg"},
 		{"mp3", "mp3"},
 		{"mpc", "mpc"},
 		{"mpc8", "mpc8"},
 		{"m4a", "m4a"},
+		{"nsf", "libgme"},
+		{"nsfe", "libgme"},
 		{"ra", "rm"},
+		{"sap", "libgme"},
+		{"spc", "libgme"},
+		{"vgm", "libgme"},
+		{"vgz", "libgme"},
 		{"wav", "wav"},
+		{"w64", "w64"},
 		{"wma", "asf"},
 		{"wv", "wv"},
 		{NULL, NULL}
@@ -348,6 +360,7 @@ static void load_video_extns (lists_t_strs *list)
 		{"mp4", "mp4"},
 		{"rec", "mpegts"},
 		{"vob", "mpeg"},
+		{"webm", "matroska"},
 		{NULL, NULL}
 	};
 
@@ -689,11 +702,37 @@ static long fmt_from_sample_fmt (struct ffmpeg_data *data)
 	return result;
 }
 
+#if 0
+/* The AVInputFormat.read_seek field was deprecated then later undeprecated
+ * again, so we humbly ask the compiler to forgive the interim deprecation. */
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+static bool deprecated_read_seek (struct ffmpeg_data *data)
+{
+	if (!data->ic->iformat->read_seek)
+		return true;
+	return false;
+}
+#ifdef __GNUC__
+#pragma GCC diagnostic warning "-Wdeprecated-declarations"
+#endif
+#endif
+
 /* Try to figure out if seeking is broken for this format.
  * The aim here is to try and ensure that seeking either works
  * properly or (because of FFmpeg breakages) is disabled. */
 static bool is_seek_broken (struct ffmpeg_data *data)
 {
+#if 0
+	/* FFmpeg's alternate strategy for formats which don't
+	 * support seeking natively seems to be... unreliable. */
+	if (deprecated_read_seek (data)) {
+		debug ("Seek broken by AVInputFormat.read_seek");
+		return true;
+	}
+#endif
+
 #ifdef HAVE_AVIOCONTEXT_SEEKABLE
 	/* How much do we trust this? */
 	if (!data->ic->pb->seekable) {
@@ -706,6 +745,12 @@ static bool is_seek_broken (struct ffmpeg_data *data)
 	if (!strcmp (data->ic->iformat->name, "asf") &&
 	    data->codec->id == CODEC_ID_MP2)
 		return true;
+
+#if 0
+	/* AU (.au): Seeking ends playing. */
+	if (!strcmp (data->ic->iformat->name, "au"))
+		return true;
+#endif
 
 	/* FLAC (.flac): Seeking results in a loop.  We don't know exactly
 	 * when this was fixed, but it was working by ffmpeg-0.7.1. */
@@ -720,6 +765,18 @@ static bool is_seek_broken (struct ffmpeg_data *data)
 	 *             probably not for real ones) because the player doesn't
 	 *             get to see them. */
 	if (!strcmp (data->ic->iformat->name, "flv"))
+		return true;
+#endif
+
+#if 0
+	/* WV (.wv): Seeking ends playing. */
+	if (!strcmp (data->ic->iformat->name, "wv"))
+		return true;
+#endif
+
+#if 0
+	/* SV8 (.mpc/.mpc8): Audacious says the musepack8 codec is also broken. */
+	if (data->codec->id == CODEC_ID_MUSEPACK8)
 		return true;
 #endif
 

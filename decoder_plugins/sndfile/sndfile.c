@@ -80,8 +80,7 @@ static void sndfile_info (const char *file_name, struct file_tags *info,
 
 		if (data->sndfile) {
 
-			/* I don't know why, but this condition is in the
-			 * examples. */
+			/* I don't know why, but this condition is in the examples. */
 			if (data->snd_info.frames <= 0x7FFFFFFF) {
 				info->time = data->snd_info.frames
 					/ data->snd_info.samplerate;
@@ -171,6 +170,8 @@ static void sndfile_get_name (const char *file, char buf[4])
 		strcpy (buf, "AU");
 	else if (!strcasecmp (ext, "wav"))
 		strcpy (buf, "WAV");
+	else if (!strcasecmp (ext, "w64"))
+		strcpy (buf, "W64");
 	else if (!strcasecmp (ext, "aif") || !strcasecmp (ext, "aiff"))
 		strcpy (buf, "AIF");
 	else if (!strcasecmp (ext, "8svx"))
@@ -188,6 +189,7 @@ static int sndfile_our_format_ext (const char *ext)
 	return !strcasecmp (ext, "au")
 		|| !strcasecmp (ext, "snd")
 		|| !strcasecmp (ext, "wav")
+		|| !strcasecmp (ext, "w64")
 		|| !strcasecmp (ext, "aif")
 		|| !strcasecmp (ext, "aiff")
 		|| !strcasecmp (ext, "8svx")
