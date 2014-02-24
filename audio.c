@@ -845,13 +845,11 @@ int audio_open (struct sound_params *sound_params)
 		audio_opened = 1;
 
 		logit ("Requested sound parameters: %s, %d channels, %dHz",
-				sfmt_str(req_sound_params.fmt, fmt_name,
-					sizeof(fmt_name)),
+				sfmt_str(req_sound_params.fmt, fmt_name, sizeof(fmt_name)),
 				req_sound_params.channels,
 				req_sound_params.rate);
 		logit ("Driver sound parameters: %s, %d channels, %dHz",
-				sfmt_str(driver_sound_params.fmt, fmt_name,
-					sizeof(fmt_name)),
+				sfmt_str(driver_sound_params.fmt, fmt_name, sizeof(fmt_name)),
 				driver_sound_params.channels,
 				driver_sound_params.rate);
 	}
@@ -1173,8 +1171,7 @@ void audio_plist_add (const char *file)
 	if (plist_find_fname(&playlist, file) == -1)
 		plist_add (&playlist, file);
 	else
-		logit ("Wanted to add a file that is already present on the "
-				"list: %s", file);
+		logit ("Wanted to add a file already present: %s", file);
 	UNLOCK (plist_mut);
 }
 
@@ -1184,8 +1181,7 @@ void audio_queue_add (const char *file)
 	if (plist_find_fname(&queue, file) == -1)
 		plist_add (&queue, file);
 	else
-		logit ("Wanted to add a file that is already present in the "
-				"queue: %s", file);
+		logit ("Wanted to add a file already present: %s", file);
 	UNLOCK (plist_mut);
 }
 

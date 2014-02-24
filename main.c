@@ -130,8 +130,8 @@ static void check_moc_dir ()
 						dir_name, strerror (errno));
 		}
 		else
-			fatal ("Error trying to check for "CONFIG_DIR
-					" directory: %s", strerror (errno));
+			fatal ("Error trying to check for "CONFIG_DIR" directory: %s",
+			        strerror (errno));
 	}
 	else {
 		if (!S_ISDIR(file_stat.st_mode) || access (dir_name, W_OK))
@@ -284,7 +284,7 @@ static void show_version ()
 	printf ("           Author : Damian Pietras\n");
 	printf ("         Homepage : %s\n", PACKAGE_URL);
 	printf ("           E-Mail : %s\n", PACKAGE_BUGREPORT);
-	printf ("        Copyright : (C) 2003-2012 Damian Pietras and others\n");
+	printf ("        Copyright : (C) 2003-2014 Damian Pietras and others\n");
 	printf ("          License : GNU General Public License, version 2 or later\n");
 	putchar ('\n');
 }

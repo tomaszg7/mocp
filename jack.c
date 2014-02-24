@@ -213,8 +213,7 @@ static int moc_jack_open (struct sound_params *sound_params)
 		char fmt_name[SFMT_STR_MAX];
 
 		error ("Unsupported sound format: %s.",
-				sfmt_str(sound_params->fmt, fmt_name,
-					sizeof(fmt_name)));
+				sfmt_str(sound_params->fmt, fmt_name, sizeof(fmt_name)));
 		return 0;
 	}
 	if (sound_params->channels != 2) {
@@ -244,7 +243,7 @@ static int moc_jack_play (const char *buff, const size_t size)
 		return 0;
 	}
 
-	debug ("Playing %luB", (unsigned long)size);
+	debug ("Playing %zu bytes", size);
 
 	if (our_xrun) {
 		logit ("xrun");
@@ -261,8 +260,7 @@ static int moc_jack_play (const char *buff, const size_t size)
 			size_t to_write;
 
 			space *= 2; /* we have 2 channels */
-			debug ("Space in the ringbuffer: %luB",
-					(unsigned long)space);
+			debug ("Space in the ringbuffer: %zu bytes", space);
 
 			to_write = MIN (space, remain);
 

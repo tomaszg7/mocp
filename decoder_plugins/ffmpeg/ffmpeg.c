@@ -333,8 +333,8 @@ static void load_audio_extns (lists_t_strs *list)
 		if (avcodec_find_decoder (CODEC_ID_VORBIS))
 			lists_strs_append (list, "oga");
 #if HAVE_DECL_CODEC_ID_OPUS || HAVE_DECL_AV_CODEC_ID_OPUS
-  /* The LibAV libraries will tell us they support Opus... but they lie. */
-  #if defined(HAVE_FFMPEG)
+  /* The Opus support in LibAV libraries is feeling better now. */
+  #if !defined(HAVE_LIBAV) || LIBAVFORMAT_VERSION_INT >= AV_VERSION_INT(55,6,0)
 		if (avcodec_find_decoder (CODEC_ID_OPUS))
 			lists_strs_append (list, "opus");
   #endif
@@ -914,8 +914,7 @@ static void *ffmpeg_open (const char *file)
 		 * may misreport experimental codecs.  Given we don't know the
 		 * codec at this time, we will have to live with it. */
 		decoder_error (&data->error, ERROR_FATAL, 0,
-				"Could not find codec parameters (err %d)",
-				err);
+				"Could not find codec parameters (err %d)", err);
 		goto end;
 	}
 
@@ -1194,7 +1193,8 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
 
 		if (len < 0) {
 			/* skip frame */
-			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream!");
+			decoder_error (&data->error, ERROR_STREAM, 0,
+			               "Error in the stream!");
 			break;
 		}
 
@@ -1243,7 +1243,8 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
 
 		if (len < 0) {
 			/* skip frame */
-			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream!");
+			decoder_error (&data->error, ERROR_STREAM, 0,
+			               "Error in the stream!");
 			break;
 		}
 

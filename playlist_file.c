@@ -170,8 +170,7 @@ static int plist_load_m3u (struct plist *plist, const char *fname,
 				serial = strtol (serial_str, &err, 0);
 				if (!*err) {
 					plist_set_serial (plist, serial);
-					logit ("Got MOCSERIAL tag with serial %d",
-							(int)serial);
+					logit ("Got MOCSERIAL tag with serial %ld", serial);
 				}
 			}
 		}
@@ -266,8 +265,7 @@ static char *read_ini_value (FILE *file, const char *section, const char *key)
 					char *q = strchr (value + 1, '"');
 
 					if (!q) {
-						error ("Parse error in the INI"
-								" file");
+						error ("Parse error in the INI file");
 						free (line);
 						break;
 					}
