@@ -34,9 +34,19 @@
 #include "io.h"
 #include "io_curl.h"
 #include "options.h"
+#include "lists.h"
+
+static char user_agent[] = PACKAGE_NAME"/"PACKAGE_VERSION;
 
 void io_curl_init ()
 {
+	char *ptr;
+
+	for (ptr = user_agent; *ptr; ptr += 1) {
+		if (*ptr == ' ')
+			*ptr = '-';
+	}
+
 	curl_global_init (CURL_GLOBAL_NOTHING);
 }
 
@@ -145,8 +155,10 @@ static size_t header_callback (void *data, size_t size, size_t nmemb,
 static int debug_callback (CURL *curl ATTR_UNUSED, curl_infotype i, char *msg,
 		size_t size, void *d ATTR_UNUSED)
 {
+	int ix;
 	char *log;
 	const char *type;
+	lists_t_strs *lines;
 
 	switch (i) {
 	case CURLINFO_TEXT:
@@ -164,11 +176,13 @@ static int debug_callback (CURL *curl ATTR_UNUSED, curl_infotype i, char *msg,
 
 	log = (char *)xmalloc (size + 1);
 	strncpy (log, msg, size);
-	if (size > 0 && log[size-1] == '\n')
-		log[size-1] = 0;
-	else
-		log[size] = 0;
-	debug ("CURL: [%s] %s", type, log);
+	log[size] = 0;
+
+	lines = lists_strs_new (8);
+	lists_strs_split (lines, log, "\n");
+	for (ix = 0; ix < lists_strs_size (lines); ix += 1)
+		debug ("CURL: [%s] %s", type, lists_strs_at (lines, ix));
+	lists_strs_free (lines);
 	free (log);
 
 	return 0;
@@ -244,8 +258,7 @@ void io_curl_open (struct io_stream *s, const char *url)
 	curl_easy_setopt (s->curl.handle, CURLOPT_HEADERFUNCTION,
 			header_callback);
 	curl_easy_setopt (s->curl.handle, CURLOPT_WRITEHEADER, s);
-	curl_easy_setopt (s->curl.handle, CURLOPT_USERAGENT,
-			PACKAGE_NAME"/"PACKAGE_VERSION);
+	curl_easy_setopt (s->curl.handle, CURLOPT_USERAGENT, user_agent);
 	curl_easy_setopt (s->curl.handle, CURLOPT_URL, s->curl.url);
 	curl_easy_setopt (s->curl.handle, CURLOPT_FOLLOWLOCATION, 1);
 	curl_easy_setopt (s->curl.handle, CURLOPT_FAILONERROR, 1);
