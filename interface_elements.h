@@ -143,6 +143,8 @@ void iface_clear_queue_positions (const struct plist *queue,
 		struct plist *playlist, struct plist *dir_list);
 void iface_update_queue_position_last (const struct plist *queue,
 		struct plist *playlist, struct plist *dir_list);
+void iface_update_attrs ();
+void iface_update_theme_selection (const char *file);
 
 #ifdef __cplusplus
 }

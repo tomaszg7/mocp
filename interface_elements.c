@@ -3778,6 +3778,67 @@ void iface_set_dir_content (const enum iface_menu iface_menu,
 	iface_refresh_screen ();
 }
 
+/* Refreshes all menu structs with updated theme attributes. */
+void iface_update_attrs ()
+{
+	size_t ix;
+
+	info_win.mixer_bar.fill_color = get_color (CLR_MIXER_BAR_FILL);
+	info_win.mixer_bar.empty_color = get_color (CLR_MIXER_BAR_EMPTY);
+	info_win.time_bar.fill_color = get_color (CLR_TIME_BAR_FILL);
+	info_win.time_bar.empty_color = get_color (CLR_TIME_BAR_EMPTY);
+
+	for (ix = 0; ix < ARRAY_SIZE(main_win.menus); ix += 1) {
+		int item_num;
+		struct side_menu *m = &main_win.menus[ix];
+		struct menu *menu = m->menu.list.main;
+		struct menu_item *mi;
+
+		if (m->type == MENU_DIR || m->type == MENU_PLAYLIST) {
+			menu_set_info_attr_normal (menu, get_color (CLR_MENU_ITEM_INFO));
+			menu_set_info_attr_sel (menu, get_color (CLR_MENU_ITEM_INFO_SELECTED));
+			menu_set_info_attr_marked (menu, get_color (CLR_MENU_ITEM_INFO_MARKED));
+			menu_set_info_attr_sel_marked (menu, get_color (CLR_MENU_ITEM_INFO_MARKED_SELECTED));
+
+			for (mi = menu->items, item_num = 0;
+			     mi && item_num < menu->nitems;
+			     mi = mi->next, item_num += 1) {
+				if (mi->type == F_DIR) {
+					menu_item_set_attr_normal (mi, get_color (CLR_MENU_ITEM_DIR));
+					menu_item_set_attr_sel (mi, get_color (CLR_MENU_ITEM_DIR_SELECTED));
+				}
+				else if (mi->type == F_PLAYLIST) {
+					menu_item_set_attr_normal (mi, get_color (CLR_MENU_ITEM_PLAYLIST));
+					menu_item_set_attr_sel (mi, get_color (CLR_MENU_ITEM_PLAYLIST_SELECTED));
+				}
+				else {
+					menu_item_set_attr_normal (mi, get_color (CLR_MENU_ITEM_FILE));
+					menu_item_set_attr_sel (mi, get_color (CLR_MENU_ITEM_FILE_SELECTED));
+				}
+			}
+		}
+		else {
+			menu_set_info_attr_normal (menu, get_color (CLR_MENU_ITEM_FILE));
+			menu_set_info_attr_sel (menu, get_color (CLR_MENU_ITEM_FILE_SELECTED));
+
+			for (mi = menu->items, item_num = 0;
+			     mi && item_num < menu->nitems;
+			     mi = mi->next, item_num += 1) {
+				menu_item_set_attr_normal (mi, get_color (CLR_MENU_ITEM_FILE));
+				menu_item_set_attr_sel (mi, get_color (CLR_MENU_ITEM_FILE_SELECTED));
+			}
+		}
+	}
+}
+
+void iface_update_theme_selection (const char *file)
+{
+    /* menus[2] is theme menu. */
+    assert (main_win.menus[2].menu.list.main->selected);
+
+    menu_setcurritem_file (main_win.menus[2].menu.list.main, file);
+}
+
 /* Like iface_set_dir_content(), but before replacing the menu content, save
  * the menu state (selected file, view position) and restore it after making
  * a new menu. */

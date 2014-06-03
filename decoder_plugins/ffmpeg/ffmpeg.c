@@ -17,7 +17,7 @@
  *		 only because LibAV doesn't care a second about their users."
  *
  *		-- http://blog.pkh.me/p/13-the-ffmpeg-libav-situation.html
-*/
+ */
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
@@ -268,7 +268,6 @@ static void ffmpeg_log_cb (void *data ATTR_UNUSED, int level,
 {
 	int len;
 	char *msg;
-	va_list vlist;
 
 	assert (fmt);
 
@@ -284,12 +283,9 @@ static void ffmpeg_log_cb (void *data ATTR_UNUSED, int level,
 		return;
 #endif
 
-	va_copy (vlist, vl);
-	len = vsnprintf (NULL, 0, fmt, vlist);
-	va_end (vlist);
-	msg = xmalloc (len + 1);
-	vsnprintf (msg, len + 1, fmt, vl);
-	if (len > 0 && msg[len - 1] == '\n')
+	msg = format_msg_va (fmt, vl);
+	len = strlen (msg);
+	for (len = strlen (msg); len > 0 && msg[len - 1] == '\n'; len -= 1)
 		msg[len - 1] = 0x00;
 
 	ffmpeg_log_repeats (msg);
@@ -1030,6 +1026,14 @@ static void *ffmpeg_open (const char *file)
 		data->delay = true;
 	data->seek_broken = is_seek_broken (data);
 	data->timing_broken = is_timing_broken (data->ic);
+
+	if (data->timing_broken && extn && !strcasecmp (extn, "wav")) {
+		ffmpeg_log_repeats (NULL);
+		decoder_error (&data->error, ERROR_FATAL, 0,
+		                   "Broken WAV file; use W64!");
+		avcodec_close (data->enc);
+		goto end;
+	}
 
 	data->okay = true;
 
