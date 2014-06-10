@@ -55,7 +55,7 @@
 struct client
 {
 	int socket; 		/* -1 if inactive */
-	int wants_events;	/* requested events? */
+	int wants_plist_events;	/* requested playlist events? */
 	struct event_queue events;
 	pthread_mutex_t events_mutex;
 	int requests_plist;	/* is the client waiting for the playlist? */
@@ -74,8 +74,6 @@ static int wake_up_pipe[2];
 
 /* Set to 1 when a signal arrived causing the program to exit. */
 static volatile int server_quit = 0;
-
-static char err_msg[265] = "";
 
 /* Information about currently played file */
 static struct {
@@ -164,7 +162,7 @@ static int add_client (int sock)
 
 	for (i = 0; i < CLIENTS_MAX; i++)
 		if (clients[i].socket == -1) {
-			clients[i].wants_events = 0;
+			clients[i].wants_plist_events = 0;
 			LOCK (clients[i].events_mutex);
 			event_queue_free (&clients[i].events);
 			event_queue_init (&clients[i].events);
@@ -571,6 +569,22 @@ static void on_stop ()
 	}
 }
 
+/* Return true iff 'event' is a playlist event. */
+static inline bool is_plist_event (const int event)
+{
+	bool result = false;
+
+	switch (event) {
+	case EV_PLIST_ADD:
+	case EV_PLIST_DEL:
+	case EV_PLIST_MOVE:
+	case EV_PLIST_CLEAR:
+		result = true;
+	}
+
+	return result;
+}
+
 static void add_event_all (const int event, const void *data)
 {
 	int i;
@@ -587,33 +601,39 @@ static void add_event_all (const int event, const void *data)
 		}
 	}
 
-	for (i = 0; i < CLIENTS_MAX; i++)
-		if (clients[i].socket != -1 && clients[i].wants_events) {
-			void *data_copy = NULL;
+	for (i = 0; i < CLIENTS_MAX; i++) {
+		void *data_copy = NULL;
 
-			if (data) {
-				if (event == EV_PLIST_ADD
-						|| event == EV_QUEUE_ADD) {
-					data_copy = plist_new_item ();
-					plist_item_copy (data_copy, data);
-				}
-				else if (event == EV_PLIST_DEL
-						|| event == EV_QUEUE_DEL
-						|| event == EV_STATUS_MSG) {
-					data_copy = xstrdup (data);
-				}
-				else if (event == EV_PLIST_MOVE
-						|| event == EV_QUEUE_MOVE)
-					data_copy = move_ev_data_dup (
-							(struct move_ev_data *)
-							data);
-				else
-					logit ("Unhandled data!");
+		if (clients[i].socket == -1)
+			continue;
+
+		if (!clients[i].wants_plist_events && is_plist_event (event))
+			continue;
+
+		if (data) {
+			if (event == EV_PLIST_ADD
+					|| event == EV_QUEUE_ADD) {
+				data_copy = plist_new_item ();
+				plist_item_copy (data_copy, data);
 			}
-
-			add_event (&clients[i], event, data_copy);
-			added++;
+			else if (event == EV_PLIST_DEL
+					|| event == EV_QUEUE_DEL
+					|| event == EV_STATUS_MSG
+					|| event == EV_SRV_ERROR) {
+				data_copy = xstrdup (data);
+			}
+			else if (event == EV_PLIST_MOVE
+					|| event == EV_QUEUE_MOVE)
+				data_copy = move_ev_data_dup (
+						(struct move_ev_data *)
+						data);
+			else
+				logit ("Unhandled data!");
 		}
+
+		add_event (&clients[i], event, data_copy);
+		added++;
+	}
 
 	if (added)
 		wake_up_server ();
@@ -772,10 +792,8 @@ static int req_jump_to (struct client *cli)
 /* Report an error logging it and sending a message to the client. */
 void server_error (const char *msg)
 {
-	strncpy (err_msg, msg, sizeof(err_msg) - 1);
-	err_msg[sizeof(err_msg) - 1] = 0;
-	logit ("ERROR: %s", err_msg);
-	add_event_all (EV_SRV_ERROR, NULL);
+	logit ("ERROR: %s", msg);
+	add_event_all (EV_SRV_ERROR, msg);
 }
 
 /* Send the song name to the client. Return 0 on error. */
@@ -1489,13 +1507,9 @@ static void handle_command (const int client_id)
 			if (!delete_item(cli))
 				err = 1;
 			break;
-		case CMD_SEND_EVENTS:
-			cli->wants_events = 1;
+		case CMD_SEND_PLIST_EVENTS:
+			cli->wants_plist_events = 1;
 			logit ("Request for events");
-			break;
-		case CMD_GET_ERROR:
-			if (!send_data_str(cli, err_msg))
-				err = 1;
 			break;
 		case CMD_GET_PLIST:
 			if (!get_client_plist(cli))

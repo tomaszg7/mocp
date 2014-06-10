@@ -238,6 +238,7 @@ static void *get_event_data (const int type)
 		case EV_PLIST_DEL:
 		case EV_QUEUE_DEL:
 		case EV_STATUS_MSG:
+		case EV_SRV_ERROR:
 			return get_str_from_srv ();
 		case EV_FILE_TAGS:
 			return recv_tags_data_from_srv ();
@@ -914,14 +915,9 @@ static void event_queue_add (const struct plist_item *item)
 }
 
 /* Get error message from the server and show it. */
-static void update_error ()
+static void update_error (char *err)
 {
-	char *err;
-
-	send_int_to_srv (CMD_GET_ERROR);
-	err = get_data_str ();
 	error ("%s", err);
-	free (err);
 }
 
 /* Send the playlist to the server to be forwarded to another client. */
@@ -1131,7 +1127,7 @@ static void server_event (const int event, void *data)
 			update_channels ();
 			break;
 		case EV_SRV_ERROR:
-			update_error ();
+			update_error ((char *)data);
 			break;
 		case EV_OPTIONS:
 			get_server_options ();
@@ -1550,8 +1546,10 @@ static void process_multiple_args (lists_t_strs *args)
 
 		if (dir == 1)
 			read_directory_recurr (path, playlist);
-		else if (!dir && (is_sound_file (path) || is_url (path)))
-			plist_add (playlist, path);
+		else if (!dir && (is_sound_file (path) || is_url (path))) {
+			if (plist_find_fname (playlist, path) == -1)
+				plist_add (playlist, path);
+		}
 		else if (is_plist_file (path)) {
 			char *plist_dir, *slash;
 
@@ -3526,7 +3524,7 @@ void init_interface (const int sock, const int logging, lists_t_strs *args)
 			if (!options_get_int("SyncPlaylist")
 					|| !use_server_playlist())
 				load_playlist ();
-			send_int_to_srv (CMD_SEND_EVENTS);
+			send_int_to_srv (CMD_SEND_PLIST_EVENTS);
 		}
 		else if (options_get_int("SyncPlaylist")) {
 			struct plist tmp_plist;
@@ -3539,7 +3537,7 @@ void init_interface (const int sock, const int logging, lists_t_strs *args)
 			plist_init (&tmp_plist);
 			get_server_playlist (&tmp_plist);
 
-			send_int_to_srv (CMD_SEND_EVENTS);
+			send_int_to_srv (CMD_SEND_PLIST_EVENTS);
 
 			send_int_to_srv (CMD_LOCK);
 			send_int_to_srv (CMD_CLI_PLIST_CLEAR);
@@ -3563,7 +3561,7 @@ void init_interface (const int sock, const int logging, lists_t_strs *args)
 		}
 	}
 	else {
-		send_int_to_srv (CMD_SEND_EVENTS);
+		send_int_to_srv (CMD_SEND_PLIST_EVENTS);
 		if (!options_get_int("SyncPlaylist")
 				|| !use_server_playlist())
 			load_playlist ();
