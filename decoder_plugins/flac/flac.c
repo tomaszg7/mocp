@@ -160,7 +160,8 @@ static void metadata_callback (
 		data->bits_per_sample = metadata->data.stream_info.bits_per_sample;
 		data->channels = metadata->data.stream_info.channels;
 		data->sample_rate = metadata->data.stream_info.sample_rate;
-		data->length = data->total_samples / data->sample_rate;
+		if (data->total_samples > 0)
+			data->length = data->total_samples / data->sample_rate;
 	}
 }
 
@@ -320,6 +321,7 @@ static void *flac_open_internal (const char *file, const int buffered)
 	data->abort = 0;
 	data->sample_buffer_fill = 0;
 	data->last_decode_position = 0;
+	data->length = -1;
 	data->ok = 0;
 
 	data->stream = io_open (file, buffered);
@@ -525,10 +527,10 @@ static void flac_info (const char *file_name, struct file_tags *info,
 	if (tags_sel & TAGS_TIME) {
 		struct flac_data *data;
 
-		if ((data = flac_open_internal(file_name, 0))) {
+		data = flac_open_internal (file_name, 0);
+		if (data->ok)
 			info->time = data->length;
-			flac_close (data);
-		}
+		flac_close (data);
 	}
 
 	if (tags_sel & TAGS_COMMENTS)
@@ -666,9 +668,13 @@ static int flac_get_avg_bitrate (void *void_data)
 
 static int flac_get_duration (void *void_data)
 {
+	int result = -1;
 	struct flac_data *data = (struct flac_data *)void_data;
 
-	return data->length;
+	if (data->ok)
+		result = data->length;
+
+	return result;
 }
 
 static void flac_get_name (const char *file ATTR_UNUSED, char buf[4])

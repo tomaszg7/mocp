@@ -91,7 +91,6 @@ static void *read_thread (void *arg)
 			fifo_buf_clear (&buf->buf);
 
 		if (buf->free_callback) {
-
 			/* unlock the mutex to make calls to out_buf functions
 			 * possible in the callback */
 			UNLOCK (buf->mutex);
@@ -102,8 +101,7 @@ static void *read_thread (void *arg)
 		debug ("sending the signal");
 		pthread_cond_broadcast (&buf->ready_cond);
 
-		if ((fifo_buf_get_fill(&buf->buf) == 0 || buf->pause
-					|| buf->stop)
+		if ((fifo_buf_get_fill(&buf->buf) == 0 || buf->pause || buf->stop)
 				&& !buf->exit) {
 			if (buf->pause && !audio_dev_closed) {
 				logit ("Closing the device due to pause");
@@ -115,7 +113,6 @@ static void *read_thread (void *arg)
 			buf->read_thread_waiting = 1;
 			pthread_cond_wait (&buf->play_cond, &buf->mutex);
 			debug ("something appeared in the buffer");
-
 		}
 
 		buf->read_thread_waiting = 0;
@@ -180,8 +177,8 @@ static void *read_thread (void *arg)
 			LOCK (buf->mutex);
 
 			/* Update time */
-			if (played && audio_get_bps())
-				buf->time += played / (float)audio_get_bps();
+			if (play_buf_fill && audio_get_bps())
+				buf->time += play_buf_fill / (float)audio_get_bps();
 			buf->hardware_buf_fill = audio_get_buf_fill();
 		}
 	}
@@ -297,7 +294,6 @@ int out_buf_put (struct out_buf *buf, const char *data, int size)
 		}
 
 		UNLOCK (buf->mutex);
-
 	}
 
 	return 1;
@@ -348,7 +344,6 @@ void out_buf_reset (struct out_buf *buf)
 	buf->pause = 0;
 	buf->reset_dev = 0;
 	buf->hardware_buf_fill = 0;
-
 	UNLOCK (buf->mutex);
 }
 
@@ -359,6 +354,11 @@ void out_buf_time_set (struct out_buf *buf, const float time)
 	UNLOCK (buf->mutex);
 }
 
+/* Return the time in the audio which the user is currently hearing.
+ * If unplayed samples still remain in the hardware buffer from the
+ * previous audio then the value returned may be negative and it is
+ * up to the caller to handle this appropriately in the context of
+ * its own processing. */
 int out_buf_time_get (struct out_buf *buf)
 {
 	int time;
@@ -367,8 +367,6 @@ int out_buf_time_get (struct out_buf *buf)
 	LOCK (buf->mutex);
 	time = buf->time - (bps ? buf->hardware_buf_fill / (float)bps : 0);
 	UNLOCK (buf->mutex);
-
-	assert (time >= 0);
 
 	return time;
 }

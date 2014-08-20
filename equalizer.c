@@ -327,7 +327,6 @@ static inline void apply_biquads(float *src, float *dst, int channels, int len, 
   };
 };
 
-
 /*
  preamping
  XMMS / Beep Media Player / Audacious use all the same code but

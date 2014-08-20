@@ -53,6 +53,12 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_PROG_INSTALL
 
+dnl Test for an ISO C99 capable compiler so we can warn of pending
+dnl requirement.
+save_CC="$CC"
+AC_PROG_CC_C99
+CC="$save_CC"
+
 AC_PROG_AWK
 AC_LIBTOOL_DLOPEN
 AC_DISABLE_STATIC
@@ -467,6 +473,13 @@ then
 	echo
 fi
 
+if test "x$ac_cv_prog_cc_c99" = "xno"
+then
+	echo "WARNING: After release 2.5 MOC will require an ISO C99 capable"
+	echo "         compiler.  Plan to upgrade your compiler soon."
+	echo
+fi
+
 if test "x$FFMPEG_CONFIG" = "xyes"
 then
 	echo "WARNING: Use of Debian's ffmpeg-config is deprecated;"
@@ -507,14 +520,6 @@ if test "x$POPT_MISSING" = "xyes"
 then
 	echo "WARNING: After release 2.5 MOC will require libpopt.  Plan"
 	echo "         to install it before moving on from release 2.5."
-	echo
-fi
-
-if test "x$enable_debug" = "x"
-then
-	echo "WARNING: After release 2.5 MOC debugging code will be disabled"
-	echo "         by default.  You should explicitly set the configure"
-	echo "         '--enable-debug' option now."
 	echo
 fi
 

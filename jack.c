@@ -40,11 +40,11 @@ static int volume_integer = 100;
 static int play;
 /* current sample rate */
 static int rate;
-/* flag set if xrun occured that was our fault (the ringbuffer doesn't contain
- * enough data in the process callback) */
-static int our_xrun = 0;
+/* flag set if xrun occurred that was our fault (the ringbuffer doesn't
+ * contain enough data in the process callback) */
+static volatile int our_xrun = 0;
 /* set to 1 if jack client thread exits */
-static int jack_shutdown;
+static volatile int jack_shutdown = 0;
 
 /* this is the function that jack calls to get audio samples from us */
 static int moc_jack_process(jack_nframes_t nframes, void *arg ATTR_UNUSED)
@@ -240,7 +240,7 @@ static int moc_jack_play (const char *buff, const size_t size)
 
 	if (jack_shutdown) {
 		logit ("Refusing to play, because there is no client thread.");
-		return 0;
+		return -1;
 	}
 
 	debug ("Playing %zu bytes", size);
@@ -292,7 +292,10 @@ static int moc_jack_play (const char *buff, const size_t size)
 		}
 	}
 
-	return size - remain;
+	if (jack_shutdown)
+		return -1;
+
+	return size;
 }
 
 static int moc_jack_read_mixer ()

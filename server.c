@@ -224,7 +224,7 @@ static int client_unlock (struct client *cli)
 	return 1;
 }
 
-/* Return the client index from tht clients table. */
+/* Return the client index from the clients table. */
 static int client_index (const struct client *cli)
 {
 	int i;
@@ -373,10 +373,10 @@ int server_init (int debugging, int foreground)
 	log_process_stack_size ();
 	log_pthread_stack_size ();
 
+	clients_init ();
 	audio_initialize ();
 	tags_cache_init (&tags_cache, options_get_int("TagsCacheSize"));
 	tags_cache_load (&tags_cache, create_file_name("cache"));
-	clients_init ();
 
 	server_tid = pthread_self ();
 	thread_signal (SIGTERM, sig_exit);
@@ -1442,7 +1442,7 @@ static void handle_command (const int client_id)
 			audio_stop ();
 			break;
 		case CMD_GET_CTIME:
-			if (!send_data_int(cli, audio_get_time()))
+			if (!send_data_int(cli, MAX(0, audio_get_time())))
 				err = 1;
 			break;
 		case CMD_SEEK:
