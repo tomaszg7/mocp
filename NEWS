@@ -1,3 +1,20 @@
+2.6.0 - "Usability"
+	* Autotools and packaging changes:
+	  - Dropped version micro number for development versions.
+	* Changed build behaviours:
+	  - 'make dist': now defaults to XZ compression
+	* Changed minimum release requirements:
+	  - FFmpeg/LibAV: raised minimum requirement to release 0.7
+	  - FLAC: raised minimum requirement to release 1.1.3
+	  - Berkeley DB: raised minimum requirement to release 4.1
+	  - libcurl: raised minimum requirement to version 7.15.1
+	  - autoconf: raised minimum requirement to version 2.64
+	* Removed functionality:
+	  - Transitional code from the previous release
+	  - autogen.sh in favour of autoreconf(1)
+	  - Deprecated ffmpeg-config support
+	  - Warning of changed executable name
+
 2.5.0 - "Consolidation"
 	* Autotools and packaging changes:
 	  - Upgraded autoconf version requirement to 2.60
