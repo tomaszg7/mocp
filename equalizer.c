@@ -696,30 +696,10 @@ void equalizer_process_buffer(char *buf, size_t size, const struct sound_params 
     equalizer_refresh();
   }
 
-  long sound_endianness = sound_params->fmt & SFMT_MASK_ENDIANNESS;
   long sound_format = sound_params->fmt & SFMT_MASK_FORMAT;
-
   int samplesize = sfmt_Bps(sound_format);
-  int is_float = (sound_params->fmt & SFMT_MASK_FORMAT) == SFMT_FLOAT;
-
-  int need_endianness_swap = 0;
-
-  if((sound_endianness != SFMT_NE) && (samplesize > 1) && (!is_float))
-  {
-    need_endianness_swap = 1;
-  }
 
   assert (size % (samplesize * sound_params->channels) == 0);
-
-  /* setup samples to perform arithmetic */
-  if(need_endianness_swap)
-  {
-    debug ("Converting endianness before mixing");
-    if(samplesize == 4)
-      audio_conv_bswap_32((int32_t *)buf, size / sizeof(int32_t));
-    else
-      audio_conv_bswap_16((int16_t *)buf, size / sizeof(int16_t));
-  }
 
   switch(sound_format)
   {
@@ -750,16 +730,6 @@ void equalizer_process_buffer(char *buf, size_t size, const struct sound_params 
     case SFMT_FLOAT:
       equ_process_buffer_float((float *)buf, size / sizeof(float));
       break;
-  }
-
-  /* restore sample-endianness */
-  if(need_endianness_swap)
-  {
-    debug ("Restoring endianness after mixing");
-    if(samplesize == 4)
-      audio_conv_bswap_32((int32_t *)buf, size / sizeof(int32_t));
-    else
-      audio_conv_bswap_16((int16_t *)buf, size / sizeof(int16_t));
   }
 }
 
