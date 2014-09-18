@@ -1,8 +1,11 @@
 2.6.0 - "Usability"
 	* Autotools and packaging changes:
-	  - Dropped version micro number for development versions.
+	  - Dropped version micro number for development versions
+	  - Upgraded autoconf-archive macros to 2014-02-28 release
+	  - Replaced custom shell code with Autoconf archive macros
 	* Changed build behaviours:
 	  - 'make dist': now defaults to XZ compression
+	  - curl-config: replaced by pkg-config
 	* Changed minimum release requirements:
 	  - FFmpeg/LibAV: raised minimum requirement to release 0.7
 	  - FLAC: raised minimum requirement to release 1.1.3
@@ -14,6 +17,10 @@
 	  - autogen.sh in favour of autoreconf(1)
 	  - Deprecated ffmpeg-config support
 	  - Warning of changed executable name
+	* Changed functionality:
+	  - Decoupled mono-mixing from softmixer
+	* Changes to supported formats and codecs:
+	  - VQF: now supported via FFmpeg/LibAV
 
 2.5.0 - "Consolidation"
 	* Autotools and packaging changes:

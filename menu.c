@@ -17,14 +17,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#ifdef HAVE_NCURSESW_H
-# include <ncursesw/curses.h>
-#elif HAVE_NCURSES_H
-# include <ncurses.h>
-#elif HAVE_CURSES_H
-# include <curses.h>
-#endif
-
 #include <assert.h>
 #include <ctype.h>
 
@@ -233,7 +225,7 @@ struct menu *menu_new (WINDOW *win, const int posx, const int posy,
 	menu->height = height;
 	menu->marked = NULL;
 	menu->show_time = 0;
-	menu->show_format = 0;
+	menu->show_format = false;
 	menu->info_attr_normal = A_NORMAL;
 	menu->info_attr_sel = A_NORMAL;
 	menu->info_attr_marked = A_NORMAL;
@@ -640,7 +632,7 @@ void menu_set_show_time (struct menu *menu, const int t)
 	menu->show_time = t;
 }
 
-void menu_set_show_format (struct menu *menu, const int t)
+void menu_set_show_format (struct menu *menu, const bool t)
 {
 	assert (menu != NULL);
 

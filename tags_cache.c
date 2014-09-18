@@ -23,19 +23,10 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <dirent.h>
 
 #ifdef HAVE_DB_H
 #include <db.h>
-#endif
-
-/* Include dirent for various systems */
-#ifdef HAVE_DIRENT_H
-# include <dirent.h>
-#else
-# define dirent direct
-# if HAVE_SYS_NDIR_H
-#  include <sys/ndir.h>
-# endif
 #endif
 
 #define DEBUG
@@ -273,24 +264,28 @@ static int cache_record_deserialize (struct cache_record *rec,
 	else
 		rec->tags = NULL;
 
-#define extract_num(var)			\
-	if (bytes_left < sizeof(var))		\
-		goto err;			\
-	memcpy (&var, p, sizeof(var));		\
-	bytes_left -= sizeof(var);		\
-	p += sizeof(var);
+#define extract_num(var) \
+	do { \
+		if (bytes_left < sizeof(var)) \
+			goto err; \
+		memcpy (&var, p, sizeof(var)); \
+		bytes_left -= sizeof(var); \
+		p += sizeof(var); \
+	} while (0)
 
-#define extract_str(var)			\
-	if (bytes_left < sizeof(str_len))	\
-		goto err;			\
-	memcpy (&str_len, p, sizeof(str_len));	\
-	p += sizeof(str_len);			\
-	if (bytes_left < str_len)		\
-		goto err;			\
-	var = xmalloc (str_len + 1);		\
-	memcpy (var, p, str_len);		\
-	var[str_len] = '\0';			\
-	p += str_len;
+#define extract_str(var) \
+	do { \
+		if (bytes_left < sizeof(str_len)) \
+			goto err; \
+		memcpy (&str_len, p, sizeof(str_len)); \
+		p += sizeof(str_len); \
+		if (bytes_left < str_len) \
+			goto err; \
+		var = xmalloc (str_len + 1); \
+		memcpy (var, p, str_len); \
+		var[str_len] = '\0'; \
+		p += str_len; \
+	} while (0)
 
 	extract_num (rec->mod_time);
 	extract_num (rec->atime);

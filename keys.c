@@ -17,14 +17,6 @@
 #include <strings.h>
 #include <assert.h>
 
-#ifdef HAVE_NCURSESW_H
-# include <ncursesw/curses.h>
-#elif HAVE_NCURSES_H
-# include <ncurses.h>
-#elif HAVE_CURSES_H
-# include <curses.h>
-#endif
-
 #include <stdio.h>
 #include <errno.h>
 #include <unistd.h>
@@ -700,7 +692,7 @@ static struct command commands[] = {
  	{
  		KEY_CMD_TOGGLE_MAKE_MONO,
  		"toggle_make_mono",
- 		"Toggle mono-mixing (when softmixer enabled)",
+		"Toggle mono-mixing",
  		CON_MENU,
  		{ 'J', -1 },
  		1

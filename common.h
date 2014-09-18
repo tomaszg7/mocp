@@ -5,6 +5,8 @@
 #include <stdarg.h>
 #include <ctype.h>
 
+#include "compiler.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -52,12 +54,6 @@ extern "C" {
                               (val) > (max) ? (max) : (val))
 #endif
 
-#ifdef HAVE__ATTRIBUTE__
-# define ATTR_UNUSED __attribute__((unused))
-#else
-# define ATTR_UNUSED
-#endif
-
 #if HAVE_STDBOOL_H
 # include <stdbool.h>
 #else
@@ -79,11 +75,6 @@ typedef unsigned char _Bool;
 #define isblank(c) ((c) == ' ' || (c) == '\t')
 #endif
 
-/* __FUNCTION__ is a gcc extension */
-#ifndef HAVE__FUNCTION__
-# define __FUNCTION__ "UNKNOWN_FUNC"
-#endif
-
 #define ARRAY_SIZE(x)	(sizeof(x)/sizeof(x[0]))
 
 void *xmalloc (size_t size);
@@ -101,14 +92,14 @@ char *xstrdup (const char *s);
 	## __VA_ARGS__)
 #endif
 
-#ifdef HAVE__ATTRIBUTE__
+#ifdef HAVE_FUNC_ATTRIBUTE_FORMAT
 void internal_fatal (const char *file, int line, const char *function,
-		const char *format, ...)
-	__attribute__ ((format (printf, 4, 5), noreturn));
+                     const char *format, ...) ATTR_NORETURN
+                     __attribute__ ((format (printf, 4, 5)));
 void error (const char *format, ...) __attribute__((format (printf, 1, 2)));
 #else
 void internal_fatal (const char *file, int line, const char *function,
-		const char *format, ...);
+                     const char *format, ...) ATTR_NORETURN;
 void error (const char *format, ...);
 #endif
 

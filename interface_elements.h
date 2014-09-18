@@ -1,11 +1,15 @@
 #ifndef INTERFACE_ELEMENTS_H
 #define INTERFACE_ELEMENTS_H
 
-#ifdef HAVE_NCURSESW_H
+#if defined HAVE_NCURSESW_CURSES_H
 # include <ncursesw/curses.h>
-#elif HAVE_NCURSES_H
+#elif defined HAVE_NCURSESW_H
+# include <ncursesw.h>
+#elif defined HAVE_NCURSES_CURSES_H
+# include <ncurses/curses.h>
+#elif defined HAVE_NCURSES_H
 # include <ncurses.h>
-#elif HAVE_CURSES_H
+#elif defined HAVE_CURSES_H
 # include <curses.h>
 #endif
 
@@ -58,7 +62,7 @@ struct iface_key
 void windows_init ();
 void windows_reset ();
 void windows_end ();
-void iface_set_option_state (const char *name, const int value);
+void iface_set_option_state (const char *name, const bool value);
 void iface_set_mixer_name (const char *name);
 void iface_set_status (const char *msg);
 void iface_set_dir_content (const enum iface_menu iface_menu,

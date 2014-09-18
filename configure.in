@@ -79,7 +79,7 @@ AC_HEADER_STDBOOL
 AC_CHECK_HEADERS([fcntl.h string.h strings.h sys/param.h unistd.h sys/un.h \
 		  sys/socket.h sys/types.h signal.h sys/time.h limits.h \
 		  sys/wait.h sys/ioctl.h pwd.h regex.h inttypes.h stdint.h \
-		  time.h errno.h sys/stat.h assert.h locale.h wchar.h],,
+		  dirent.h time.h errno.h sys/stat.h assert.h locale.h wchar.h],,
 		 AC_MSG_ERROR([Can't find required header files.]))
 AC_CHECK_HEADERS([sys/select.h byteswap.h])
 
@@ -313,10 +313,7 @@ then
 		 EXTRA_LIBS="$EXTRA_LIBS -lmagic"])
 fi
 
-dnl FIXME: Support for this in the source code
-AC_HEADER_DIRENT
-
-ACX_PTHREAD
+AX_PTHREAD
 AC_FUNC_MMAP
 
 if test "$ax_pthread_ok" != "yes"
@@ -333,23 +330,26 @@ AC_TRY_COMPILE(,[printf(__FUNCTION__);], [AC_DEFINE([HAVE__FUNCTION__], 1,
 	       [Define if we have __FUNCTION__ constant])])
 
 dnl __attribute__
-AC_TRY_COMPILE([#include <stdarg.h>],
-	       [int f(const char *f, ...)
-	       __attribute__((format (printf, 1, 2)))],
-	       [AC_DEFINE([HAVE__ATTRIBUTE__], 1,
-			  [Define if we have __attribute__ extension])])
+AX_C___ATTRIBUTE__
+if test "x$ax_cv___attribute__" = "xyes"
+then
+	AX_GCC_FUNC_ATTRIBUTE(format)
+	AX_GCC_FUNC_ATTRIBUTE(noreturn)
+	AX_GCC_VAR_ATTRIBUTE(unused)
+fi
 
 dnl ncurses
-MP_WITH_CURSES
-if test -z "$CURSES_LIB"
+AX_WITH_CURSES
+if test "x$ax_cv_curses" = "xyes"
 then
-	AC_MSG_ERROR([You need curses/ncurses library and header files.])
-else
-	AC_CHECK_LIB([$CURSES_LIB], [set_escdelay],
+	CURSES_LIB_NO_L=`echo $CURSES_LIB | $AWK '{print substr($0, 3, 99)}'`
+	AC_CHECK_LIB([$CURSES_LIB_NO_L], [set_escdelay],
 		AC_DEFINE([HAVE_SET_ESCDELAY], 1, [Define if you have set_escdelay.]),
 		[AC_CHECK_FUNC([setenv], ,
 			AC_MSG_ERROR([Required function setenv not found.]))])
-	EXTRA_LIBS="$EXTRA_LIBS -l$CURSES_LIB"
+	EXTRA_LIBS="$EXTRA_LIBS $CURSES_LIB"
+else
+	AC_MSG_ERROR([You need curses/ncurses library and header files.])
 fi
 
 dnl popt
@@ -390,32 +390,13 @@ AC_ARG_WITH(curl, AS_HELP_STRING([--without-curl],
                                  [Compile without Network streams support]))
 if test "x$with_curl" != "xno"
 then
-	dnl FIXME: make a better curl test
-	AC_CHECK_PROG([CURL_CONFIG], [curl-config], [yes])
-	if test "x$CURL_CONFIG" = "xyes"
-	then
-		AC_MSG_CHECKING([libcurl version])
-		curl_ver=`curl-config --version | $AWK '{print $2}'`
-		curl_ver_major=`echo $curl_ver | $AWK -F. '{print $1}'`
-		curl_ver_minor=`echo $curl_ver | $AWK -F. '{print $2}'`
-		curl_ver_fix=`echo $curl_ver | $AWK -F. '{print $3}'`
-
-		# make 071501 from 7.15.1
-		curl_ver_number=`printf "%02d%02d%02d" $curl_ver_major \
-			$curl_ver_minor $curl_ver_fix`
-
-		if test "$curl_ver_number" -ge "071501"
-		then
-			AC_MSG_RESULT([$curl_ver, OK])
-			CFLAGS="$CFLAGS `curl-config --cflags`"
-			EXTRA_LIBS="$EXTRA_LIBS `curl-config --libs`"
-			EXTRA_OBJS="$EXTRA_OBJS io_curl.o"
-			AC_DEFINE([HAVE_CURL], 1, [Define if you have libcurl])
-			COMPILE_CURL="yes"
-		else
-			AC_MSG_RESULT([$curl_ver, but minimum is 7.15.1])
-		fi
-	fi
+	PKG_CHECK_MODULES(CURL, [curl >= 7.15.1],
+		[EXTRA_OBJS="$EXTRA_OBJS io_curl.o"
+		 AC_DEFINE([HAVE_CURL], 1, [Define if you have libcurl])
+		 EXTRA_LIBS="$EXTRA_LIBS $CURL_LIBS"
+		 CFLAGS="$CFLAGS $CURL_CFLAGS"
+		 COMPILE_CURL="yes"],
+		[true])
 fi
 
 AC_SUBST(EXTRA_LIBS)
@@ -467,6 +448,13 @@ if test "x$POPT_MISSING" = "xyes"
 then
 	echo "WARNING: MOC release 2.6 will soon require libpopt;"
 	echo "         plan to install it soon."
+	echo
+fi
+
+if test "x$UPGRADE_TAGLIB" = "xyes"
+then
+	echo "WARNING: MOC will soon require TagLib version 1.5 or later;"
+	echo "         plan to upgrade your TagLib soon."
 	echo
 fi
 

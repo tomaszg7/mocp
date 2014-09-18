@@ -104,7 +104,7 @@ static void write_pid_file ()
 }
 
 /* Check if there is a pid file and if it is valid, return the pid, else 0 */
-static int check_pid_file ()
+static pid_t check_pid_file ()
 {
 	FILE *file;
 	pid_t pid;
@@ -245,7 +245,7 @@ static void del_client (struct client *cli)
 }
 
 /* Check if the process with given PID exists. Return != 0 if so. */
-static int valid_pid (const int pid)
+static int valid_pid (const pid_t pid)
 {
 	return kill(pid, 0) == 0 ? 1 : 0;
 }
@@ -323,7 +323,7 @@ int server_init (int debugging, int foreground)
 {
 	struct sockaddr_un sock_name;
 	int server_sock;
-	int pid;
+	pid_t pid;
 
 	logit ("Starting MOC Server");
 
@@ -403,6 +403,18 @@ static int send_data_int (const struct client *cli, const int data)
 	assert (cli->socket != -1);
 
 	if (!send_int(cli->socket, EV_DATA) || !send_int(cli->socket, data))
+		return 0;
+
+	return 1;
+}
+
+/* Send EV_DATA and the boolean value. Return 0 on error. */
+static int send_data_bool (const struct client *cli, const bool data)
+{
+	assert (cli->socket != -1);
+
+	if (!send_int(cli->socket, EV_DATA) ||
+	    !send_int(cli->socket, data ? 1 : 0))
 		return 0;
 
 	return 1;
@@ -833,8 +845,8 @@ static int send_option (struct client *cli)
 		return 0;
 	}
 
-	/* All supported options are integer type. */
-	if (!send_data_int(cli, options_get_int(name))) {
+	/* All supported options are boolean type. */
+	if (!send_data_bool(cli, options_get_bool(name))) {
 		free (name);
 		return 0;
 	}
@@ -860,7 +872,7 @@ static int get_set_option (struct client *cli)
 		return 0;
 	}
 
-	options_set_int (name, val);
+	options_set_bool (name, val ? true : false);
 	free (name);
 
 	add_event_all (EV_OPTIONS, NULL);

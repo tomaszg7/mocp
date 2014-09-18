@@ -30,13 +30,18 @@
 # include <langinfo.h>
 #endif
 
-#ifdef HAVE_NCURSESW_H
+#if defined HAVE_NCURSESW_CURSES_H
 # include <ncursesw/curses.h>
-#elif HAVE_NCURSES_H
+#elif defined HAVE_NCURSESW_H
+# include <ncursesw.h>
+#elif defined HAVE_NCURSES_CURSES_H
+# include <ncurses/curses.h>
+#elif defined HAVE_NCURSES_H
 # include <ncurses.h>
-#else
+#elif defined HAVE_CURSES_H
 # include <curses.h>
 #endif
+
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
@@ -340,10 +345,10 @@ void utf8_init ()
 			logit ("iconv_open() failed: %s", strerror(errno));
 	}
 
-	if (options_get_int ("FileNamesIconv"))
+	if (options_get_bool ("FileNamesIconv"))
 		files_iconv_desc = iconv_open ("UTF-8", "");
 
-	if (options_get_int ("NonUTFXterm"))
+	if (options_get_bool ("NonUTFXterm"))
 		xterm_iconv_desc = iconv_open ("", "UTF-8");
 }
 

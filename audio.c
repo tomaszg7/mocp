@@ -388,8 +388,8 @@ int sfmt_Bps (const long format)
  * request and whether or not there are files in the queue. */
 static void go_to_another_file ()
 {
-	int shuffle = options_get_int ("Shuffle");
-	int go_next = (play_next || options_get_int("AutoNext"));
+	bool shuffle = options_get_bool ("Shuffle");
+	bool go_next = (play_next || options_get_bool("AutoNext"));
 	int curr_playing_curr_pos;
 	/* XXX: Shouldn't play_next be protected by mutex? */
 
@@ -460,7 +460,7 @@ static void go_to_another_file ()
 						curr_playing_curr_pos);
 
 			if (curr_playing == -1) {
-				if (options_get_int("Repeat"))
+				if (options_get_bool("Repeat"))
 					curr_playing = plist_last (curr_plist);
 				logit ("Beginning of the list.");
 			}
@@ -479,7 +479,7 @@ static void go_to_another_file ()
 				curr_playing = plist_next (curr_plist,
 						curr_playing_curr_pos);
 
-			if (curr_playing == -1 && options_get_int("Repeat")) {
+			if (curr_playing == -1 && options_get_bool("Repeat")) {
 				if (shuffle) {
 					plist_clear (&shuffled_plist);
 					plist_cat (&shuffled_plist, &playlist);
@@ -494,7 +494,7 @@ static void go_to_another_file ()
 				logit ("Next item");
 
 		}
-		else if (!options_get_int("Repeat")) {
+		else if (!options_get_bool("Repeat")) {
 			curr_playing = -1;
 		}
 		else
@@ -649,7 +649,7 @@ void audio_play (const char *fname)
 
 		started_playing_in_queue = 1;
 	}
-	else if (options_get_int("Shuffle")) {
+	else if (options_get_bool("Shuffle")) {
 		plist_clear (&shuffled_plist);
 		plist_cat (&shuffled_plist, &playlist);
 		plist_shuffle (&shuffled_plist);
@@ -914,7 +914,7 @@ int audio_send_pcm (const char *buf, const size_t size)
 		buf = equalized;
 	}
 
-	if (softmixer_is_active ())
+	if (softmixer_is_active () || softmixer_is_mono ())
 	{
 		if (equalized)
 		{
@@ -1060,7 +1060,6 @@ void audio_initialize ()
 {
 	long masked_formats;
 	int max_channels;
-//	lists_s_strs masked_fmt_list;
 
 	find_working_driver (options_get_list ("SoundDriver"), &hw);
 
@@ -1077,13 +1076,6 @@ void audio_initialize ()
 
 	max_channels=options_get_int("MaxChannels");
 	if (max_channels>0) hw_caps.max_channels=max_channels;
-
-// 	if (!options_get_int("Allow24bitOutput")
-// 			&& hw_caps.formats & (SFMT_S32 | SFMT_U32 | SFMT_U24 | SFMT_S24)) {
-// 		logit ("Disabling 24bit and 32bit modes because Allow24bitOutput is set "
-// 				"to no.");
-// 		hw_caps.formats &= ~(SFMT_S32 | SFMT_U32 | SFMT_S24 | SFMT_U24);
-// 	}
 
 	out_buf_init (&out_buf, options_get_int("OutputBuffer") * 1024);
 
