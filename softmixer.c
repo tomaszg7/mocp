@@ -23,6 +23,8 @@
 #include <assert.h>
 #include <stdint.h>
 
+/* #define DEBUG */
+
 #include "common.h"
 #include "audio.h"
 #include "audio_conversion.h"
@@ -30,8 +32,6 @@
 #include "options.h"
 #include "files.h"
 #include "log.h"
-
-/* #define DEBUG */
 
 static int active;
 static int mix_mono;
@@ -106,24 +106,24 @@ int softmixer_is_mono()
 
 /* private code */
 
-static void process_buffer_u8(uint8_t *buf, size_t size);
-static void process_buffer_s8(int8_t *buf, size_t size);
-static void process_buffer_u16(uint16_t *buf, size_t size);
-static void process_buffer_s16(int16_t *buf, size_t size);
-static void process_buffer_u24(uint32_t *buf, size_t size);
-static void process_buffer_s24(int32_t *buf, size_t size);
-static void process_buffer_u32(uint32_t *buf, size_t size);
-static void process_buffer_s32(int32_t *buf, size_t size);
-static void process_buffer_float(float *buf, size_t size);
-static void mix_mono_u8(uint8_t *buf, int channels, size_t size);
-static void mix_mono_s8(int8_t *buf, int channels, size_t size);
-static void mix_mono_u16(uint16_t *buf, int channels, size_t size);
-static void mix_mono_s16(int16_t *buf, int channels, size_t size);
-static void mix_mono_u24(uint32_t *buf, int channels, size_t size);
-static void mix_mono_s24(int32_t *buf, int channels, size_t size);
-static void mix_mono_u32(uint32_t *buf, int channels, size_t size);
-static void mix_mono_s32(int32_t *buf, int channels, size_t size);
-static void mix_mono_float(float *buf, int channels, size_t size);
+static void process_buffer_u8(uint8_t *buf, size_t samples);
+static void process_buffer_s8(int8_t *buf, size_t samples);
+static void process_buffer_u16(uint16_t *buf, size_t samples);
+static void process_buffer_s16(int16_t *buf, size_t samples);
+static void process_buffer_u24(uint32_t *buf, size_t samples);
+static void process_buffer_s24(int32_t *buf, size_t samples);
+static void process_buffer_u32(uint32_t *buf, size_t samples);
+static void process_buffer_s32(int32_t *buf, size_t samples);
+static void process_buffer_float(float *buf, size_t samples);
+static void mix_mono_u8(uint8_t *buf, int channels, size_t samples);
+static void mix_mono_s8(int8_t *buf, int channels, size_t samples);
+static void mix_mono_u16(uint16_t *buf, int channels, size_t samples);
+static void mix_mono_s16(int16_t *buf, int channels, size_t samples);
+static void mix_mono_u24(uint32_t *buf, int channels, size_t samples);
+static void mix_mono_s24(int32_t *buf, int channels, size_t samples);
+static void mix_mono_u32(uint32_t *buf, int channels, size_t samples);
+static void mix_mono_s32(int32_t *buf, int channels, size_t samples);
+static void mix_mono_float(float *buf, int channels, size_t samples);
 
 static void softmixer_read_config()
 {
@@ -270,9 +270,9 @@ void softmixer_process_buffer(char *buf, size_t size, const struct sound_params 
     return;
 
   long sound_format = sound_params->fmt & SFMT_MASK_FORMAT;
-  int samplesize = sfmt_Bps(sound_format);
+  int samplewidth = sfmt_Bps(sound_format);
 
-  assert (size % (samplesize * sound_params->channels) == 0);
+  assert (size % (samplewidth * sound_params->channels) == 0);
 
   switch(sound_format)
   {
@@ -333,13 +333,13 @@ void softmixer_process_buffer(char *buf, size_t size, const struct sound_params 
   }
 }
 
-static void process_buffer_u8(uint8_t *buf, size_t size)
+static void process_buffer_u8(uint8_t *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int16_t tmp = buf[i];
     tmp -= (UINT8_MAX>>1);
@@ -351,13 +351,13 @@ static void process_buffer_u8(uint8_t *buf, size_t size)
   }
 }
 
-static void process_buffer_s8(int8_t *buf, size_t size)
+static void process_buffer_s8(int8_t *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int16_t tmp = buf[i];
     tmp *= mixer_real;
@@ -367,13 +367,13 @@ static void process_buffer_s8(int8_t *buf, size_t size)
   }
 }
 
-static void process_buffer_u16(uint16_t *buf, size_t size)
+static void process_buffer_u16(uint16_t *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int32_t tmp = buf[i];
     tmp -= (UINT16_MAX>>1);
@@ -385,13 +385,13 @@ static void process_buffer_u16(uint16_t *buf, size_t size)
   }
 }
 
-static void process_buffer_s16(int16_t *buf, size_t size)
+static void process_buffer_s16(int16_t *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int32_t tmp = buf[i];
     tmp *= mixer_real;
@@ -401,13 +401,13 @@ static void process_buffer_s16(int16_t *buf, size_t size)
   }
 }
 
-static void process_buffer_u24(uint32_t *buf, size_t size)
+static void process_buffer_u24(uint32_t *buf, size_t samples)
 {
-  size_t i;
+  samples_t i;
 
   debug ("mixing");
   
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int64_t tmp = buf[i];
     tmp -= S24_MIN;
@@ -419,13 +419,13 @@ static void process_buffer_u24(uint32_t *buf, size_t size)
   }
 }
 
-static void process_buffer_s24(int32_t *buf, size_t size)
+static void process_buffer_s24(int32_t *buf, size_t samples)
 {
-  size_t i;
+  samples_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int64_t tmp = buf[i];
     tmp *= mixer_real;
@@ -435,13 +435,13 @@ static void process_buffer_s24(int32_t *buf, size_t size)
   }
 }
 
-static void process_buffer_u32(uint32_t *buf, size_t size)
+static void process_buffer_u32(uint32_t *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int64_t tmp = buf[i];
     tmp -= (UINT32_MAX>>1);
@@ -453,13 +453,13 @@ static void process_buffer_u32(uint32_t *buf, size_t size)
   }
 }
 
-static void process_buffer_s32(int32_t *buf, size_t size)
+static void process_buffer_s32(int32_t *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     int64_t tmp = buf[i];
     tmp *= mixer_real;
@@ -469,13 +469,13 @@ static void process_buffer_s32(int32_t *buf, size_t size)
   }
 }
 
-static void process_buffer_float(float *buf, size_t size)
+static void process_buffer_float(float *buf, size_t samples)
 {
   size_t i;
 
   debug ("mixing");
 
-  for(i=0; i<size; i++)
+  for(i=0; i<samples; i++)
   {
     float tmp = buf[i];
     tmp *= mixer_realf;
@@ -485,7 +485,7 @@ static void process_buffer_float(float *buf, size_t size)
 }
 
 // Mono-Mixing
-static void mix_mono_u8(uint8_t *buf, int channels, size_t size)
+static void mix_mono_u8(uint8_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -494,7 +494,7 @@ static void mix_mono_u8(uint8_t *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     int16_t mono = 0;
 
@@ -513,7 +513,7 @@ static void mix_mono_u8(uint8_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_s8(int8_t *buf, int channels, size_t size)
+static void mix_mono_s8(int8_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -522,7 +522,7 @@ static void mix_mono_s8(int8_t *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     int16_t mono = 0;
 
@@ -541,7 +541,7 @@ static void mix_mono_s8(int8_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_u16(uint16_t *buf, int channels, size_t size)
+static void mix_mono_u16(uint16_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -550,7 +550,7 @@ static void mix_mono_u16(uint16_t *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     int32_t mono = 0;
 
@@ -569,7 +569,7 @@ static void mix_mono_u16(uint16_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_s16(int16_t *buf, int channels, size_t size)
+static void mix_mono_s16(int16_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -578,7 +578,7 @@ static void mix_mono_s16(int16_t *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     int32_t mono = 0;
 
@@ -597,7 +597,7 @@ static void mix_mono_s16(int16_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_u24(uint32_t *buf, int channels, size_t size)
+static void mix_mono_u24(uint32_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -626,17 +626,17 @@ static void mix_mono_u24(uint32_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_s24(int32_t *buf, int channels, size_t size)
+static void mix_mono_s24(int32_t *buf, int channels, size_t samples)
 {
   int c;
-  size_t i = 0;
+  samples_t i = 0;
 
   debug ("making mono");
 
   if(channels < 2)
     return;
 
-  while(i < size)
+  while(i < samples)
   {
     int64_t mono = 0;
 
@@ -655,7 +655,7 @@ static void mix_mono_s24(int32_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_u32(uint32_t *buf, int channels, size_t size)
+static void mix_mono_u32(uint32_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -664,7 +664,7 @@ static void mix_mono_u32(uint32_t *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     int64_t mono = 0;
 
@@ -683,7 +683,7 @@ static void mix_mono_u32(uint32_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_s32(int32_t *buf, int channels, size_t size)
+static void mix_mono_s32(int32_t *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -692,7 +692,7 @@ static void mix_mono_s32(int32_t *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     int64_t mono = 0;
 
@@ -711,7 +711,7 @@ static void mix_mono_s32(int32_t *buf, int channels, size_t size)
   }
 }
 
-static void mix_mono_float(float *buf, int channels, size_t size)
+static void mix_mono_float(float *buf, int channels, size_t samples)
 {
   int c;
   size_t i = 0;
@@ -720,7 +720,7 @@ static void mix_mono_float(float *buf, int channels, size_t size)
 
   assert (channels > 1);
 
-  while(i < size)
+  while(i < samples)
   {
     float mono = 0.0f;
 

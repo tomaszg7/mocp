@@ -15,7 +15,6 @@
 
 #include <stdarg.h>
 #include <locale.h>
-#include <unistd.h>
 #include <assert.h>
 #include <string.h>
 #include <errno.h>
@@ -24,19 +23,15 @@
 #include <time.h>
 #include <signal.h>
 #include <ctype.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <sys/time.h>
 #include <sys/wait.h>
 #include <dirent.h>
-
-#ifdef HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
+#include <sys/select.h>
 
 #define DEBUG
 
 #include "common.h"
+#include "compat.h"
 #include "log.h"
 #include "interface_elements.h"
 #include "interface.h"
@@ -96,20 +91,20 @@ static time_t silent_seek_key_last = (time_t)0; /* when the silent seek key was
 /* When the menu was last moved (arrow keys, page up, etc.) */
 static time_t last_menu_move_time = (time_t)0;
 
-static void sig_quit (int sig ATTR_UNUSED)
+static void sig_quit (int sig LOGIT_ONLY)
 {
 	log_signal (sig);
 	want_quit = QUIT_CLIENT;
 }
 
-static void sig_interrupt (int sig ATTR_UNUSED)
+static void sig_interrupt (int sig LOGIT_ONLY)
 {
 	log_signal (sig);
 	wants_interrupt = 1;
 }
 
 #ifdef SIGWINCH
-static void sig_winch (int sig ATTR_UNUSED)
+static void sig_winch (int sig LOGIT_ONLY)
 {
 	log_signal (sig);
 	want_resize = 1;
@@ -2584,15 +2579,15 @@ static void go_to_playing_file ()
  * have 11.8 seconds, return 12 seconds. */
 static time_t rounded_time ()
 {
-	struct timeval exact_time;
+	struct timespec exact_time;
 	time_t curr_time;
 
-	if (gettimeofday(&exact_time, NULL) == -1)
-		interface_fatal ("gettimeofday() failed: %s", strerror(errno));
+	if (clock_gettime (CLOCK_REALTIME, &exact_time) == -1)
+		interface_fatal ("clock_gettime() failed: %s", strerror(errno));
 
 	curr_time = exact_time.tv_sec;
-	if (exact_time.tv_usec > 500000)
-		curr_time++;
+	if (exact_time.tv_nsec > 500000000L)
+		curr_time += 1;
 
 	return curr_time;
 }
@@ -2725,6 +2720,7 @@ static void add_themes_to_list (lists_t_strs *themes, const char *themes_dir)
 	}
 
 	while ((entry = readdir(dir))) {
+		int rc;
 		char file[PATH_MAX];
 
 		if (entry->d_name[0] == '.')
@@ -2734,8 +2730,8 @@ static void add_themes_to_list (lists_t_strs *themes, const char *themes_dir)
 		if (entry->d_name[strlen(entry->d_name)-1] == '~')
 			continue;
 
-		if (snprintf(file, sizeof(file), "%s/%s", themes_dir,
-					entry->d_name) >= (int)sizeof(file))
+		rc = snprintf(file, sizeof(file), "%s/%s", themes_dir, entry->d_name);
+		if (rc >= ssizeof(file))
 			continue;
 
 		lists_strs_append (themes, file);
@@ -3033,7 +3029,7 @@ static char *custom_cmd_substitute (const char *arg)
 	return result;
 }
 
-static void run_external_cmd (char **args, const int arg_num ATTR_UNUSED)
+static void run_external_cmd (char **args, const int arg_num ASSERT_ONLY)
 {
 	pid_t child;
 
@@ -3058,7 +3054,7 @@ static void run_external_cmd (char **args, const int arg_num ATTR_UNUSED)
 			/* We have an error. */
 			fprintf (stderr, "\nError executing %s: %s\n", args[0],
 					strerror(errno));
-			sleep (2);
+			xsleep (2, 1);
 			exit (EXIT_FAILURE);
 		}
 
@@ -3067,7 +3063,7 @@ static void run_external_cmd (char **args, const int arg_num ATTR_UNUSED)
 		if (WIFEXITED(status) && WEXITSTATUS(status) != 0) {
 			fprintf (stderr, "\nCommand exited with error (status %d).\n",
 			                 WEXITSTATUS(status));
-			sleep (2);
+			xsleep (2, 1);
 		}
 		iface_restore ();
 	}
@@ -3596,19 +3592,21 @@ void init_interface (const int sock, const int logging, lists_t_strs *args)
 
 void interface_loop ()
 {
+	log_circular_start ();
+
 	while (want_quit == NO_QUIT) {
 		fd_set fds;
 		int ret;
-		struct timeval timeout = { 1, 0 };
+		struct timespec timeout = { 1, 0 };
 
 		FD_ZERO (&fds);
 		FD_SET (srv_sock, &fds);
 		FD_SET (STDIN_FILENO, &fds);
 
 		dequeue_events ();
-		ret = select (srv_sock + 1, &fds, NULL, NULL, &timeout);
+		ret = pselect (srv_sock + 1, &fds, NULL, NULL, &timeout, NULL);
 		if (ret == -1 && !want_quit && errno != EINTR)
-			interface_fatal ("select() failed: %s", strerror(errno));
+			interface_fatal ("pselect() failed: %s", strerror(errno));
 
 		iface_tick ();
 
@@ -3642,6 +3640,9 @@ void interface_loop ()
 		if (!want_quit)
 			update_mixer_value ();
 	}
+
+	log_circular_log ();
+	log_circular_stop ();
 }
 
 /* Save the current directory path to a file. */
@@ -4061,8 +4062,8 @@ void interface_cmdline_enqueue (int server_sock, lists_t_strs *args)
 
 void interface_cmdline_playit (int server_sock, lists_t_strs *args)
 {
+	int ix, serial;
 	struct plist plist;
-	int ix;
 
 	srv_sock = server_sock; /* the interface is not initialized, so set it
 				   here */
@@ -4083,25 +4084,22 @@ void interface_cmdline_playit (int server_sock, lists_t_strs *args)
 		}
 	}
 
-	if (plist_count(&plist)) {
-		int serial;
-
-		send_int_to_srv (CMD_LOCK);
-
-		send_playlist (&plist, 1);
-
-		send_int_to_srv (CMD_GET_SERIAL);
-		serial = get_data_int ();
-		send_int_to_srv (CMD_PLIST_SET_SERIAL);
-		send_int_to_srv (serial);
-
-		send_int_to_srv (CMD_UNLOCK);
-
-		send_int_to_srv (CMD_PLAY);
-		send_str_to_srv ("");
-	}
-	else
+	if (plist_count (&plist) == 0)
 		fatal ("No files added - no sound files on command line!");
+
+	send_int_to_srv (CMD_LOCK);
+
+	send_playlist (&plist, 1);
+
+	send_int_to_srv (CMD_GET_SERIAL);
+	serial = get_data_int ();
+	send_int_to_srv (CMD_PLIST_SET_SERIAL);
+	send_int_to_srv (serial);
+
+	send_int_to_srv (CMD_UNLOCK);
+
+	send_int_to_srv (CMD_PLAY);
+	send_str_to_srv ("");
 
 	plist_free (&plist);
 }

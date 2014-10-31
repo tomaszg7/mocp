@@ -1,17 +1,10 @@
 #ifndef IO_H
 #define IO_H
 
-/* curl sometimes needs this */
-
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <sys/time.h>
-#ifdef HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
-#include <unistd.h> /* for [s]size_t */
+#include <unistd.h>         /* for [s]size_t */
 #include <pthread.h>
 #ifdef HAVE_CURL
+# include <sys/socket.h>     /* curl sometimes needs this */
 # include <curl/curl.h>
 #endif
 
@@ -74,7 +67,7 @@ struct io_stream
 	int buffered;	/* are we using the buffer? */
 	off_t pos;	/* current position in the file from the user point of view */
 	size_t prebuffer;	/* number of bytes left to prebuffer */
-	pthread_mutex_t io_mutex;	/* mutex for IO operations */
+	pthread_mutex_t io_mtx;	/* mutex for IO operations */
 
 #ifdef HAVE_MMAP
 	void *mem;
@@ -85,8 +78,8 @@ struct io_stream
 	struct io_stream_curl curl;
 #endif
 
-	struct fifo_buf buf;
-	pthread_mutex_t buf_mutex;
+	struct fifo_buf *buf;
+	pthread_mutex_t buf_mtx;
 	pthread_cond_t buf_free_cond; /* some space became available in the
 					 buffer */
 	pthread_cond_t buf_fill_cond; /* the buffer was filled with some data */
@@ -95,7 +88,7 @@ struct io_stream
 					   thread */
 
 	struct stream_metadata {
-		pthread_mutex_t mutex;
+		pthread_mutex_t mtx;
 		char *title;	/* title of the stream */
 		char *url;
 	} metadata;

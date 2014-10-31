@@ -17,11 +17,7 @@
 #include <string.h>
 #include <strings.h>
 #include <stdlib.h>
-#ifdef HAVE_SYS_SELECT_H
-# include <sys/select.h>
-#endif
-#include <sys/time.h>
-#include <sys/types.h>
+#include <sys/select.h>
 #include <unistd.h>
 #include <errno.h>
 #include <assert.h>
@@ -55,7 +51,7 @@ void io_curl_cleanup ()
 	curl_global_cleanup ();
 }
 
-static size_t write_callback (void *data, size_t size, size_t nmemb,
+static size_t write_cb (void *data, size_t size, size_t nmemb,
 		void *stream)
 {
 	struct io_stream *s = (struct io_stream *)stream;
@@ -70,7 +66,7 @@ static size_t write_callback (void *data, size_t size, size_t nmemb,
 	return data_size;
 }
 
-static size_t header_callback (void *data, size_t size, size_t nmemb,
+static size_t header_cb (void *data, size_t size, size_t nmemb,
 		void *stream)
 {
 	struct io_stream *s = (struct io_stream *)stream;
@@ -151,9 +147,9 @@ static size_t header_callback (void *data, size_t size, size_t nmemb,
 	return size * nmemb;
 }
 
-#ifdef DEBUG
-static int debug_callback (CURL *curl ATTR_UNUSED, curl_infotype i, char *msg,
-		size_t size, void *d ATTR_UNUSED)
+#if !defined(NDEBUG) && defined(DEBUG)
+static int debug_cb (CURL *unused1 ATTR_UNUSED, curl_infotype i,
+                     char *msg, size_t size, void *unused2 ATTR_UNUSED)
 {
 	int ix;
 	char *log;
@@ -252,11 +248,9 @@ void io_curl_open (struct io_stream *s, const char *url)
 
 	curl_easy_setopt (s->curl.handle, CURLOPT_NOPROGRESS, 1);
 	curl_easy_setopt (s->curl.handle, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_0);
-	curl_easy_setopt (s->curl.handle, CURLOPT_WRITEFUNCTION,
-			write_callback);
+	curl_easy_setopt (s->curl.handle, CURLOPT_WRITEFUNCTION, write_cb);
 	curl_easy_setopt (s->curl.handle, CURLOPT_WRITEDATA, s);
-	curl_easy_setopt (s->curl.handle, CURLOPT_HEADERFUNCTION,
-			header_callback);
+	curl_easy_setopt (s->curl.handle, CURLOPT_HEADERFUNCTION, header_cb);
 	curl_easy_setopt (s->curl.handle, CURLOPT_WRITEHEADER, s);
 	curl_easy_setopt (s->curl.handle, CURLOPT_USERAGENT, user_agent);
 	curl_easy_setopt (s->curl.handle, CURLOPT_URL, s->curl.url);
@@ -270,10 +264,9 @@ void io_curl_open (struct io_stream *s, const char *url)
 	if (options_get_str("HTTPProxy"))
 		curl_easy_setopt (s->curl.handle, CURLOPT_PROXY,
 				options_get_str("HTTPProxy"));
-#ifdef DEBUG
+#if !defined(NDEBUG) && defined(DEBUG)
 	curl_easy_setopt (s->curl.handle, CURLOPT_VERBOSE, 1);
-	curl_easy_setopt (s->curl.handle, CURLOPT_DEBUGFUNCTION,
-			debug_callback);
+	curl_easy_setopt (s->curl.handle, CURLOPT_DEBUGFUNCTION, debug_cb);
 #endif
 
 	if ((s->curl.multi_status = curl_multi_add_handle(s->curl.multi_handle,
@@ -352,9 +345,9 @@ static int curl_read_internal (struct io_stream *s)
 			fd_set read_fds, write_fds, exc_fds;
 			int max_fd, ret;
 			long milliseconds;
-			struct timeval timeout;
+			struct timespec timeout;
 
-			logit ("Doing select()...");
+			logit ("Doing pselect()...");
 
 			FD_ZERO (&read_fds);
 			FD_ZERO (&write_fds);
@@ -375,10 +368,10 @@ static int curl_read_internal (struct io_stream *s)
 			if (milliseconds <= 0)
 				milliseconds = 1000;
 			timeout.tv_sec = milliseconds / 1000;
-			timeout.tv_usec = (milliseconds % 1000) * 1000;
+			timeout.tv_nsec = (milliseconds % 1000L) * 1000000L;
 
-			ret = select (max_fd + 1, &read_fds, &write_fds,
-					&exc_fds, &timeout);
+			ret = pselect (max_fd + 1, &read_fds, &write_fds, &exc_fds,
+			              &timeout, NULL);
 
 			if (ret < 0 && errno == EINTR) {
 				logit ("Interrupted");
@@ -387,7 +380,7 @@ static int curl_read_internal (struct io_stream *s)
 
 			if (ret < 0) {
 				s->errno_val = errno;
-				logit ("select() failed");
+				logit ("pselect() failed");
 				return 0;
 			}
 
@@ -456,7 +449,7 @@ static void parse_icy_string (struct io_stream *s, const char *str)
 		t = c;
 		while (*c && *c != '=')
 			c++;
-		if (*c != '=' || c - t >= (int)sizeof(name)) {
+		if (*c != '=' || c - t >= ssizeof(name)) {
 			logit ("malformed metadata");
 			return;
 		}
@@ -483,8 +476,8 @@ static void parse_icy_string (struct io_stream *s, const char *str)
 			return;
 		}
 
-		strncpy (value, t, MIN(c - t, (int)sizeof(value) - 1));
-		value[MIN(c - t, (int)sizeof(value) - 1)] = 0;
+		strncpy (value, t, MIN(c - t, ssizeof(value) - 1));
+		value[MIN(c - t, ssizeof(value) - 1)] = 0;
 
 		/* eat ' */
 		c++;

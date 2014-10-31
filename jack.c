@@ -8,9 +8,6 @@
 #endif
 
 #include <unistd.h>
-
-#define DEBUG
-
 #include <stdio.h>
 #include <jack/jack.h>
 #include <jack/types.h>
@@ -18,6 +15,8 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+
+#define DEBUG
 
 #include "common.h"
 #include "audio.h"
@@ -47,7 +46,7 @@ static volatile int our_xrun = 0;
 static volatile int jack_shutdown = 0;
 
 /* this is the function that jack calls to get audio samples from us */
-static int moc_jack_process(jack_nframes_t nframes, void *arg ATTR_UNUSED)
+static int process_cb(jack_nframes_t nframes, void *unused ATTR_UNUSED)
 {
 	jack_default_audio_sample_t *out[2];
 
@@ -109,20 +108,20 @@ static int moc_jack_process(jack_nframes_t nframes, void *arg ATTR_UNUSED)
 }
 
 /* this is called if jack changes its sample rate */
-static int moc_jack_update_sample_rate(jack_nframes_t new_rate,
-		void *arg ATTR_UNUSED)
+static int update_sample_rate_cb(jack_nframes_t new_rate,
+		void *unused ATTR_UNUSED)
 {
 	rate = new_rate;
 	return 0;
 }
 
 /* callback for jack's error messages */
-static void error_callback (const char *msg)
+static void error_cb (const char *msg)
 {
 	error ("JACK: %s", msg);
 }
 
-static void shutdown_callback (void *arg ATTR_UNUSED)
+static void shutdown_cb (void *unused ATTR_UNUSED)
 {
 	jack_shutdown = 1;
 }
@@ -133,7 +132,7 @@ static int moc_jack_init (struct output_driver_caps *caps)
 
 	client_name = options_get_str ("JackClientName");
 
-	jack_set_error_function (error_callback);
+	jack_set_error_function (error_cb);
 
 #ifdef HAVE_JACK_CLIENT_OPEN
 
@@ -167,7 +166,7 @@ static int moc_jack_init (struct output_driver_caps *caps)
 #endif
 
 	jack_shutdown = 0;
-	jack_on_shutdown (client, shutdown_callback, NULL);
+	jack_on_shutdown (client, shutdown_cb, NULL);
 
 	/* allocate memory for an array of 2 output ports */
 	output_port = xmalloc(2 * sizeof(jack_port_t *));
@@ -179,8 +178,8 @@ static int moc_jack_init (struct output_driver_caps *caps)
 	ringbuffer[1] = jack_ringbuffer_create(RINGBUF_SZ);
 
 	/* set the call back functions, activate the client */
-	jack_set_process_callback (client, moc_jack_process, NULL);
-	jack_set_sample_rate_callback(client, moc_jack_update_sample_rate, NULL);
+	jack_set_process_callback (client, process_cb, NULL);
+	jack_set_sample_rate_callback(client, update_sample_rate_cb, NULL);
 	if (jack_activate (client)) {
 		error ("cannot activate client");
 		return 0;
@@ -285,10 +284,9 @@ static int moc_jack_play (const char *buff, const size_t size)
 			}
 		}
 		else {
-			debug ("Sleeping for %uus", (unsigned)(RINGBUF_SZ
+			debug ("Sleeping for %uus", (unsigned int)(RINGBUF_SZ
 					/ (float)(audio_get_bps()) * 100000.0));
-			usleep (RINGBUF_SZ / (float)(audio_get_bps())
-				* 100000.0);
+			xsleep (RINGBUF_SZ, audio_get_bps ());
 		}
 	}
 

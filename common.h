@@ -5,8 +5,6 @@
 #include <stdarg.h>
 #include <ctype.h>
 
-#include "compiler.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,7 +25,7 @@ extern "C" {
 # endif
 #endif
 
-/* Exit status on fatal exit. */
+/* Exit status on fatal error. */
 #define EXIT_FATAL	2
 
 #define LOCK(mutex)	pthread_mutex_lock (&mutex)
@@ -76,33 +74,31 @@ typedef unsigned char _Bool;
 #endif
 
 #define ARRAY_SIZE(x)	(sizeof(x)/sizeof(x[0]))
+#define ssizeof(x)		((ssize_t) sizeof(x))
 
 void *xmalloc (size_t size);
 void *xcalloc (size_t nmemb, size_t size);
 void *xrealloc (void *ptr, const size_t size);
 char *xstrdup (const char *s);
 
+#ifdef NEED_XSLEEP
+void xsleep (size_t ticks, size_t ticks_per_sec);
+#endif
 
 #ifdef NDEBUG
 #define fatal(format, ...) \
 	internal_fatal (NULL, 0, NULL, format, ## __VA_ARGS__)
+#define ASSERT_ONLY ATTR_UNUSED
 #else
 #define fatal(format, ...) \
 	internal_fatal (__FILE__, __LINE__, __FUNCTION__, format, \
 	## __VA_ARGS__)
+#define ASSERT_ONLY
 #endif
 
-#ifdef HAVE_FUNC_ATTRIBUTE_FORMAT
 void internal_fatal (const char *file, int line, const char *function,
-                     const char *format, ...) ATTR_NORETURN
-                     __attribute__ ((format (printf, 4, 5)));
-void error (const char *format, ...) __attribute__((format (printf, 1, 2)));
-#else
-void internal_fatal (const char *file, int line, const char *function,
-                     const char *format, ...) ATTR_NORETURN;
-void error (const char *format, ...);
-#endif
-
+                     const char *format, ...) ATTR_NORETURN ATTR_PRINTF(4, 5);
+void error (const char *format, ...) ATTR_PRINTF(1, 2);
 void set_me_server ();
 char *str_repl (char *target, const char *oldstr, const char *newstr);
 char *trim (const char *src, size_t len);

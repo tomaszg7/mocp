@@ -29,8 +29,6 @@
 #include <assert.h>
 #include <stdint.h>
 
-#include "compiler.h"
-
 /* This warning reset suppresses a deprecation warning message for
  * av_metadata_set()'s use of an AVMetadata parameter.  Although it
  * only occurs in FFmpeg release 0.7, the non-linear versioning of
@@ -191,8 +189,9 @@ struct extn_list {
 
 static lists_t_strs *supported_extns = NULL;
 
-static void ffmpeg_log_repeats (char *msg)
+static void ffmpeg_log_repeats (char *msg LOGIT_ONLY)
 {
+#ifndef NDEBUG
 	static int msg_count = 0;
 	static char *prev_msg = NULL;
 	static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -226,9 +225,11 @@ static void ffmpeg_log_repeats (char *msg)
 		msg_count = 1;
 	}
 	UNLOCK (mutex);
+#endif
 }
 
-static void ffmpeg_log_cb (void *data ATTR_UNUSED, int level,
+#ifndef NDEBUG
+static void ffmpeg_log_cb (void *unused ATTR_UNUSED, int level,
                            const char *fmt, va_list vl)
 {
 	int len;
@@ -255,6 +256,7 @@ static void ffmpeg_log_cb (void *data ATTR_UNUSED, int level,
 
 	ffmpeg_log_repeats (msg);
 }
+#endif
 
 /* Find the first audio stream and return its index, or nb_streams if
  * none found. */
@@ -443,12 +445,14 @@ static void ffmpeg_init ()
 {
 	int rc;
 
-#ifdef DEBUG
+#ifndef NDEBUG
+# ifdef DEBUG
 	av_log_set_level (AV_LOG_INFO);
-#else
+# else
 	av_log_set_level (AV_LOG_ERROR);
-#endif
+# endif
 	av_log_set_callback (ffmpeg_log_cb);
+#endif
 	avcodec_register_all ();
 	av_register_all ();
 
@@ -1081,7 +1085,7 @@ static AVPacket *get_packet (struct ffmpeg_data *data)
 	free_packet (pkt);
 
 	/* FFmpeg has (at least) two ways of indicating EOF.  (Awesome!) */
-	if (rc == (int)AVERROR_EOF)
+	if (rc == AVERROR_EOF)
 		data->eof = true;
 	if (data->ic->pb && data->ic->pb->eof_reached)
 		data->eof = true;
@@ -1111,7 +1115,7 @@ static int decode_packet (struct ffmpeg_data *data, AVPacket *pkt,
 	 *
 	 * See: avcodec.h in ffmpeg
 	 */
-	char avbuf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2] __attribute__((aligned(16)));
+	char avbuf[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2] ATTR_ALIGNED(16);
 
 	data->avbuf_size = sizeof(avbuf);
 	data->avbuf = avbuf;

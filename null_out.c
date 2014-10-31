@@ -15,11 +15,6 @@
 # include "config.h"
 #endif
 
-/* _XOPEN_SOURCE is known to break compilation under OpenBSD. */
-#ifndef OPENBSD
-# define _XOPEN_SOURCE  500 /* for usleep() */
-#endif
-
 #include <unistd.h>
 
 #include "common.h"
@@ -38,9 +33,9 @@ static void null_close ()
 	params.rate = 0;
 }
 
-static int null_play (const char *buff ATTR_UNUSED, const size_t size)
+static int null_play (const char *unused ATTR_UNUSED, const size_t size)
 {
-	usleep (size * 1000000.0 / audio_get_bps ());
+	xsleep (size, audio_get_bps ());
 	return size;
 }
 
@@ -49,7 +44,7 @@ static int null_read_mixer ()
 	return 100;
 }
 
-static void null_set_mixer (int vol ATTR_UNUSED)
+static void null_set_mixer (int unused ATTR_UNUSED)
 {
 }
 

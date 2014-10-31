@@ -203,7 +203,7 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 #endif
 }
 
-static int sndfile_get_bitrate (void *void_data ATTR_UNUSED)
+static int sndfile_get_bitrate (void *unused ATTR_UNUSED)
 {
 	return -1;
 }

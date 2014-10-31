@@ -17,11 +17,13 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <string.h>
 #include <strings.h>
 #include <ctype.h>
 #include <assert.h>
 #include <unistd.h>
+#include <time.h>
 #include <sys/types.h>
 #include <pwd.h>
 #include <errno.h>
@@ -57,8 +59,8 @@ void error (const char *format, ...)
 
 /* End program with a message. Use when an error occurs and we can't recover.
  * If we're the server, then also log the message to the system log. */
-void internal_fatal (const char *file ATTR_UNUSED, int line ATTR_UNUSED,
-                 const char *function ATTR_UNUSED, const char *format, ...)
+void internal_fatal (const char *file LOGIT_ONLY, int line LOGIT_ONLY,
+                 const char *function LOGIT_ONLY, const char *format, ...)
 {
 	va_list va;
 	char *msg;
@@ -125,6 +127,33 @@ char *xstrdup (const char *s)
 
 	return s ? n : NULL;
 }
+
+#ifdef NEED_XSLEEP
+/* Sleep for the specified number of 'ticks'. */
+void xsleep (size_t ticks, size_t ticks_per_sec)
+{
+	assert(ticks < UINT64_MAX / __UINT64_C(1000000000));
+	assert(ticks_per_sec > 0);
+
+	if (ticks > 0) {
+		int rc;
+		uint64_t nsecs;
+		struct timespec delay;
+
+		nsecs = ticks;
+		nsecs *= __UINT64_C(1000000000);
+		nsecs /= ticks_per_sec;
+		delay.tv_sec = nsecs / __UINT64_C(1000000000);
+		delay.tv_nsec = nsecs % __UINT64_C(1000000000);
+
+		do {
+			rc = nanosleep (&delay, &delay);
+			if (rc == -1 && errno != EINTR)
+				fatal ("nanosleep() failed: %s", strerror (errno));
+		} while (rc != 0);
+	}
+}
+#endif
 
 void set_me_server ()
 {
@@ -237,18 +266,18 @@ bool is_valid_symbol (const char *candidate)
 /* Return path to a file in MOC config directory. NOT THREAD SAFE */
 char *create_file_name (const char *file)
 {
+	int rc;
 	static char fname[PATH_MAX];
 	char *moc_dir = options_get_str ("MOCDir");
 
-	if (moc_dir[0] == '~') {
-		if (snprintf(fname, sizeof(fname), "%s/%s/%s", get_home (),
-				(moc_dir[1] == '/') ? moc_dir + 2 : moc_dir + 1,
-				file)
-				>= (int)sizeof(fname))
-			fatal ("Path too long!");
-	}
-	else if (snprintf(fname, sizeof(fname), "%s/%s", moc_dir, file)
-			>= (int)sizeof(fname))
+	if (moc_dir[0] == '~')
+		rc = snprintf(fname, sizeof(fname), "%s/%s/%s", get_home (),
+		              (moc_dir[1] == '/') ? moc_dir + 2 : moc_dir + 1,
+		              file);
+	else
+		rc = snprintf(fname, sizeof(fname), "%s/%s", moc_dir, file);
+
+	if (rc >= ssizeof(fname))
 		fatal ("Path too long!");
 
 	return fname;

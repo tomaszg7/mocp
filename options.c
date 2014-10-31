@@ -262,7 +262,7 @@ static int check_function (int opt, ...)
 }
 
 /* Always pass a value as valid. */
-static int check_true (int opt ATTR_UNUSED, ...)
+static int check_true (int unused ATTR_UNUSED, ...)
 {
 	return 1;
 }
@@ -408,14 +408,11 @@ static void add_list (const char *name, const char *value, options_t_check *chec
 /* Set an integer option to the value. */
 void options_set_int (const char *name, const int value)
 {
-	int i = find_option (name, OPTION_INT | OPTION_BOOL);
+	int i = find_option (name, OPTION_INT);
 
 	if (i == -1)
 		fatal ("Tried to set wrong option '%s'!", name);
-	if (options[i].type == OPTION_INT)
-		options[i].value.num = value;
-	else
-		options[i].value.boolean = value ? true : false;
+	options[i].value.num = value;
 }
 
 /* Set a boolean option to the value. */
@@ -449,18 +446,14 @@ void options_set_symb (const char *name, const char *value)
 /* Set a string option to the value. The string is duplicated. */
 void options_set_str (const char *name, const char *value)
 {
-	int opt = find_option (name, OPTION_STR | OPTION_SYMB);
+	int opt = find_option (name, OPTION_STR);
 
 	if (opt == -1)
 		fatal ("Tried to set wrong option '%s'!", name);
 
-	if (options[opt].type == OPTION_SYMB) {
-		options_set_symb (name, value);
-	} else {
-		if (options[opt].value.str)
-			free (options[opt].value.str);
-		options[opt].value.str = xstrdup (value);
-	}
+	if (options[opt].value.str)
+		free (options[opt].value.str);
+	options[opt].value.str = xstrdup (value);
 }
 
 /* Set list option values to the colon separated value. */
@@ -557,6 +550,7 @@ void options_init ()
 	add_bool ("ReadTags", true);
 	add_str  ("MusicDir", NULL, CHECK_NONE);
 	add_bool ("StartInMusicDir", false);
+	add_int  ("CircularLogSize", 0, CHECK_RANGE(1), 0, INT_MAX);
 	add_symb ("Sort", "FileName", CHECK_SYMBOL(1), "FileName");
 	add_bool ("ShowStreamErrors", false);
 	add_bool ("MP3IgnoreCRCErrors", true);
@@ -777,7 +771,7 @@ int options_check_str (const char *name, const char *val)
 {
 	int opt;
 
-	opt = find_option (name, OPTION_STR | OPTION_SYMB);
+	opt = find_option (name, OPTION_STR);
 	if (opt == -1)
 		return 0;
 	return options[opt].check (opt, val);
@@ -1162,13 +1156,11 @@ void options_free ()
 
 int options_get_int (const char *name)
 {
-	int i = find_option (name, OPTION_INT | OPTION_BOOL);
+	int i = find_option (name, OPTION_INT);
 
 	if (i == -1)
 		fatal ("Tried to get wrong option '%s'!", name);
 
-	if (options[i].type == OPTION_BOOL)
-		return options[i].value.boolean ? 1 : 0;
 	return options[i].value.num;
 }
 
@@ -1184,7 +1176,7 @@ bool options_get_bool (const char *name)
 
 char *options_get_str (const char *name)
 {
-	int i = find_option (name, OPTION_STR | OPTION_SYMB);
+	int i = find_option (name, OPTION_STR);
 
 	if (i == -1)
 		fatal ("Tried to get wrong option '%s'!", name);
@@ -1202,7 +1194,7 @@ char *options_get_symb (const char *name)
 	return options[i].value.str;
 }
 
-struct lists_s_strs *options_get_list (const char *name)
+lists_t_strs *options_get_list (const char *name)
 {
 	int i = find_option (name, OPTION_LIST);
 
