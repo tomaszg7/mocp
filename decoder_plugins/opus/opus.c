@@ -175,7 +175,7 @@ static void opus_tags (const char *file_name, struct file_tags *info,
 	op_free (of);
 }
 
-static int read_callback (void *datasource, unsigned char *ptr, int bytes)
+static int read_cb (void *datasource, unsigned char *ptr, int bytes)
 {
 	ssize_t res;
 
@@ -189,7 +189,7 @@ static int read_callback (void *datasource, unsigned char *ptr, int bytes)
 	return res;
 }
 
-static int seek_callback (void *datasource, opus_int64 offset, int whence)
+static int seek_cb (void *datasource, opus_int64 offset, int whence)
 {
  	debug ("Seek request to %"PRId64" (%s)", (int64_t)offset,
  			whence == SEEK_SET ? "SEEK_SET"
@@ -197,12 +197,12 @@ static int seek_callback (void *datasource, opus_int64 offset, int whence)
  	return io_seek (datasource, offset, whence)<0 ? -1 : 0;
 }
 
-static int close_callback (void *datasource ATTR_UNUSED)
+static int close_cb (void *datasource ATTR_UNUSED)
 {
 	return 0;
 }
 
-static opus_int64 tell_callback (void *datasource)
+static opus_int64 tell_cb (void *datasource)
 {
 	return (opus_int64)io_tell (datasource);
 }
@@ -211,10 +211,10 @@ static void opus_open_stream_internal (struct opus_data *data)
 {
 	int res;
 	OpusFileCallbacks callbacks = {
-		read_callback,
-		seek_callback,
-		tell_callback,
-		close_callback
+		read_cb,
+		seek_cb,
+		tell_cb,
+		close_cb
 	};
 
 	data->tags = tags_new ();

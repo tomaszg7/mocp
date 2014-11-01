@@ -403,7 +403,7 @@ static void process_buffer_s16(int16_t *buf, size_t samples)
 
 static void process_buffer_u24(uint32_t *buf, size_t samples)
 {
-  samples_t i;
+  size_t i;
 
   debug ("mixing");
   
@@ -421,7 +421,7 @@ static void process_buffer_u24(uint32_t *buf, size_t samples)
 
 static void process_buffer_s24(int32_t *buf, size_t samples)
 {
-  samples_t i;
+  size_t i;
 
   debug ("mixing");
 
@@ -607,7 +607,7 @@ static void mix_mono_u24(uint32_t *buf, int channels, size_t samples)
   if(channels < 2)
     return;
 
-  while(i < size)
+  while(i < samples)
   {
     int64_t mono = 0;
 
@@ -629,7 +629,7 @@ static void mix_mono_u24(uint32_t *buf, int channels, size_t samples)
 static void mix_mono_s24(int32_t *buf, int channels, size_t samples)
 {
   int c;
-  samples_t i = 0;
+  size_t i = 0;
 
   debug ("making mono");
 
