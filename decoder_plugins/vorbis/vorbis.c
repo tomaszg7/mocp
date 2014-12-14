@@ -336,17 +336,15 @@ static int vorbis_decode (void *prv_data, char *buf, int buf_len,
 
 	while (1) {
 #ifndef HAVE_TREMOR
-	#ifdef INTERNAL_FLOAT
+#ifdef INTERNAL_FLOAT
 	float **pcm = NULL;
 	//We need some safe bound on maximal number of channels... Up to 8 are described in Vorbis specification
 	ret = ov_read_float(&data->vf, &pcm, buf_len/sizeof(float)/8, &current_section);
-		debug("vorbis float");
-	#else
-		ret = ov_read(&data->vf, buf, buf_len,
-		              (SFMT_NE == SFMT_LE ? 0 : 1),
-		              2, 1, &current_section);
-		debug("vorbis fixed");
-	#endif
+	debug("vorbis float");
+#else
+	ret = ov_read(&data->vf, buf, buf_len,(SFMT_NE == SFMT_LE ? 0 : 1), 2, 1, &current_section);
+	debug("vorbis fixed");
+#endif
 #else
 		ret = ov_read(&data->vf, buf, buf_len, &current_section);
 #endif
@@ -372,52 +370,51 @@ static int vorbis_decode (void *prv_data, char *buf, int buf_len,
 		assert (info != NULL);
 		sound_params->channels = info->channels;
 		sound_params->rate = info->rate;
-		#ifdef INTERNAL_FLOAT
-		  sound_params->fmt = SFMT_FLOAT;
-		#else
-		  sound_params->fmt = SFMT_S16 | SFMT_NE;
-		#endif
-		  
+#ifdef INTERNAL_FLOAT
+		sound_params->fmt = SFMT_FLOAT;
+#else
+		sound_params->fmt = SFMT_S16 | SFMT_NE;
+#endif
+
 		/* Update the bitrate information */
 		bitrate = ov_bitrate_instant (&data->vf);
 		if (bitrate > 0)
 			data->bitrate = bitrate / 1000;
 
-#ifdef INTERNAL_FLOAT	
-	if (sound_params->channels==1)
-	{
-		assert (sizeof(float) * ret <= (unsigned)buf_len);
-                if (ret > 0)
-			memcpy (buf, *pcm, sizeof(float) * ret);
-	  
-	} else
-	{
-	  float *out; out=malloc(buf_len);
-	  //float out[1024*2];
-	   int i,j; 
-	assert (sizeof(float) * ret *sound_params->channels<= (unsigned)buf_len);
-                if (ret > 0)
-		{
-			for (i=0 ; i < ret; i++) {
-				for(j=0;j<(sound_params->channels);j++)
-					out[sound_params->channels*i+j] = pcm[j][i];
-			};
-			memcpy(buf,out,sizeof(float)*ret*sound_params->channels);
+#ifdef INTERNAL_FLOAT
+		if (sound_params->channels==1) {
+			assert (sizeof(float) * ret <= (unsigned)buf_len);
+
+			if (ret > 0)
+				memcpy (buf, *pcm, sizeof(float) * ret);
+
+		} 
+		else {
+			float *out; out=malloc(buf_len);
+			int i,j;
+
+			assert (sizeof(float) * ret *sound_params->channels<= (unsigned)buf_len);
+
+			if (ret > 0) {
+				for (i=0 ; i < ret; i++) {
+					for(j=0;j<(sound_params->channels);j++)
+						out[sound_params->channels*i+j] = pcm[j][i];
+				};
+				memcpy(buf,out,sizeof(float)*ret*sound_params->channels);
+			}
+			free(out);
 		}
-	free(out);
-	}
 #endif
 		break;
-
 	}
-	
-	
+
+
 	debug("decoded: %d samples, %u bytes, buffer: %d, channels: %d",ret,(unsigned int)sizeof(float)*ret*sound_params->channels,buf_len,sound_params->channels);
-	#ifdef INTERNAL_FLOAT
+#ifdef INTERNAL_FLOAT
 	return ret*sizeof(float)*sound_params->channels;
-	#else
+#else
 	return ret;
-	#endif
+#endif
 }
 
 static int vorbis_current_tags (void *prv_data, struct file_tags *tags)

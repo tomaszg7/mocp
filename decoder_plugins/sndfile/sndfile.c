@@ -172,34 +172,30 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 	sound_params->rate = data->snd_info.samplerate;
 
 #ifdef INTERNAL_FLOAT
-	if ((data->snd_info.format & (SF_FORMAT_FLOAT | SF_FORMAT_DOUBLE | SF_FORMAT_VORBIS)) || (sizeof(int) != 4)) 
-	{
+	if ((data->snd_info.format & (SF_FORMAT_FLOAT | SF_FORMAT_DOUBLE | SF_FORMAT_VORBIS)) || (sizeof(int) != 4)) {
 		sound_params->fmt = SFMT_FLOAT;
 		return sf_readf_float (data->sndfile, (float *)buf,
-		    buf_len / sizeof(float) / data->snd_info.channels)
-		    * sizeof(float) * data->snd_info.channels;
+			buf_len / sizeof(float) / data->snd_info.channels)
+			* sizeof(float) * data->snd_info.channels;
 	}
-	else
-	{
+	else {
 		sound_params->fmt = SFMT_S32 | SFMT_NE;
 		return sf_readf_int (data->sndfile, (int *)buf,
-		    buf_len / sizeof(int) / data->snd_info.channels)
-		    * sizeof(int) * data->snd_info.channels;
+			buf_len / sizeof(int) / data->snd_info.channels)
+			* sizeof(int) * data->snd_info.channels;
 	}
 #else
 	switch (sizeof(int)) {
 		case 4:
-		    sound_params->fmt = SFMT_S32 & SFMT_NE;
-		    break;
+			sound_params->fmt = SFMT_S32 & SFMT_NE;
+			break;
 		case 2:
-		    sound_params->fmt = SFMT_S16 & SFMT_NE;
-		    break;
+			sound_params->fmt = SFMT_S16 & SFMT_NE;
+			break;
 		default:
-		    error("sizeof(int)=%d is not supported without floating point processing. Please report this error.",sizeof(int));
+			error("sizeof(int)=%d is not supported without floating point processing. Please report this error.",sizeof(int));
 	}
-	return sf_readf_int (data->sndfile, (int *)buf,
-	    buf_len / sizeof(int) / data->snd_info.channels)
-	    * sizeof(int) * data->snd_info.channels;
+	return sf_readf_int (data->sndfile, (int *)buf, buf_len / sizeof(int) / data->snd_info.channels) * sizeof(int) * data->snd_info.channels;
 #endif
 }
 
