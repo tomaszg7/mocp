@@ -48,8 +48,20 @@
 
 static int mocp_argc;
 static const char **mocp_argv;
+
+#ifndef OPENWRT
 static int popt_next_val = 1;
 static char *render_popt_command_line ();
+#endif
+
+/* List of MOC-specific environment variables. */
+static struct {
+	const char *name;
+	const char *desc;
+} environment_variables[] = {
+	{"MOCP_OPTS", "Additional command line options"},
+	{"MOCP_POPTRC", "List of POPT configuration files"}
+};
 
 struct parameters
 {
@@ -404,28 +416,40 @@ static void show_usage (poptContext ctx)
 /* Show program help. */
 static void show_help (poptContext ctx)
 {
+	size_t ix;
+
 	show_banner ();
 	poptSetOtherOptionHelp (ctx, mocp_summary);
 	poptPrintHelp (ctx, stdout, 0);
+
 	printf ("\nEnvironment variables:\n\n");
-	printf ("  MOCP_OPTS  "
-	        "                       Additional command line options\n");
-	printf ("  MOCP_POPTRC"
-	        "                       List of POPT configuration files\n");
+	for (ix = 0; ix < ARRAY_SIZE(environment_variables); ix += 1)
+		printf ("  %-34s%s\n", environment_variables[ix].name,
+		                       environment_variables[ix].desc);
 	printf ("\n");
 }
 
 /* Show POPT-interpreted command line arguments. */
+#ifndef OPENWRT
 static void show_args ()
 {
 	if (mocp_argc > 0) {
 		char *str;
+
+		str = getenv ("MOCP_POPTRC");
+		if (str)
+			printf ("MOCP_POPTRC='%s' ", str);
+
+		str = getenv ("MOCP_OPTS");
+		if (str)
+			printf ("MOCP_OPTS='%s' ", str);
 
 		str = render_popt_command_line ();
 		printf ("%s\n", str);
 		free (str);
 	}
 }
+#endif
 
 /* Disambiguate the user's request. */
 static void show_misc_cb (poptContext ctx,
@@ -442,9 +466,12 @@ static void show_misc_cb (poptContext ctx,
 		show_help (ctx);
 		break;
 	case 0:
+#ifndef OPENWRT
 		if (!strcmp (opt->longName, "echo-args"))
 			show_args ();
-		else if (!strcmp (opt->longName, "usage"))
+		else
+#endif
+		if (!strcmp (opt->longName, "usage"))
 			show_usage (ctx);
 		break;
 	}
@@ -551,8 +578,10 @@ static struct poptOption misc_opts[] = {
 	{NULL, 0, POPT_ARG_CALLBACK, show_misc_cb, 0, NULL, NULL},
 	{"version", 'V', POPT_ARG_NONE, NULL, 0,
 			"Print version information", NULL},
+#ifndef OPENWRT
 	{"echo-args", 0, POPT_ARG_NONE, NULL, 0,
 			"Print POPT-interpreted arguments", NULL},
+#endif
 	{"usage", 0, POPT_ARG_NONE, NULL, 0,
 			"Print brief usage", NULL},
 	{"help", 'h', POPT_ARG_NONE, NULL, 0,
@@ -574,10 +603,9 @@ static void read_mocp_poptrc (poptContext ctx, const char *env_poptrc)
 	int ix, rc, count;
 	lists_t_strs *files;
 
-	logit ("MOCP_POPTRC: %s", env_poptrc);
-
 	files = lists_strs_new (4);
 	count = lists_strs_split (files, env_poptrc, ":");
+
 	for (ix = 0; ix < count; ix += 1) {
 		const char *fn;
 
@@ -620,8 +648,21 @@ static void read_default_poptrc (poptContext ctx)
 
 	check_popt_secure ();
 	rc = poptReadDefaultConfig (ctx, 0);
+
+	if (rc == POPT_ERROR_ERRNO) {
+		int saved_errno = errno;
+
+		fprintf (stderr, "\n"
+		         "WARNING: The following fatal error message may be bogus!\n"
+		         "         If you have an empty /etc/popt.d directory, try\n"
+		         "         adding an empty file to it.  If that does not fix\n"
+		         "         the problem then you have a genuine error.\n");
+
+		errno = saved_errno;
+	}
+
 	if (rc != 0)
-		fatal ("Error reading default POPT config file: %s\n",
+		fatal ("Error reading default POPT config file: %s",
 		        poptStrerror (rc));
 }
 
@@ -648,8 +689,6 @@ static void prepend_mocp_opts (poptContext ctx)
 		int env_argc;
 		const char **env_argv;
 
-		logit ("MOCP_OPTS: %s", env_opts);
-
 		rc = poptParseArgvString (env_opts, &env_argc, &env_argv);
 		if (rc < 0)
 			fatal ("Error parsing MOCP_OPTS: %s", poptStrerror (rc));
@@ -664,6 +703,7 @@ static void prepend_mocp_opts (poptContext ctx)
 
 /* Return a copy of the POPT option table structure which is suitable
  * for rendering the POPT expansions of the command line. */
+#ifndef OPENWRT
 struct poptOption *clone_popt_options (struct poptOption *opts)
 {
 	size_t count, ix, iy = 0;
@@ -724,8 +764,10 @@ struct poptOption *clone_popt_options (struct poptOption *opts)
 
 	return result;
 }
+#endif
 
 /* Free a copied POPT option table structure. */
+#ifndef OPENWRT
 void free_popt_clone (struct poptOption *opts)
 {
 	int ix;
@@ -740,9 +782,11 @@ void free_popt_clone (struct poptOption *opts)
 
 	free (opts);
 }
+#endif
 
 /* Return a pointer to the copied POPT option table entry for which the
  * 'val' field matches 'wanted'.  */
+#ifndef OPENWRT
 struct poptOption *find_popt_option (struct poptOption *opts, int wanted)
 {
 	int ix = 0;
@@ -784,8 +828,10 @@ struct poptOption *find_popt_option (struct poptOption *opts, int wanted)
 
 	return NULL;
 }
+#endif
 
 /* Render the command line as interpreted by POPT. */
+#ifndef OPENWRT
 static char *render_popt_command_line ()
 {
 	int rc;
@@ -869,6 +915,7 @@ err:
 
 	return result;
 }
+#endif
 
 static void override_config_option (const char *arg, lists_t_strs *deferred)
 {
@@ -1013,17 +1060,23 @@ static void process_options (poptContext ctx, lists_t_strs *deferred)
 	}
 
 	if (rc < -1) {
-		const char *opt, *alias;
+		const char *opt, *alias, *reason;
 
 		opt = poptBadOption (ctx, 0);
 		alias = poptBadOption (ctx, POPT_BADOPTION_NOALIAS);
+		reason = poptStrerror (rc);
+
+#ifdef OPENWRT
+		if (!strcmp (opt, "--echo-args"))
+			reason = "Not available on OpenWRT";
+#endif
 
 		/* poptBadOption() with POPT_BADOPTION_NOALIAS fails to
 		 * return the correct option if poptStuffArgs() was used. */
 		if (!strcmp (opt, alias) || getenv ("MOCP_OPTS"))
-			fatal ("%s: %s\n", opt, poptStrerror (rc));
+			fatal ("%s: %s", opt, reason);
 		else
-			fatal ("%s (aliased by %s): %s\n", opt, alias, poptStrerror (rc));
+			fatal ("%s (aliased by %s): %s", opt, alias, reason);
 	}
 }
 
@@ -1091,6 +1144,21 @@ static void process_deferred_overrides (lists_t_strs *deferred)
 	free (config_decoders);
 }
 
+static void log_environment_variables ()
+{
+#ifndef NDEBUG
+	size_t ix;
+
+	for (ix = 0; ix < ARRAY_SIZE(environment_variables); ix += 1) {
+		char *str;
+
+		str = getenv (environment_variables[ix].name);
+		if (str)
+			logit ("%s='%s'", environment_variables[ix].name, str);
+	}
+#endif
+}
+
 static void log_command_line ()
 {
 #ifndef NDEBUG
@@ -1111,7 +1179,7 @@ static void log_command_line ()
 /* Log the command line as interpreted by POPT. */
 static void log_popt_command_line ()
 {
-#ifndef NDEBUG
+#if !defined(NDEBUG) && !defined(OPENWRT)
 	if (mocp_argc > 0) {
 		char *str;
 
@@ -1167,6 +1235,7 @@ int main (int argc, const char *argv[])
 	if (!setlocale(LC_ALL, ""))
 		logit ("Could not set locale!");
 
+	log_environment_variables ();
 	log_command_line ();
 	args = process_command_line (deferred_overrides);
 	log_popt_command_line ();
