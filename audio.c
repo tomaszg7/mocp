@@ -1049,8 +1049,9 @@ static long decode_masked_formats (lists_t_strs *list)
 	if (lists_strs_exists(list,"S32")) fmt |= SFMT_S32;
 	if (lists_strs_exists(list,"U32")) fmt |= SFMT_U32;
 	if (lists_strs_exists(list,"FLOAT")) fmt |= SFMT_FLOAT;
-  
-	return fmt;
+
+	if (lists_strs_size(list) != __builtin_popcount(fmt)) fatal ("Incorrect setting for MaskOutputFormats");
+	else return fmt;
 }
 
 void audio_initialize ()
@@ -1070,6 +1071,8 @@ void audio_initialize ()
 	    logit ("Applying mask %lX to formats",masked_formats);
 	    hw_caps.formats &= ~masked_formats;
 	}
+
+	if (!sound_format_ok(hw_caps.formats)) fatal ("No available sound formats after applying MaskOutputFormats.");
 
 	max_channels=options_get_int("MaxChannels");
 	if (max_channels>0) hw_caps.max_channels=max_channels;
