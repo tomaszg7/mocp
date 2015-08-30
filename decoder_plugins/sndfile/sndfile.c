@@ -188,21 +188,68 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 #else
 	switch (sizeof(int)) {
 		case 4:
-			sound_params->fmt = SFMT_S32 & SFMT_NE;
+			sound_params->fmt = SFMT_S32 | SFMT_NE;
 			break;
 		case 2:
-			sound_params->fmt = SFMT_S16 & SFMT_NE;
+			sound_params->fmt = SFMT_S16 | SFMT_NE;
 			break;
 		default:
-			error("sizeof(int)=%d is not supported without floating point processing. Please report this error.",sizeof(int));
+			error("sizeof(int)=%d is not supported without floating point processing. Please report this error.",(int)sizeof(int));
 	}
 	return sf_readf_int (data->sndfile, (int *)buf, buf_len / sizeof(int) / data->snd_info.channels) * sizeof(int) * data->snd_info.channels;
 #endif
 }
 
-static int sndfile_get_bitrate (void *unused ATTR_UNUSED)
+static int sndfile_get_bitrate (void *void_data)
 {
-	return -1;
+	int result;
+	struct sndfile_data *data = (struct sndfile_data *)void_data;
+
+
+	switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
+	case SF_FORMAT_PCM_S8:
+	case SF_FORMAT_PCM_U8:
+	case SF_FORMAT_DPCM_8:
+	case SF_FORMAT_ULAW:
+	case SF_FORMAT_ALAW:
+		result = data->snd_info.samplerate * data->snd_info.channels * 8 / 1000;
+		break;
+	case SF_FORMAT_PCM_16:
+	case SF_FORMAT_DPCM_16:
+		result = data->snd_info.samplerate * data->snd_info.channels * 16 / 1000;
+		break;
+	case SF_FORMAT_PCM_24:
+		result = data->snd_info.samplerate * data->snd_info.channels * 24 / 1000;
+		break;
+	case SF_FORMAT_PCM_32:
+	case SF_FORMAT_FLOAT:
+		result = data->snd_info.samplerate * data->snd_info.channels * 32 / 1000;
+		break;
+	case SF_FORMAT_DOUBLE:
+		result = data->snd_info.samplerate * data->snd_info.channels * 64 / 1000;
+		break;
+	case SF_FORMAT_IMA_ADPCM:
+	case SF_FORMAT_MS_ADPCM:
+	case SF_FORMAT_VOX_ADPCM:
+		result = data->snd_info.samplerate * data->snd_info.channels * 4 / 1000;
+		break;
+	case SF_FORMAT_G721_32:
+		result = 32;
+		break;
+	case SF_FORMAT_G723_24:
+		result = 24;
+		break;
+	case SF_FORMAT_G723_40:
+		result = 40;
+		break;
+	case SF_FORMAT_GSM610:
+		result = 13;
+		break;
+	default:
+		result = -1;
+	}
+
+	return result;
 }
 
 static int sndfile_get_duration (void *void_data)
