@@ -1061,8 +1061,12 @@ void audio_initialize ()
 
 	find_working_driver (options_get_list ("SoundDriver"), &hw);
 
-	assert (hw_caps.max_channels >= hw_caps.min_channels);
-	assert (sound_format_ok(hw_caps.formats));
+	if (hw_caps.max_channels < hw_caps.min_channels)
+		fatal ("Error initializing audio device: "
+		       "device reports incorrect number of channels.");
+	if (!sound_format_ok (hw_caps.formats))
+		fatal ("Error initializing audio device: "
+		       "device reports no usable formats.");
 
 	print_output_capabilities (&hw_caps);
 	masked_formats=decode_masked_formats(options_get_list("MaskOutputFormats"));
@@ -1070,6 +1074,9 @@ void audio_initialize ()
 	{
 	    logit ("Applying mask %lX to formats",masked_formats);
 	    hw_caps.formats &= ~masked_formats;
+		if (!sound_format_ok (hw_caps.formats))
+			fatal ("No available sound formats after applying format mask. "
+			       "Consider ammending MaskOutputFormats.");
 	}
 
 	if (!sound_format_ok(hw_caps.formats)) fatal ("No available sound formats after applying MaskOutputFormats.");

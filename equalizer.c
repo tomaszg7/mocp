@@ -535,7 +535,7 @@ void equalizer_refresh()
   else
   {
     if(config_preset_name)
-      current_set_name = config_preset_name;
+      current_set_name = xstrdup(config_preset_name);
   }
 
   clear_eq_set(&equ_list);
@@ -670,9 +670,21 @@ void equalizer_refresh()
       current_equ = current_equ->next;
     }
 
-    free(current_set_name);
+    if(current_equ)
+    {
+      // only free name when EQ was found to allow logging
+      free(current_set_name);
+    }
   }
 
+  if (!current_equ && current_set_name)
+  {
+    logit ("EQ %s not found.", current_set_name);
+    /* equalizer not found, pick next equalizer */
+    current_equ = &equ_list;
+    // free name now
+    free(current_set_name);
+  }
   if(current_equ && !current_equ->set)
     equalizer_next();
 
