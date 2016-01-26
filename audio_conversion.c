@@ -680,6 +680,10 @@ int audio_conv_new (struct audio_conversion *conv,
 	}
 
 	if (from->rate != to->rate) {
+		if (options_get_int("EnableResample")==0) {
+			error ("Resampling disabled!");
+			return 0;
+		}
 #ifdef HAVE_SAMPLERATE
 		int err;
 		int resample_type = -1;

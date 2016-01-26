@@ -87,8 +87,8 @@ struct sound_params
  */
 struct output_driver_caps
 {
-	int min_channels; /*!< Minimum number of channels */
-	int max_channels; /*!< Maximum number of channels */
+	unsigned int min_channels; /*!< Minimum number of channels */
+	unsigned int max_channels; /*!< Maximum number of channels */
 	long formats; /*!< Supported sample formats (or'd sfmt_fmt mask
 			with endianness') */
 	unsigned int min_rate; /*!< Minimum sample rate in Hz */

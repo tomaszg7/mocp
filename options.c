@@ -657,8 +657,9 @@ void options_init ()
 	add_symb ("ResampleMethod", "Linear",
 	                 CHECK_SYMBOL(5), "SincBestQuality", "SincMediumQuality",
 	                                  "SincFastest", "ZeroOrderHold", "Linear");
-	add_int  ("ForceSampleRate", 0, CHECK_RANGE(1), 0, 500000);
-	add_int  ("MaxChannels", 0, CHECK_RANGE(1), 0, 500000);	
+	add_int  ("EnableResample", 0, CHECK_RANGE(1), 0, 500000);
+	add_int  ("MaxSamplerate", 0, CHECK_RANGE(1), 0, 500000);
+	add_int  ("MaxChannels", 0, CHECK_RANGE(1), 0, 500000);
 	add_list ("MaskOutputFormats","",CHECK_NONE);
 	add_bool ("UseRealtimePriority", false);
 	add_int  ("TagsCacheSize", 256, CHECK_RANGE(1), 0, INT_MAX);

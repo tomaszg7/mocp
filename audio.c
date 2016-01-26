@@ -797,9 +797,15 @@ int audio_open (struct sound_params *sound_params)
 	/* Set driver_sound_params to parameters supported by the driver that
 	 * are nearly the requested parameters. */
 
-	if (options_get_int("ForceSampleRate")) {
-		driver_sound_params.rate = options_get_int("ForceSampleRate");
+	if (options_get_int("EnableResample")==2) {
+		driver_sound_params.rate = options_get_int("MaxSamplerate");
 		logit ("Setting forced driver sample rate to %dHz",
+				driver_sound_params.rate);
+	}
+	else if ((options_get_int("EnableResample")==1) &&
+	  ((req_sound_params.rate > options_get_int("MaxSamplerate")) || (req_sound_params.rate > hw_caps.max_rate) || (req_sound_params.rate < hw_caps.min_rate))) {
+		driver_sound_params.rate = options_get_int("MaxSamplerate");
+		logit ("Enabling resampling to  %dHz",
 				driver_sound_params.rate);
 	}
 	else
