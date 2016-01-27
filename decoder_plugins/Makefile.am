@@ -4,6 +4,10 @@ if BUILD_mp3
     SUBDIRS += mp3
 endif
 
+if BUILD_mpg123
+    SUBDIRS += mpg123
+endif
+
 if BUILD_aac
     SUBDIRS += aac
 endif
