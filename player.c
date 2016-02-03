@@ -818,6 +818,7 @@ static void play_stream (const struct decoder *f, struct out_buf *out_buf)
 
 		f->close (decoder_data);
 		error ("%s", err.err);
+		status_msg ("");
 		decoder_error_clear (&err);
 		logit ("Can't open file");
 	}
@@ -971,7 +972,7 @@ void player_jump_to (const int sec)
 }
 
 /* Stop playing, clear the output buffer, but allow to unpause by starting
- * playing the same stream. This is usefull for internet streams that can't
+ * playing the same stream.  This is useful for Internet streams that can't
  * be really paused. */
 void player_pause ()
 {
