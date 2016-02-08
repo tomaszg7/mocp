@@ -49,22 +49,66 @@ struct mpg123_data
 	struct file_tags *tags;
 };
 
+// ID3v1 tag values may not be null-terminated
+char* safe_string (char text[30])
+{
+	char *out;
+
+	out = xmalloc(sizeof(char)*31);
+	memcpy(out, text, 30*sizeof(char));
+	out[30] = 0;
+	return out;
+}
 
 static void get_tags (mpg123_handle *mf, struct file_tags *info)
 {
 	mpg123_id3v1 *v1;
 	mpg123_id3v2 *v2;
-	mpg123_id3 (mf, &v1, &v2);
+	int meta;
 
-	if (v2) {
-		if (v2->title && v2->title->p) info->title = xstrdup(v2->title->p);
-		if (v2->artist && v2->artist->p) info->artist = xstrdup(v2->artist->p);
-		if (v2->album && v2->album->p) info->album  = xstrdup(v2->album->p);
-// 		info->track = v2???
-	} else if (v1) {
-		if (v1->title) info->title  = xstrdup(v1->title);
-		if (v1->artist) info->artist = xstrdup(v1->artist);
-		if (v1->album) info->album = xstrdup(v1->album);
+	meta = mpg123_meta_check(mf);
+	if(meta & MPG123_ID3 && mpg123_id3(mf, &v1, &v2) == MPG123_OK) {
+	  if (v2) { debug("TG: v2 tags present");
+		if (v2->title && v2->title->p) { info->title = xstrdup(v2->title->p); debug("TG: title v2 %s", info->title);}
+		if (v2->artist && v2->artist->p) { info->artist = xstrdup(v2->artist->p); debug("TG: artist v2 %s", info->artist);}
+		if (v2->album && v2->album->p) { info->album  = xstrdup(v2->album->p); debug("TG: album v2 %s", info->album);}
+
+		size_t i,j;
+		for (i=0; i<v2->texts; ++i) {
+		  // null-terminate tag name
+		  char *tag_id;
+		    tag_id=xmalloc(5*sizeof(char));
+		    memcpy(tag_id,v2->text[i].id,4);
+		    tag_id[4] = 0;
+
+		    debug("TG: field id: %s, value v2: %s", tag_id, v2->text[i].text.p);
+		    if (strcmp(tag_id,"TRCK")==0) {
+		      debug("TG: track number found");
+
+		      //since track number may be in form 07/23, we need to extract the first number
+		      for (j=0; j<v2->text[i].text.fill; ++j) {
+			if (v2->text[i].text.p[j]=='/') break;
+		      }
+		      //debug("TG: track number j=%d",(int)j);
+		      if (j>0) {
+			char *num;
+
+			num=xmalloc((j+1)*sizeof(char));
+			memcpy(num,v2->text[i].text.p,j);
+			if (atoi(num)>0) info->track = atoi(num);
+			debug("TG: track v2 %d",info->track);
+			free(num);
+		      }
+		    }
+		    free(tag_id);
+		}
+	  }
+	  if (v1) { debug("TG: v1 tags present");
+		if (!info->title && v1->title) {info->title  = safe_string(v1->title); debug("TG: title v1 %s", info->title);}
+		if (!info->artist && v1->artist) { info->artist = safe_string(v1->artist);  debug("TG: artist v1 %s", info->artist);}
+		if (!info->album && v1->album) {info->album = safe_string(v1->album); debug("TG: album v1 %s", info->album);}
+		if (info->track==-1 && v1->comment && v1->comment[28]==0 && v1->comment[29]>0) { info->track = (int)(v1->comment[29]); debug("TG: track v1 %d", info->track);}
+	  }
 	}
 }
 
