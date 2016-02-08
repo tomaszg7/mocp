@@ -323,16 +323,27 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 	size_t decoded_bytes;
 	struct mpg123_frameinfo info;
 
+	int ch, enc;
+	long rate;
+
 	decoder_error_clear (&data->error);
 
 	while (1) {
 		ret = mpg123_read(data->mf, (unsigned char *) buf, buf_len, &decoded_bytes);
 		if (ret != MPG123_OK) {
-			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream: %s",mpg123_plain_strerror (ret)); // ???
+			// What if some samples were successfully decoded?
+			if (ret == MPG123_DONE) return 0;
+			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream: %s",mpg123_plain_strerror (ret));
 				debug ("mpg123 decoder error: %s", mpg123_plain_strerror (ret));
-// 			continue;
-			return 0;
+			if (ret == MPG123_NEW_FORMAT) {
+			  mpg123_getformat (data->mf,&rate,&ch,&enc);
+			  debug ("Encoding: %i, sample rate: %li, channels: %i",enc,rate,ch);
+			  data->sample_rate = rate;
+			  data->channels = ch;
+			}
+			continue;
 		}
+
 		if (decoded_bytes == 0)
 			return 0;
 
