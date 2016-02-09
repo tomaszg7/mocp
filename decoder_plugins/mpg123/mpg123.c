@@ -108,6 +108,7 @@ static void get_tags (mpg123_handle *mf, struct file_tags *info)
 		if (!info->album && v1->album) {info->album = safe_string(v1->album); debug("TG: album v1 %s", info->album);}
 		if (info->track==-1 && v1->comment && v1->comment[28]==0 && v1->comment[29]>0) { info->track = (int)(v1->comment[29]); debug("TG: track v1 %d", info->track);}
 	  }
+	mpg123_meta_free(mf);
 	}
 }
 
@@ -330,18 +331,18 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 
 	while (1) {
 		ret = mpg123_read(data->mf, (unsigned char *) buf, buf_len, &decoded_bytes);
-		if (ret != MPG123_OK) {
-			// What if some samples were successfully decoded?
-			if (ret == MPG123_DONE) return 0;
+
+		if (ret != MPG123_OK && ret != MPG123_DONE && ret != MPG123_NEW_FORMAT) {
 			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream: %s",mpg123_plain_strerror (ret));
 				debug ("mpg123 decoder error: %s", mpg123_plain_strerror (ret));
-			if (ret == MPG123_NEW_FORMAT) {
+			continue;
+		}
+
+		if (ret == MPG123_NEW_FORMAT) {
 			  mpg123_getformat (data->mf,&rate,&ch,&enc);
 			  debug ("Encoding: %i, sample rate: %li, channels: %i",enc,rate,ch);
 			  data->sample_rate = rate;
 			  data->channels = ch;
-			}
-			continue;
 		}
 
 		if (decoded_bytes == 0)
