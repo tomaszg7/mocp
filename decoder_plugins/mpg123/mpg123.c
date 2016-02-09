@@ -44,7 +44,7 @@ struct mpg123_data
 	int encoding;
 	struct decoder_error error;
 	int ok; /* was this stream successfully opened? */
-	int tags_change; /* the tags were changed from the last call of opus_current_tags */
+	int tags_change; /* the tags were changed from the last call decode function */
 	struct file_tags *tags;
 };
 
@@ -162,7 +162,6 @@ static off_t seek_cb (void *datasource, off_t offset, int whence)
 		whence == SEEK_SET ? "SEEK_SET" : (whence == SEEK_CUR ? "SEEK_CUR" : "SEEK_END"));
 	return io_seek (datasource, offset, whence)<0 ? -1 : 0;
 }
-
 
 static void mpg123_open_stream_internal (struct mpg123_data *data)
 {
@@ -338,15 +337,24 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 			continue;
 		}
 
+		if (decoded_bytes == 0)
+			return 0;
+
 		if (ret == MPG123_NEW_FORMAT) {
 			  mpg123_getformat (data->mf,&rate,&ch,&enc);
-			  debug ("Encoding: %i, sample rate: %li, channels: %i",enc,rate,ch);
+			  debug ("Encoding change: %i, sample rate: %li, channels: %i",enc,rate,ch);
 			  data->sample_rate = rate;
 			  data->channels = ch;
 		}
 
-		if (decoded_bytes == 0)
-			return 0;
+		if (mpg123_meta_check(data->mf) & MPG123_NEW_ID3) {
+			logit ("Tags change");
+
+			data->tags_change = 1;
+			tags_free (data->tags);
+			data->tags = tags_new ();
+			get_tags (&data->mf, data->tags);
+		}
 
 		sound_params->channels = data->channels;
 		sound_params->rate = data->sample_rate;
