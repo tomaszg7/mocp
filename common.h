@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
+#include <limits.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -81,6 +82,7 @@ void *xcalloc (size_t nmemb, size_t size);
 void *xrealloc (void *ptr, const size_t size);
 char *xstrdup (const char *s);
 void xsleep (size_t ticks, size_t ticks_per_sec);
+char *xstrerror (int errnum);
 
 #ifdef NDEBUG
 #define fatal(...) \
@@ -91,6 +93,17 @@ void xsleep (size_t ticks, size_t ticks_per_sec);
 	internal_fatal (__FILE__, __LINE__, __FUNCTION__, ## __VA_ARGS__)
 #define ASSERT_ONLY
 #endif
+
+#ifndef STRERROR_FN
+# define STRERROR_FN xstrerror
+#endif
+
+#define error_errno(format, errnum) \
+	do { \
+		char *err = STRERROR_FN (errnum); \
+		error (format ": %s", err); \
+		free (err); \
+	} while (0)
 
 void internal_fatal (const char *file, int line, const char *function,
                      const char *format, ...) ATTR_NORETURN ATTR_PRINTF(4, 5);
@@ -104,6 +117,7 @@ bool is_valid_symbol (const char *candidate);
 char *create_file_name (const char *file);
 void sec_to_min (char *buff, const int seconds);
 const char *get_home ();
+void common_cleanup ();
 
 #ifdef __cplusplus
 }
