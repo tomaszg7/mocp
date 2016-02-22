@@ -353,7 +353,7 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 			data->tags_change = 1;
 			tags_free (data->tags);
 			data->tags = tags_new ();
-			get_tags (&data->mf, data->tags);
+			get_tags (data->mf, data->tags);
 		}
 
 		sound_params->channels = data->channels;
