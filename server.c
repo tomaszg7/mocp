@@ -1429,6 +1429,8 @@ static void handle_command (const int client_id)
 	switch (cmd) {
 		case CMD_QUIT:
 			logit ("Exit request from the client");
+			close (cli->socket);
+			del_client (cli);
 			server_quit = 1;
 			break;
 		case CMD_LIST_CLEAR:
@@ -1706,7 +1708,6 @@ void server_loop (int list_sock)
 {
 	struct sockaddr_un client_name;
 	socklen_t name_len = sizeof (client_name);
-	int end = 0;
 
 	logit ("MOC server started, pid: %d", getpid());
 
@@ -1728,13 +1729,10 @@ void server_loop (int list_sock)
 		else
 			res = 0;
 
-		if (res == -1 && errno != EINTR && !server_quit) {
-			int err = errno;
+		if (res == -1 && errno != EINTR && !server_quit)
+			fatal ("select() failed: %s", xstrerror (errno));
 
-			logit ("select() failed: %s", xstrerror(err));
-			fatal ("select() failed: %s", xstrerror(err));
-		}
-		else if (!server_quit && res >= 0) {
+		if (!server_quit && res >= 0) {
 			if (FD_ISSET(list_sock, &fds_read)) {
 				int client_sock;
 
@@ -1766,7 +1764,7 @@ void server_loop (int list_sock)
 		if (server_quit)
 			logit ("Exiting...");
 
-	} while (!end && !server_quit);
+	} while (!server_quit);
 
 	log_circular_log ();
 	log_circular_stop ();

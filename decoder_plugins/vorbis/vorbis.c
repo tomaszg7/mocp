@@ -22,7 +22,6 @@
 #include <assert.h>
 #ifndef HAVE_TREMOR
 #include <vorbis/vorbisfile.h>
-//#include <vorbis/codec.h>
 #else
 #include <tremor/ivorbisfile.h>
 #include <tremor/ivorbiscodec.h>
