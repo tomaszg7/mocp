@@ -13,16 +13,13 @@
 #include "config.h"
 #endif
 
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
 #include <assert.h>
 #include <ctype.h>
 
 #include "common.h"
-#include "compat.h"
 #include "options.h"
 #include "menu.h"
 #include "files.h"

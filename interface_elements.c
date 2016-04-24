@@ -15,11 +15,6 @@
 # include "config.h"
 #endif
 
-/* _XOPEN_SOURCE is known to break compilation under OpenBSD. */
-#ifndef OPENBSD
-# define _XOPEN_SOURCE	500 /* for wcswidth() */
-#endif
-
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -30,11 +25,6 @@
 #include <unistd.h>
 #include <wctype.h>
 #include <wchar.h>
-
-/* This breaks compilation on FreeBSD 5.4. */
-#ifndef FREEBSD
-# define _XOPEN_SOURCE_EXTENDED /* for wget_wch() */
-#endif
 
 #include "common.h"
 #include "menu.h"
@@ -969,7 +959,7 @@ err:
 static void main_win_init (struct main_win *w, lists_t_strs *layout_fmt)
 {
 	struct main_win_layout l;
-	int res;
+	bool rc ASSERT_ONLY;
 
 	assert (w != NULL);
 
@@ -986,8 +976,8 @@ static void main_win_init (struct main_win *w, lists_t_strs *layout_fmt)
 	w->lyrics_screen_top = 0;
 	w->layout_fmt = layout_fmt;
 
-	res = parse_layout (&l, layout_fmt);
-	assert (res);
+	rc = parse_layout (&l, layout_fmt);
+	assert (rc);
 
 	side_menu_init (&w->menus[0], MENU_DIR, w->win, &l.menus[0]);
 	side_menu_init (&w->menus[1], MENU_PLAYLIST, w->win, &l.menus[1]);
@@ -2225,15 +2215,15 @@ static void main_win_swap_plist_items (struct main_win *w, const char *file1,
 static void main_win_use_layout (struct main_win *w, lists_t_strs *layout_fmt)
 {
 	struct main_win_layout l;
-	int res;
+	bool rc ASSERT_ONLY;
 
 	assert (w != NULL);
 	assert (layout_fmt != NULL);
 
 	w->layout_fmt = layout_fmt;
 
-	res = parse_layout (&l, layout_fmt);
-	assert (res);
+	rc = parse_layout (&l, layout_fmt);
+	assert (rc);
 
 	side_menu_resize (&w->menus[0], &l.menus[0]);
 	side_menu_resize (&w->menus[1], &l.menus[1]);
@@ -2263,7 +2253,7 @@ static void validate_layouts ()
 static void main_win_resize (struct main_win *w)
 {
 	struct main_win_layout l;
-	int res;
+	bool rc ASSERT_ONLY;
 
 	assert (w != NULL);
 
@@ -2271,8 +2261,8 @@ static void main_win_resize (struct main_win *w)
 	wresize (w->win, LINES - 4, COLS);
 	werase (w->win);
 
-	res = parse_layout (&l, w->layout_fmt);
-	assert (res);
+	rc = parse_layout (&l, w->layout_fmt);
+	assert (rc);
 
 	side_menu_resize (&w->menus[0], &l.menus[0]);
 	side_menu_resize (&w->menus[1], &l.menus[1]);
@@ -3666,7 +3656,6 @@ void windows_reset ()
 		/* Make sure that the next line after we exit will be "clear". */
 		printf ("\n");
 		fflush (stdout);
-
 	}
 }
 

@@ -41,7 +41,6 @@
 #include "options.h"
 #include "protocol.h"
 #include "log.h"
-#include "compat.h"
 #include "decoder.h"
 #include "lists.h"
 #include "files.h"
@@ -101,11 +100,13 @@ static int server_connect ()
 	struct sockaddr_un sock_name;
 	int sock;
 
-	/* Create a socket */
-	if ((sock = socket (PF_LOCAL, SOCK_STREAM, 0)) == -1)
+	/* Create a socket.
+	 * For reasons why AF_UNIX is the correct constant to use in both
+	 * cases, see the commentary the SVN log for commit r2833. */
+	if ((sock = socket (AF_UNIX, SOCK_STREAM, 0)) == -1)
 		 return -1;
 
-	sock_name.sun_family = AF_LOCAL;
+	sock_name.sun_family = AF_UNIX;
 	strcpy (sock_name.sun_path, socket_name());
 
 	if (connect(sock, (struct sockaddr *)&sock_name,
@@ -393,7 +394,7 @@ static void show_version ()
 	printf ("           Author : Damian Pietras\n");
 	printf ("         Homepage : %s\n", PACKAGE_URL);
 	printf ("           E-Mail : %s\n", PACKAGE_BUGREPORT);
-	printf ("        Copyright : (C) 2003-2014 Damian Pietras and others\n");
+	printf ("        Copyright : (C) 2003-2016 Damian Pietras and others\n");
 	printf ("          License : GNU General Public License, version 2 or later\n");
 	putchar ('\n');
 }

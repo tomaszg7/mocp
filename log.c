@@ -23,7 +23,6 @@
 #include <signal.h>
 
 #include "common.h"
-#include "compat.h"
 #include "lists.h"
 #include "log.h"
 #include "options.h"
@@ -148,7 +147,7 @@ static void log_signals_raised (void)
 
     for (ix = 0; ix < ARRAY_SIZE(sig_info); ix += 1) {
 		while (sig_info[ix].raised > sig_info[ix].logged) {
-			locked_logit (__FILE__, __LINE__, __FUNCTION__, sig_info[ix].name);
+			locked_logit (__FILE__, __LINE__, __func__, sig_info[ix].name);
 			sig_info[ix].logged += 1;
 		}
 	}
@@ -228,12 +227,12 @@ void log_init_stream (FILE *f LOGIT_ONLY, const char *fn LOGIT_ONLY)
 		goto end;
 
 	msg = format_msg ("Writing log to: %s", fn);
-	locked_logit (__FILE__, __LINE__, __FUNCTION__, msg);
+	locked_logit (__FILE__, __LINE__, __func__, msg);
 	free (msg);
 
 	if (log_records_spilt > 0) {
 		msg = format_msg ("%d log records spilt", log_records_spilt);
-		locked_logit (__FILE__, __LINE__, __FUNCTION__, msg);
+		locked_logit (__FILE__, __LINE__, __func__, msg);
 		free (msg);
 	}
 

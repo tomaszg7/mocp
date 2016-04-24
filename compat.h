@@ -1,3 +1,12 @@
+/*
+ * The purpose of this header is to provide functions and macros which
+ * MOC code expects but which are missing or broken on the host system.
+ *
+ * This header should be included by all code before any other MOC
+ * headers (except 'compiler.h').  Therefore, it is included once by
+ * 'common.h' which is itself included by all code.
+ */
+
 #ifndef COMPAT_H
 #define COMPAT_H
 
@@ -17,11 +26,48 @@
                       (((x) & 0xFF000000) >> 24))
 #endif
 
+#ifndef SUN_LEN
+#define SUN_LEN(p) \
+        ((sizeof *(p)) - sizeof((p)->sun_path) + strlen ((p)->sun_path))
+#endif
+
+/* isblank() is a GNU extension */
+#ifndef isblank
+#define isblank(c) ((c) == ' ' || (c) == '\t')
+#endif
+
+/* Maximum path length, we don't consider exceptions like mounted NFS */
+#ifndef PATH_MAX
+# if defined(_POSIX_PATH_MAX)
+#  define PATH_MAX	_POSIX_PATH_MAX /* Posix */
+# elif defined(MAXPATHLEN)
+#  define PATH_MAX	MAXPATHLEN      /* Solaris? Also linux...*/
+# else
+#  define PATH_MAX	4096             /* Suppose, we have 4096 */
+# endif
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef HAVE_STRCASESTR
+#if HAVE_STDBOOL_H
+# include <stdbool.h>
+#else
+# if ! HAVE__BOOL
+#  ifdef __cplusplus
+typedef bool _Bool;
+#  else
+typedef unsigned char _Bool;
+#  endif
+# endif
+# define bool _Bool
+# define false 0
+# define true 1
+# define __bool_true_false_are_defined 1
+#endif
+
+#if !HAVE_DECL_STRCASESTR && !defined(__cplusplus)
 char *strcasestr (const char *haystack, const char *needle);
 #endif
 
