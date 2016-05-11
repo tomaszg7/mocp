@@ -218,6 +218,10 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
 			best = SFMT_U16;
+		else if (formats & SFMT_S24_3)
+			best = SFMT_S24_3;
+		else if (formats & SFMT_U24_3)
+			best = SFMT_U24_3;
 		else if (formats & SFMT_S24)
 			best = SFMT_S24;
 		else if (formats & SFMT_U24)
@@ -228,16 +232,16 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_U32;
 		else if (formats & SFMT_FLOAT)
 			best = SFMT_FLOAT;
-		else if (formats & SFMT_S24_3)
-			best = SFMT_S24_3;
-		else if (formats & SFMT_U24_3)
-			best = SFMT_U24_3;
 	}
 	else if (req == SFMT_S16 || req == SFMT_U16) {
 		if (formats & SFMT_S16)
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
 			best = SFMT_U16;
+		else if (formats & SFMT_S24_3)
+			best = SFMT_S24_3;
+		else if (formats & SFMT_U24_3)
+			best = SFMT_U24_3;
 		else if (formats & SFMT_S24)
 			best = SFMT_S24;
 		else if (formats & SFMT_U24)
@@ -252,13 +256,37 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S8;
 		else if (formats & SFMT_U8)
 			best = SFMT_U8;
+	}
+	else if (req == SFMT_S24 || req == SFMT_U24) {
+		if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
 		else if (formats & SFMT_S24_3)
 			best = SFMT_S24_3;
 		else if (formats & SFMT_U24_3)
 			best = SFMT_U24_3;
+		else if (formats & SFMT_S32)
+			best = SFMT_S32;
+		else if (formats & SFMT_U32)
+			best = SFMT_U32;
+		else if (formats & SFMT_FLOAT)
+			best = SFMT_FLOAT;
+		else if (formats & SFMT_S16)
+			best = SFMT_S16;
+		else if (formats & SFMT_U16)
+			best = SFMT_U16;
+		else if (formats & SFMT_S8)
+			best = SFMT_S8;
+		else if (formats & SFMT_U8)
+			best = SFMT_U8;
 	}
-	else if (req == SFMT_S24 || req == SFMT_U24) {
-		if (formats & SFMT_S24)
+	else if (req == SFMT_S24_3 || req == SFMT_U24_3) {
+		if (formats & SFMT_S24_3)
+			best = SFMT_S24_3;
+		else if (formats & SFMT_U24_3)
+			best = SFMT_U24_3;
+		else if (formats & SFMT_S24)
 			best = SFMT_S24;
 		else if (formats & SFMT_U24)
 			best = SFMT_U24;
@@ -276,10 +304,6 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S8;
 		else if (formats & SFMT_U8)
 			best = SFMT_U8;
-		else if (formats & SFMT_S24_3)
-			best = SFMT_S24_3;
-		else if (formats & SFMT_U24_3)
-			best = SFMT_U24_3;
 	}
 	else if (req == SFMT_S32 || req == SFMT_U32) {
 		if (formats & SFMT_S32)
@@ -288,14 +312,14 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_U32;
 		else if (formats & SFMT_FLOAT)
 			best = SFMT_FLOAT;
-		else if (formats & SFMT_S24)
-			best = SFMT_S24;
-		else if (formats & SFMT_U24)
-			best = SFMT_U24;
 		else if (formats & SFMT_S24_3)
 			best = SFMT_S24_3;
 		else if (formats & SFMT_U24_3)
 			best = SFMT_U24_3;
+		else if (formats & SFMT_S24)
+			best = SFMT_S24;
+		else if (formats & SFMT_U24)
+			best = SFMT_U24;
  		else if (formats & SFMT_S16)
 			best = SFMT_S16;
 		else if (formats & SFMT_U16)
@@ -314,6 +338,10 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S32;
 		else if (formats & SFMT_U32)
 			best = SFMT_U32;
+		else if (formats & SFMT_S24_3)
+			best = SFMT_S24_3;
+		else if (formats & SFMT_U24_3)
+			best = SFMT_U24_3;
 		else if (formats & SFMT_S24)
 			best = SFMT_S24;
 		else if (formats & SFMT_U24)
@@ -326,10 +354,6 @@ static long sfmt_best_matching (const long formats_with_endian,
 			best = SFMT_S8;
 		else if (formats & SFMT_U8)
 			best = SFMT_U8;
-		else if (formats & SFMT_S24_3)
-			best = SFMT_S24_3;
-		else if (formats & SFMT_U24_3)
-			best = SFMT_U24_3;
 	}
 
 	assert (best != 0);

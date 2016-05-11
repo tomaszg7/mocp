@@ -329,6 +329,43 @@ static void s24_to_float (const char *in, float *out,
 		out[i] = *in_32++ / ((float)S24_MAX + 1.0);
 }
 
+static void s24_3_to_float (const char *in, float *out,
+		const size_t samples)
+{
+	size_t i;
+	const int8_t *in_8 = (int8_t *)in;
+
+	assert (in != NULL);
+	assert (out != NULL);
+
+	for (i = 0; i < samples; i++) {
+#ifdef WORDS_BIGENDIAN
+		out[i] = (*(in_8+2)+(*(in_8+1)<<8)+(*(in_8)<<16)) / ((float)S24_MAX + 1.0);
+#else
+		out[i] = (*(in_8)+(*(in_8+1)<<8)+(*(in_8+2)<<16)) / ((float)S24_MAX + 1.0);
+#endif
+                in_8+=3;
+        }
+}
+
+static void u24_3_to_float (const char *in, float *out,
+		const size_t samples)
+{
+	size_t i;
+	const uint8_t *in_8 = (int8_t *)in;
+
+	assert (in != NULL);
+	assert (out != NULL);
+
+	for (i = 0; i < samples; i++) {
+#ifdef WORDS_BIGENDIAN
+		out[i] = (*(in_8+2)+(*(in_8+1)<<8)+(*(in_8)<<16) + (float)S24_MIN) / ((float)S24_MAX + 1.0);
+#else
+		out[i] = (*(in_8)+(*(in_8+1)<<8)+(*(in_8+2)<<16) + (float)S24_MIN) / ((float)S24_MAX + 1.0);
+#endif
+                in_8+=3;
+        }
+}
 
 static void u32_to_float (const unsigned char *in, float *out,
 		const size_t samples)
@@ -395,6 +432,16 @@ static float *fixed_to_float (const char *buf, const size_t size,
 			*new_size = sizeof(float) * size / 4;
 			out = (float *)xmalloc (*new_size);
 			s24_to_float (buf, out, size / 4);
+			break;
+		case SFMT_S24_3:
+			*new_size = sizeof(float) * size / 3;
+			out = (float *)xmalloc (*new_size);
+			s24_3_to_float (buf, out, size / 3);
+			break;
+		case SFMT_U24_3:
+			*new_size = sizeof(float) * size / 3;
+			out = (float *)xmalloc (*new_size);
+			u24_3_to_float (buf, out, size / 3);
 			break;
 		case SFMT_U32:
 			*new_size = sizeof(float) * size / 4;
