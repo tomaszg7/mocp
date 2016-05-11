@@ -571,6 +571,18 @@ void audio_conv_bswap_16 (int16_t *buf, const size_t num)
 		buf[i] = bswap_16 (buf[i]);
 }
 
+void audio_conv_bswap_24 (int8_t *buf, const size_t num)
+{
+	size_t i;
+        int8_t tmp;
+
+	for (i = 0; i < num; i+=3) {
+		tmp = buf[i];
+                buf[i] = buf[i+2];
+                buf[i+2] = tmp;
+        }
+}
+
 void audio_conv_bswap_32 (int32_t *buf, const size_t num)
 {
 	size_t i;
@@ -597,7 +609,11 @@ static void swap_endian (char *buf, const size_t size, const long fmt)
 		case SFMT_U32:
 			audio_conv_bswap_32 ((int32_t *)buf, size / 4);
 			break;
-		default:
+		case SFMT_S24_3:
+		case SFMT_U24_3:
+			audio_conv_bswap_24 ((int8_t *)buf, size);
+                        break;
+                default:
 			error ("Can't convert to native endian!");
 			abort (); /* we can't do anything smarter */
 	}
@@ -956,9 +972,6 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 
 	curr_sound = (char *)xmalloc (size);
 	memcpy (curr_sound, buf, size);
-
-	/*no decoder should return S24_3 or U24_3 samples */
-	assert(!(curr_sfmt & (SFMT_S24_3 | SFMT_U24_3)));
 
 	if (!(curr_sfmt & SFMT_NE)) {
 		swap_endian (curr_sound, *conv_len, curr_sfmt);

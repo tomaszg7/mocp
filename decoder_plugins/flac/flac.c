@@ -32,7 +32,7 @@
 #define MAX_SUPPORTED_CHANNELS		6
 
 #define SAMPLES_PER_WRITE		512
-#define SAMPLE_BUFFER_SIZE ((FLAC__MAX_BLOCK_SIZE + SAMPLES_PER_WRITE) * MAX_SUPPORTED_CHANNELS * (32/8))
+#define SAMPLE_BUFFER_SIZE ((FLAC__MAX_BLOCK_SIZE + SAMPLES_PER_WRITE) * MAX_SUPPORTED_CHANNELS * (24/8))
 
 struct flac_data
 {
@@ -71,8 +71,6 @@ static size_t pack_pcm_signed (FLAC__byte *data,
 	unsigned int bytes_per_sample;
 	unsigned int incr;
 
-	if (bps == 24)
-		bps = 32; /* we encode to 32-bit words */
 	bytes_per_sample = bps / 8;
 	incr = bytes_per_sample * channels;
 
@@ -92,11 +90,10 @@ static size_t pack_pcm_signed (FLAC__byte *data,
 					data[0] = (FLAC__byte)(sample >> 8);
 					data[1] = (FLAC__byte)sample;
 					break;
-				case 32:
+				case 24:
 					data[0] = (FLAC__byte)(sample >> 16);
 					data[1] = (FLAC__byte)(sample >> 8);
 					data[2] = (FLAC__byte)sample;
-					data[3] = 0;
 					break;
 			}
 
@@ -454,7 +451,7 @@ static int flac_decode (void *void_data, char *buf, int buf_len,
 			sound_params->fmt = SFMT_S16 | SFMT_BE;
 			break;
 		case 3:
-			sound_params->fmt = SFMT_S32 | SFMT_BE;
+			sound_params->fmt = SFMT_S24_3 | SFMT_BE;
 			break;
 	}
 
