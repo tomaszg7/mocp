@@ -20,12 +20,6 @@
 # include "config.h"
 #endif
 
-/* for lrintf() */
-#define _ISOC9X_SOURCE  1
-#define _ISOC99_SOURCE  1
-#define __USE_ISOC9X    1
-#define __USE_ISOC99    1
-
 #include <assert.h>
 #include <stdlib.h>
 #include <math.h>
@@ -57,13 +51,8 @@ static void float_to_u8 (const float *in, unsigned char *out, const size_t sampl
 			out[i] = UINT8_MAX;
 		else if (f <= INT32_MIN)
 			out[i] = 0;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			out[i] = (unsigned int)((lrintf(f) >> 24) - INT8_MIN);
-#else
-			out[i] = (unsigned int)(((int)f >> 24) - INT8_MIN);
-#endif
-		}
 	}
 }
 
@@ -81,13 +70,8 @@ static void float_to_s8 (const float *in, char *out, const size_t samples)
 			out[i] = INT8_MAX;
 		else if (f <= INT32_MIN)
 			out[i] = INT8_MIN;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			out[i] = lrintf(f) >> 24;
-#else
-			out[i] = (int)f >> 24;
-#endif
-		}
 	}
 }
 
@@ -107,13 +91,8 @@ static void float_to_u16 (const float *in, unsigned char *out,
 			*out_val = UINT16_MAX;
 		else if (f <= INT32_MIN)
 			*out_val = 0;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			*out_val = (unsigned int)((lrintf(f) >> 16) - INT16_MIN);
-#else
-			*out_val = (unsigned int)(((int)f >> 16) - INT16_MIN);
-#endif
-		}
 	}
 }
 
@@ -132,13 +111,8 @@ static void float_to_s16 (const float *in, char *out, const size_t samples)
 			*out_val = INT16_MAX;
 		else if (f <= INT32_MIN)
 			*out_val = INT16_MIN;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			*out_val = lrintf(f) >> 16;
-#else
-			*out_val = ((int)f >> 16);
-#endif
-		}
 	}
 }
 
@@ -159,13 +133,8 @@ static void float_to_u24 (const float *in, unsigned char *out,
 			*out_val = U24_MAX;
 		else if (f <= S24_MIN)
 			*out_val = 0;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			*out_val = (uint32_t)(lrintf(f) - S24_MIN);
-#else
-			*out_val = (uint32_t)((int32_t)f - S24_MIN);
-#endif
-		}
 	}
 }
 
@@ -187,13 +156,8 @@ static void float_to_s24 (const float *in, char *out,
 			*out_val = S24_MAX;
 		else if (f <= S24_MIN)
 			*out_val = S24_MIN;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			*out_val = lrintf(f);
-#else
-			*out_val = (int32_t)f;
-#endif
-		}
 	}
 }
 
@@ -214,13 +178,8 @@ static void float_to_u24_3 (const float *in, unsigned char *out, const size_t sa
 			out_i = U24_MAX;
 		else if (f <= S24_MIN)
 			out_i = 0;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			out_i = (uint32_t)(lrintf(f) - S24_MIN);
-#else
-			out_i = (uint32_t)((int32_t)f - S24_MIN);
-#endif
-		    }
 		out_val[0] = (out_i&0x000000FF);
 		out_val[1] = (out_i&0x0000FF00)>>8;
 		out_val[2] = (out_i&0x00FF0000)>>16;
@@ -244,13 +203,8 @@ static void float_to_s24_3 (const float *in, char *out, const size_t samples)
 			out_i = S24_MAX;
 		else if (f <= S24_MIN)
 			out_i = S24_MIN;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			out_i = lrintf(f);
-#else
-			out_i = (int32_t)f;
-#endif
-		    }
 		out_val[0] = (out_i&0x000000FF);
 		out_val[1] = (out_i&0x0000FF00)>>8;
 		out_val[2] = (out_i&0x00FF0000)>>16;
@@ -275,13 +229,8 @@ static void float_to_u32 (const float *in, unsigned char *out,
 			*out_val = INT32_MAX;
 		else if (f <= INT32_MIN)
 			*out_val = 0;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			*out_val = (uint32_t)(lrintf(f) - INT32_MIN);
-#else
-			*out_val = (uint32_t)((int32_t)f - INT32_MIN);
-#endif
-		}
 	}
 }
 
@@ -301,13 +250,8 @@ static void float_to_s32 (const float *in, char *out, const size_t samples)
 			*out_val = INT32_MAX;
 		else if (f <= INT32_MIN)
 			*out_val = INT32_MIN;
-		else {
-#ifdef HAVE_LRINTF
+		else
 			*out_val = lrintf(f);
-#else
-			*out_val = (int32_t)f;
-#endif
-		}
 	}
 }
 

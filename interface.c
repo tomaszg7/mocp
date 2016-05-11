@@ -3683,7 +3683,6 @@ void interface_end ()
 		send_int_to_srv (CMD_QUIT);
 	else
 		send_int_to_srv (CMD_DISCONNECT);
-	close (srv_sock);
 	srv_sock = -1;
 
 	windows_end ();
@@ -4169,11 +4168,11 @@ void interface_cmdline_set (int server_sock, char *arg, const int val)
 
 	while(tok) {
 
-		if(!strncmp (tok, "Shuffle", 8) || !strncmp (tok,"s",2))
+		if(!strcasecmp (tok, "Shuffle") || !strcasecmp (tok, "s"))
 			tok = "Shuffle";
-		else if(!strncmp (tok, "AutoNext", 9) || !strncmp (tok, "n",2))
+		else if(!strcasecmp (tok, "AutoNext") || !strcasecmp (tok, "n"))
 			tok = "AutoNext";
-		else if(!strncmp (tok, "Repeat", 7) || !strncmp (tok, "r", 2))
+		else if(!strcasecmp (tok, "Repeat") || !strcasecmp (tok, "r"))
 			tok = "Repeat";
 		else {
 			fprintf (stderr, "Unknown option '%s'\n", tok);
@@ -4190,9 +4189,9 @@ void interface_cmdline_set (int server_sock, char *arg, const int val)
 		send_str_to_srv (tok);
 
 		if(val == 2)
-			send_int_to_srv (!options_get_int(tok));
+			send_bool_to_srv (!options_get_bool(tok));
 		else
-			send_int_to_srv (val);
+			send_bool_to_srv (val);
 
 		tok = strtok_r (NULL, ",", &last);
 	}
