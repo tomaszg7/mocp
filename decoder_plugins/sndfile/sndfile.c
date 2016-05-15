@@ -44,6 +44,7 @@ struct sndfile_data
 	SF_INFO snd_info;
 	struct decoder_error error;
 	bool timing_broken;
+        int bitrate;
 };
 
 static lists_t_strs *supported_extns = NULL;
@@ -139,6 +140,7 @@ static void *sndfile_open (const char *file)
 	decoder_error_init (&data->error);
 	memset (&data->snd_info, 0, sizeof(data->snd_info));
 	data->timing_broken = false;
+        data->bitrate = -1;
 
 	fd = open (file, O_RDONLY);
 	if (fd == -1) {
@@ -166,10 +168,65 @@ static void *sndfile_open (const char *file)
 		return data;
 	}
 
+	switch (data->snd_info.format  & SF_FORMAT_TYPEMASK) {
+            case SF_FORMAT_WAV:
+            case SF_FORMAT_AIFF:
+            case SF_FORMAT_AU:
+            case SF_FORMAT_RAW:
+            case SF_FORMAT_SVX:
+            case SF_FORMAT_VOC:
+            case SF_FORMAT_IRCAM:
+            case SF_FORMAT_MAT4:
+            case SF_FORMAT_MAT5:
+            case SF_FORMAT_WAVEX:
+                switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
+                    case SF_FORMAT_PCM_S8:
+                    case SF_FORMAT_PCM_U8:
+//                  case SF_FORMAT_DPCM_8:
+                    case SF_FORMAT_ULAW:
+                    case SF_FORMAT_ALAW:
+                        data->bitrate = data->snd_info.samplerate * data->snd_info.channels * 8 / 1000;
+                        break;
+                    case SF_FORMAT_PCM_16:
+//                  case SF_FORMAT_DPCM_16:
+                        data->bitrate = data->snd_info.samplerate * data->snd_info.channels * 16 / 1000;
+                        break;
+                    case SF_FORMAT_PCM_24:
+                        data->bitrate = data->snd_info.samplerate * data->snd_info.channels * 24 / 1000;
+                        break;
+                    case SF_FORMAT_PCM_32:
+                    case SF_FORMAT_FLOAT:
+                        data->bitrate = data->snd_info.samplerate * data->snd_info.channels * 32 / 1000;
+                        break;
+                    case SF_FORMAT_DOUBLE:
+                        data->bitrate = data->snd_info.samplerate * data->snd_info.channels * 64 / 1000;
+                        break;
+                    case SF_FORMAT_IMA_ADPCM:
+                    case SF_FORMAT_MS_ADPCM:
+                    case SF_FORMAT_VOX_ADPCM:
+                        data->bitrate = data->snd_info.samplerate * data->snd_info.channels * 4 / 1000;
+                        break;
+                    case SF_FORMAT_G721_32:
+                        data->bitrate = 32;
+                        break;
+                    case SF_FORMAT_G723_24:
+                        data->bitrate = 24;
+                        break;
+                    case SF_FORMAT_G723_40:
+                        data->bitrate = 40;
+                        break;
+                    case SF_FORMAT_GSM610:
+                        if (data->snd_info.samplerate == 8000)
+                            data->bitrate = 13;
+                        break;
+                }
+        }
+
 	debug ("Opened file %s", file);
 	debug ("Channels: %d", data->snd_info.channels);
 	debug ("Format: %08X", data->snd_info.format);
 	debug ("Sample rate: %d", data->snd_info.samplerate);
+        debug ("Bitrate: %d", data->bitrate);
 
 	return data;
 }
@@ -252,54 +309,9 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 
 static int sndfile_get_bitrate (void *void_data)
 {
-	int result;
 	struct sndfile_data *data = (struct sndfile_data *)void_data;
 
-
-	switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
-	case SF_FORMAT_PCM_S8:
-	case SF_FORMAT_PCM_U8:
-	case SF_FORMAT_DPCM_8:
-	case SF_FORMAT_ULAW:
-	case SF_FORMAT_ALAW:
-		result = data->snd_info.samplerate * data->snd_info.channels * 8 / 1000;
-		break;
-	case SF_FORMAT_PCM_16:
-	case SF_FORMAT_DPCM_16:
-		result = data->snd_info.samplerate * data->snd_info.channels * 16 / 1000;
-		break;
-	case SF_FORMAT_PCM_24:
-		result = data->snd_info.samplerate * data->snd_info.channels * 24 / 1000;
-		break;
-	case SF_FORMAT_PCM_32:
-	case SF_FORMAT_FLOAT:
-		result = data->snd_info.samplerate * data->snd_info.channels * 32 / 1000;
-		break;
-	case SF_FORMAT_DOUBLE:
-		result = data->snd_info.samplerate * data->snd_info.channels * 64 / 1000;
-		break;
-	case SF_FORMAT_IMA_ADPCM:
-	case SF_FORMAT_MS_ADPCM:
-	case SF_FORMAT_VOX_ADPCM:
-		result = data->snd_info.samplerate * data->snd_info.channels * 4 / 1000;
-		break;
-	case SF_FORMAT_G721_32:
-		result = 32;
-		break;
-	case SF_FORMAT_G723_24:
-		result = 24;
-		break;
-	case SF_FORMAT_G723_40:
-		result = 40;
-		break;
-	case SF_FORMAT_GSM610:
-		result = 13;
-		break;
-	default:
-		result = -1;
-	}
-
-	return result;
+        return data->bitrate;
 }
 
 static int sndfile_get_duration (void *void_data)
@@ -360,7 +372,7 @@ static struct decoder sndfile_decoder = {
 	sndfile_get_name,
 	NULL,
 	NULL,
-	NULL
+	sndfile_get_bitrate
 };
 
 struct decoder *plugin_init ()
