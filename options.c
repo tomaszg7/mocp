@@ -649,7 +649,7 @@ void options_init ()
 	                 "wv(wavpack,*,ffmpeg):"
 	                 "audio/aac(aac):audio/aacp(aac):audio/m4a(ffmpeg):"
 	                 "audio/wav(sndfile,*):"
-	                 "ogg(vorbis,ffmpeg):oga(vorbis,ffmpeg):ogv(ffmpeg):"
+	                 "ogg(vorbis,sndfile,ffmpeg):oga(vorbis,sndfile,ffmpeg):ogv(ffmpeg):"
 	                 "opus(opus,ffmpeg):"
 	                 "spx(speex):"
 	                 "application/ogg(vorbis,opus):audio/ogg(vorbis,opus)",
