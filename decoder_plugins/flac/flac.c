@@ -244,8 +244,6 @@ static void *flac_open_internal (const char *file, const int buffered)
 	data->length = -1;
 	data->ok = 0;
 
-        off_t file_size;
-
 	data->stream = io_open (file, buffered);
 	if (!io_ok(data->stream)) {
 		decoder_error (&data->error, ERROR_FATAL, 0,
@@ -280,11 +278,16 @@ static void *flac_open_internal (const char *file, const int buffered)
 
 	data->ok = 1;
 
-//      Wrong calculation, produces bitrate of uncompressed stream for one channel
-//	data->avg_bitrate = data->bits_per_sample * data->sample_rate;
-        file_size = io_file_size (data->stream);
-        if (data->length > 0 && file_size != -1)
-                data->avg_bitrate = file_size / data->length * 8;
+	if (data->length > 0) {
+		off_t data_size = io_file_size (data->stream);
+		if (data_size > 0) {
+			FLAC__uint64 pos;
+
+			if (FLAC__stream_decoder_get_decode_position (data->decoder, &pos))
+				data_size -= pos;
+			data->avg_bitrate = data_size * 8 / data->length;
+		}
+	}
 
 	debug ("File opened. Channels %d. Samplerate %d. Duration %d. Avg_Bitrate %d.", data->channels, data->sample_rate,
 		data->length, data->avg_bitrate);
