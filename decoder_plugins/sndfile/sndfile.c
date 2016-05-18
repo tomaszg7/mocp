@@ -307,6 +307,7 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 		default:
 			error("sizeof(int)=%d is not supported without floating point processing. Please report this error.",(int)sizeof(int));
 	}
+	sf_command (data->sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE) ;
 	return sf_readf_int (data->sndfile, (int *)buf, buf_len / sizeof(int) / data->snd_info.channels) * sizeof(int) * data->snd_info.channels;
 #endif
 }
