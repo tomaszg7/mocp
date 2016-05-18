@@ -282,13 +282,15 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 	sound_params->rate = data->snd_info.samplerate;
 
 #ifdef INTERNAL_FLOAT
-	if ((data->snd_info.format & (SF_FORMAT_FLOAT | SF_FORMAT_DOUBLE | SF_FORMAT_VORBIS)) || (sizeof(int) != 4)) {
+        switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
+            case SF_FORMAT_FLOAT:
+            case SF_FORMAT_DOUBLE:
+            case SF_FORMAT_VORBIS:
 		sound_params->fmt = SFMT_FLOAT;
 		return sf_readf_float (data->sndfile, (float *)buf,
 			buf_len / sizeof(float) / data->snd_info.channels)
 			* sizeof(float) * data->snd_info.channels;
-	}
-	else {
+            default:
 		sound_params->fmt = SFMT_S32 | SFMT_NE;
 		return sf_readf_int (data->sndfile, (int *)buf,
 			buf_len / sizeof(int) / data->snd_info.channels)
