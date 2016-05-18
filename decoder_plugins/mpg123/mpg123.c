@@ -185,60 +185,71 @@ static void mpg123_open_stream_internal (struct mpg123_data *data)
 	}
 	else
 	{
-	const long *rates;
-	size_t rate_count;
-	size_t i;
-	mpg123_format_none(data->mf);
-	mpg123_rates(&rates, &rate_count);
+		const long *rates;
+		size_t rate_count;
+		size_t i;
+		mpg123_format_none(data->mf);
+		mpg123_rates(&rates, &rate_count);
 
-#ifdef INTERNAL_FLOAT
-	data->encoding = SFMT_FLOAT|SFMT_NE;
-	debug("TG: selected FLOAT");
-	for(i=0; i<rate_count; ++i)
-	  switch (sizeof(float)) {
-	    case 4: mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO, MPG123_ENC_FLOAT_32); break;
-	    case 8: mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO, MPG123_ENC_FLOAT_64); break;
-	    default: mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO, MPG123_ENC_SIGNED_32);
-	    data->encoding = SFMT_S32|SFMT_NE; debug("TG: unknown sizeof(float): %d, falling back to S32",sizeof(float));break;
-	  }
-#else
-	for(i=0; i<rate_count; ++i)
-	  mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO, MPG123_ENC_SIGNED_32);
-	data->encoding = SFMT_S32|SFMT_NE;
-	debug("TG: selected S32");
-#endif
+	#ifdef INTERNAL_FLOAT
+		data->encoding = SFMT_FLOAT|SFMT_NE;
+		debug("TG: selected FLOAT");
+		for(i=0; i<rate_count; ++i)
+			switch (sizeof(float)) {
+				case 4:
+					mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+								MPG123_ENC_FLOAT_32);
+					break;
+				case 8:
+					mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+								MPG123_ENC_FLOAT_64);
+					break;
+				default:
+					mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+								MPG123_ENC_SIGNED_32);
+					data->encoding = SFMT_S32|SFMT_NE;
+					debug("TG: unsupported sizeof(float): %d, falling back to S32",
+						sizeof(float));
+					break;
+			}
+	#else
+		for(i=0; i<rate_count; ++i)
+			mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+						MPG123_ENC_SIGNED_32);
+		data->encoding = SFMT_S32|SFMT_NE;
+		debug("TG: selected S32");
+	#endif
 
-	if (mpg123_open_handle (data->mf,data->stream) == MPG123_OK && mpg123_getformat (data->mf,&rate,&ch,&enc) == MPG123_OK)
-	  {
-	    debug ("Encoding: %i, sample rate: %li, channels: %i",enc,rate,ch);
-	    data->sample_rate = rate;
-	    data->channels = ch;
- 
-	    mpg123_info(data->mf,&info);
-	    debug ("Bitrate %i",info.bitrate);
-	    data->bitrate = info.bitrate;
+		if (mpg123_open_handle (data->mf,data->stream) == MPG123_OK &&
+		    mpg123_getformat (data->mf,&rate,&ch,&enc) == MPG123_OK) {
+			debug ("Encoding: %i, sample rate: %li, channels: %i",enc,rate,ch);
+			data->sample_rate = rate;
+			data->channels = ch;
 
-	    mpg123_scan(data->mf);
-	    samples = mpg123_length(data->mf);
-	    if (samples == MPG123_ERR)
-			data->duration = -1;
-	    else
-			data->duration =samples/rate;
-	    debug("Duration: %d, samples %lld",data->duration,(long long)samples);
-	    file_size = io_file_size (data->stream);
-	    if (data->duration > 0 && file_size != -1)
-			data->avg_bitrate = file_size / data->duration * 8;
-	    get_tags (data->mf, data->tags);
+			mpg123_info(data->mf,&info);
+			debug ("Bitrate %i",info.bitrate);
+			data->bitrate = info.bitrate;
 
-	    debug("TG: active mpg123 decoder %s",mpg123_current_decoder(data->mf));
+			mpg123_scan(data->mf);
+			samples = mpg123_length(data->mf);
+			if (samples == MPG123_ERR)
+				data->duration = -1;
+			else
+				data->duration =samples/rate;
+			debug("Duration: %d, samples %lld",data->duration,(long long)samples);
+			file_size = io_file_size (data->stream);
+			if (data->duration > 0 && file_size != -1)
+				data->avg_bitrate = file_size / data->duration * 8;
+			get_tags (data->mf, data->tags);
 
-	    data->ok = 1;
-	    return;
-	  }
-	  else
-	  {
-	    mpg123_err = "Error opening handle or getting format";
-	  }
+			debug("TG: active mpg123 decoder %s",mpg123_current_decoder(data->mf));
+
+			data->ok = 1;
+			return;
+		}
+		else {
+			mpg123_err = "Error opening handle or getting format";
+		}
 	}
 
 	decoder_error (&data->error, ERROR_FATAL, 0, "%s", mpg123_err);
@@ -247,8 +258,6 @@ static void mpg123_open_stream_internal (struct mpg123_data *data)
 	mpg123_exit();
 	data->mf = NULL;
 	io_close (data->stream);
-
-// 	}
 }
 
 static void *mpg123_openX (const char *file)
@@ -273,9 +282,7 @@ static void *mpg123_openX (const char *file)
 
 static int mpg123_can_decode (__attribute__ ((unused)) struct io_stream *stream)
 {
-
 	return 1;
-
 }
 
 static void *mpg123_open_stream (struct io_stream *stream)
@@ -333,7 +340,7 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 
 		if (ret != MPG123_OK && ret != MPG123_DONE && ret != MPG123_NEW_FORMAT) {
 			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream: %s",mpg123_plain_strerror (ret));
-				debug ("mpg123 decoder error: %s", mpg123_plain_strerror (ret));
+			debug ("mpg123 decoder error: %s", mpg123_plain_strerror (ret));
 			continue;
 		}
 
@@ -341,15 +348,14 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 			return 0;
 
 		if (ret == MPG123_NEW_FORMAT) {
-			  mpg123_getformat (data->mf,&rate,&ch,&enc);
-			  debug ("Encoding change: %i, sample rate: %li, channels: %i",enc,rate,ch);
-			  data->sample_rate = rate;
-			  data->channels = ch;
+			mpg123_getformat (data->mf,&rate,&ch,&enc);
+			debug ("Encoding change: %i, sample rate: %li, channels: %i",enc,rate,ch);
+			data->sample_rate = rate;
+			data->channels = ch;
 		}
 
 		if (mpg123_meta_check(data->mf) & MPG123_NEW_ID3) {
 			logit ("Tags change");
-
 			data->tags_change = 1;
 			tags_free (data->tags);
 			data->tags = tags_new ();

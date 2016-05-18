@@ -174,7 +174,7 @@ static int read_cb (void *datasource, unsigned char *ptr, int bytes)
 static int seek_cb (void *datasource, opus_int64 offset, int whence)
 {
 	debug ("Seek request to %"PRId64" (%s)", (int64_t)offset,
-		whence == SEEK_SET ? "SEEK_SET" : (whence == SEEK_CUR ? "SEEK_CUR" : "SEEK_END"));
+	       whence == SEEK_SET ? "SEEK_SET" : (whence == SEEK_CUR ? "SEEK_CUR" : "SEEK_END"));
 	return io_seek (datasource, offset, whence)<0 ? -1 : 0;
 }
 
@@ -211,7 +211,7 @@ static void opus_open_stream_internal (struct opus_data *data)
 		data->of = NULL;
 		io_close (data->stream);
 	}
-       else {
+	else {
 		ogg_int64_t samples;
 		data->last_section = -1;
 		data->avg_bitrate = op_bitrate (data->of, -1) / 1000;
@@ -252,7 +252,7 @@ static int opus_can_decode (struct io_stream *stream)
 	char buf[36];
 
 	if (io_peek (stream, buf, 36) == 36 && !memcmp (buf, "OggS", 4)
-			&& !memcmp (buf + 28, "OpusHead", 8))
+	    && !memcmp (buf + 28, "OpusHead", 8))
 		return 1;
 	return 0;
 }

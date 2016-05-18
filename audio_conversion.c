@@ -143,8 +143,6 @@ static void float_to_s24 (const float *in, char *out,
 {
 	size_t i;
 
-
-
 	assert (in != NULL);
 	assert (out != NULL);
 
@@ -168,8 +166,7 @@ static void float_to_u24_3 (const float *in, unsigned char *out, const size_t sa
 	assert (in != NULL);
 	assert (out != NULL);
 
-	for (i = 0; i < samples; i++)
-	{
+	for (i = 0; i < samples; i++) {
 		int8_t *out_val = (int8_t *)(out + 3*i);
 		float f = in[i] * S24_MAX;
 		uint32_t out_i;
@@ -194,8 +191,7 @@ static void float_to_s24_3 (const float *in, char *out, const size_t samples)
 	assert (out != NULL);
 
 	int32_t out_i;
-		for (i = 0; i < samples; i++)
-	{
+	for (i = 0; i < samples; i++) {
 		int8_t *out_val = (int8_t *)(out + 3*i);
 		float f = in[i] * S24_MAX;
 
@@ -344,8 +340,8 @@ static void s24_3_to_float (const char *in, float *out,
 #else
 		out[i] = (*(in_8)+(*(in_8+1)<<8)+(*(in_8+2)<<16)) / ((float)S24_MAX + 1.0);
 #endif
-                in_8+=3;
-        }
+		in_8+=3;
+	}
 }
 
 static void u24_3_to_float (const char *in, float *out,
@@ -363,8 +359,8 @@ static void u24_3_to_float (const char *in, float *out,
 #else
 		out[i] = (*(in_8)+(*(in_8+1)<<8)+(*(in_8+2)<<16) + (float)S24_MIN) / ((float)S24_MAX + 1.0);
 #endif
-                in_8+=3;
-        }
+		in_8+=3;
+	}
 }
 
 static void u32_to_float (const unsigned char *in, float *out,
