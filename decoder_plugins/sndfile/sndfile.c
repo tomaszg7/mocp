@@ -230,6 +230,11 @@ static void *sndfile_open (const char *file)
 	debug ("Sample rate: %d", data->snd_info.samplerate);
         debug ("Bitrate: %d", data->bitrate);
 
+#ifndef INTERNAL_FLOAT
+        if ( (data->snd_info.format & SF_FORMAT_SUBMASK) ==  SF_FORMAT_FLOAT ||
+            (data->snd_info.format & SF_FORMAT_SUBMASK) ==  SF_FORMAT_DOUBLE)
+                    sf_command (data->sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE);
+#endif
 	return data;
 }
 
@@ -290,13 +295,8 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 		return sf_readf_float (data->sndfile, (float *)buf,
 			buf_len / sizeof(float) / data->snd_info.channels)
 			* sizeof(float) * data->snd_info.channels;
-            default:
-		sound_params->fmt = SFMT_S32 | SFMT_NE;
-		return sf_readf_int (data->sndfile, (int *)buf,
-			buf_len / sizeof(int) / data->snd_info.channels)
-			* sizeof(int) * data->snd_info.channels;
-	}
-#else
+        }
+#endif
 	switch (sizeof(int)) {
 		case 4:
 			sound_params->fmt = SFMT_S32 | SFMT_NE;
@@ -305,11 +305,13 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 			sound_params->fmt = SFMT_S16 | SFMT_NE;
 			break;
 		default:
-			error("sizeof(int)=%d is not supported without floating point processing. Please report this error.",(int)sizeof(int));
+			logit("sizeof(int)=%d is not supported. Please report this error. Falling back to float decoding.",(int)sizeof(int));
+                        sound_params->fmt = SFMT_FLOAT;
+                        return sf_readf_float (data->sndfile, (float *)buf,
+                                buf_len / sizeof(float) / data->snd_info.channels)
+                                * sizeof(float) * data->snd_info.channels;
 	}
-	sf_command (data->sndfile, SFC_SET_SCALE_FLOAT_INT_READ, NULL, SF_TRUE) ;
 	return sf_readf_int (data->sndfile, (int *)buf, buf_len / sizeof(int) / data->snd_info.channels) * sizeof(int) * data->snd_info.channels;
-#endif
 }
 
 static int sndfile_get_bitrate (void *void_data)
