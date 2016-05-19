@@ -256,14 +256,29 @@ static void sndfile_close (void *void_data)
 static void sndfile_info (const char *file_name, struct file_tags *info,
 		const int tags_sel)
 {
-	if (tags_sel & TAGS_TIME) {
-		struct sndfile_data *data;
-
-		data = sndfile_open (file_name);
-		if (data->sndfile && !data->timing_broken)
-			info->time = data->snd_info.frames / data->snd_info.samplerate;
+	struct sndfile_data *data;
+	data = sndfile_open (file_name);
+	if (!data->sndfile) {
 		sndfile_close (data);
+		return;
 	}
+
+	if ((tags_sel & TAGS_TIME) && !data->timing_broken)
+		info->time = data->snd_info.frames / data->snd_info.samplerate;
+
+	if (tags_sel & TAGS_COMMENTS) {
+		const char *res;
+		if ((res = sf_get_string (data->sndfile, SF_STR_TITLE)))
+			info->title = xstrdup(res);
+		if ((res = sf_get_string (data->sndfile, SF_STR_ARTIST)))
+			info->artist = xstrdup(res);
+		if ((res = sf_get_string (data->sndfile, SF_STR_ALBUM)))
+			info->album = xstrdup(res);
+		if ((res = sf_get_string (data->sndfile, SF_STR_TRACKNUMBER)))
+			info->track = atoi(res);
+	}
+
+	sndfile_close (data);
 }
 
 static int sndfile_seek (void *void_data, int sec)
