@@ -348,7 +348,7 @@ static void u24_3_to_float (const char *in, float *out,
 		const size_t samples)
 {
 	size_t i;
-	const uint8_t *in_8 = (int8_t *)in;
+	const uint8_t *in_8 = (uint8_t *)in;
 
 	assert (in != NULL);
 	assert (out != NULL);
