@@ -196,21 +196,21 @@ static void mpg123_open_stream_internal (struct mpg123_data *data)
 		debug("TG: selected FLOAT");
 		for(i=0; i<rate_count; ++i)
 			switch (sizeof(float)) {
-				case 4:
-					mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
-								MPG123_ENC_FLOAT_32);
-					break;
-				case 8:
-					mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
-								MPG123_ENC_FLOAT_64);
-					break;
-				default:
-					mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
-								MPG123_ENC_SIGNED_32);
-					data->encoding = SFMT_S32|SFMT_NE;
-					debug("TG: unsupported sizeof(float): %d, falling back to S32",
-						sizeof(float));
-					break;
+			case 4:
+				mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+				              MPG123_ENC_FLOAT_32);
+				break;
+			case 8:
+				mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+				              MPG123_ENC_FLOAT_64);
+				break;
+			default:
+				mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
+				              MPG123_ENC_SIGNED_32);
+				data->encoding = SFMT_S32|SFMT_NE;
+				debug("TG: unsupported sizeof(float): %d, falling back to S32",
+				      sizeof(float));
+				break;
 			}
 	#else
 		for(i=0; i<rate_count; ++i)
@@ -247,9 +247,8 @@ static void mpg123_open_stream_internal (struct mpg123_data *data)
 			data->ok = 1;
 			return;
 		}
-		else {
+		else
 			mpg123_err = "Error opening handle or getting format";
-		}
 	}
 
 	decoder_error (&data->error, ERROR_FATAL, 0, "%s", mpg123_err);
