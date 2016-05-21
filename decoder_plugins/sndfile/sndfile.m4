@@ -11,6 +11,12 @@ then
 			   want_sndfile="yes"
 			   DECODER_PLUGINS="$DECODER_PLUGINS sndfile"],
 			   [true])
+		if test "x$want_sndfile" = "xyes"
+		then
+			AC_SEARCH_LIBS(sf_current_byterate, sndfile,
+                        [AC_DEFINE([HAVE_SNDFILE_BYTERATE], 1,
+                                [Define to 1 if you have the `sf_current_byterate' function.])])
+                fi
 fi
 
 AM_CONDITIONAL([BUILD_sndfile], [test "$want_sndfile"])

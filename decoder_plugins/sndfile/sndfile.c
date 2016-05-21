@@ -170,63 +170,11 @@ static void *sndfile_open (const char *file)
 		return data;
 	}
 
-	switch (data->snd_info.format  & SF_FORMAT_TYPEMASK) {
-	case SF_FORMAT_WAV:
-	case SF_FORMAT_AIFF:
-	case SF_FORMAT_AU:
-	case SF_FORMAT_RAW:
-	case SF_FORMAT_SVX:
-	case SF_FORMAT_VOC:
-	case SF_FORMAT_IRCAM:
-	case SF_FORMAT_MAT4:
-	case SF_FORMAT_MAT5:
-	case SF_FORMAT_WAVEX:
-		switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
-		case SF_FORMAT_PCM_S8:
-		case SF_FORMAT_PCM_U8:
-		case SF_FORMAT_ULAW:
-		case SF_FORMAT_ALAW:
-			data->bitrate = data->snd_info.samplerate *
-							data->snd_info.channels * 8 / 1000;
-			break;
-		case SF_FORMAT_PCM_16:
-			data->bitrate = data->snd_info.samplerate *
-							data->snd_info.channels * 16 / 1000;
-			break;
-		case SF_FORMAT_PCM_24:
-			data->bitrate = data->snd_info.samplerate *
-							data->snd_info.channels * 24 / 1000;
-			break;
-		case SF_FORMAT_PCM_32:
-		case SF_FORMAT_FLOAT:
-			data->bitrate = data->snd_info.samplerate *
-							data->snd_info.channels * 32 / 1000;
-			break;
-		case SF_FORMAT_DOUBLE:
-			data->bitrate = data->snd_info.samplerate *
-							data->snd_info.channels * 64 / 1000;
-			break;
-		case SF_FORMAT_IMA_ADPCM:
-		case SF_FORMAT_MS_ADPCM:
-		case SF_FORMAT_VOX_ADPCM:
-			data->bitrate = data->snd_info.samplerate *
-							data->snd_info.channels * 4 / 1000;
-			break;
-		case SF_FORMAT_G721_32:
-			data->bitrate = 32;
-			break;
-		case SF_FORMAT_G723_24:
-			data->bitrate = 24;
-			break;
-		case SF_FORMAT_G723_40:
-			data->bitrate = 40;
-			break;
-		case SF_FORMAT_GSM610:
-			if (data->snd_info.samplerate == 8000)
-				data->bitrate = 13;
-			break;
-		}
-	}
+#ifdef HAVE_SNDFILE_BYTERATE
+	data->bitrate = sf_current_byterate (data->sndfile);
+	if (data->bitrate > 0)
+		data->bitrate = data->bitrate * 8 / 1000;
+#endif
 
 	debug ("Opened file %s", file);
 	debug ("Channels: %d", data->snd_info.channels);
@@ -304,6 +252,12 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 
 	sound_params->channels = data->snd_info.channels;
 	sound_params->rate = data->snd_info.samplerate;
+
+#ifdef HAVE_SNDFILE_BYTERATE
+	data->bitrate = sf_current_byterate (data->sndfile);
+	if (data->bitrate > 0)
+		data->bitrate = data->bitrate * 8 / 1000;
+#endif
 
 #ifdef INTERNAL_FLOAT
 	switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
@@ -400,7 +354,7 @@ static struct decoder sndfile_decoder = {
 	sndfile_get_name,
 	NULL,
 	NULL,
-	sndfile_get_bitrate
+	NULL
 };
 
 struct decoder *plugin_init ()
