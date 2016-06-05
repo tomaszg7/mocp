@@ -249,15 +249,11 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 		struct sound_params *sound_params)
 {
 	struct sndfile_data *data = (struct sndfile_data *)void_data;
+	int use_float = 0;
+	int res;
 
 	sound_params->channels = data->snd_info.channels;
 	sound_params->rate = data->snd_info.samplerate;
-
-#ifdef HAVE_SNDFILE_BYTERATE
-	data->bitrate = sf_current_byterate (data->sndfile);
-	if (data->bitrate > 0)
-		data->bitrate = data->bitrate * 8 / 1000;
-#endif
 
 #ifdef INTERNAL_FLOAT
 	switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
@@ -265,11 +261,10 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 	case SF_FORMAT_DOUBLE:
 	case SF_FORMAT_VORBIS:
 		sound_params->fmt = SFMT_FLOAT;
-		return sf_readf_float (data->sndfile, (float *)buf,
-		       buf_len / sizeof(float) / data->snd_info.channels) *
-		       sizeof(float) * data->snd_info.channels;
+		use_float = 1;
 	}
 #endif
+
 	switch (sizeof(int)) {
 	case 4:
 		sound_params->fmt = SFMT_S32 | SFMT_NE;
@@ -281,12 +276,24 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 		logit("sizeof(int)=%d is not supported. Please report this error. Falling back to float decoding.",
 		      (int)sizeof(int));
 		sound_params->fmt = SFMT_FLOAT;
-		return sf_readf_float (data->sndfile, (float *)buf, buf_len /
-			   sizeof(float) / data->snd_info.channels) *
-			   sizeof(float) * data->snd_info.channels;
+		use_float = 1;
 	}
-	return sf_readf_int (data->sndfile, (int *)buf, buf_len / sizeof(int)
-	       / data->snd_info.channels) * sizeof(int) * data->snd_info.channels;
+
+	if (use_float)
+		res = sf_readf_float (data->sndfile, (float *)buf, buf_len /
+		      sizeof(float) / data->snd_info.channels) *
+		      sizeof(float) * data->snd_info.channels;
+	else
+        res = sf_readf_int (data->sndfile, (int *)buf, buf_len / sizeof(int) /
+	          data->snd_info.channels) * sizeof(int) * data->snd_info.channels;
+
+#ifdef HAVE_SNDFILE_BYTERATE
+	data->bitrate = sf_current_byterate (data->sndfile);
+	if (data->bitrate > 0)
+		data->bitrate = data->bitrate * 8 / 1000;
+#endif
+
+	return res;
 }
 
 static int sndfile_get_bitrate (void *void_data)
