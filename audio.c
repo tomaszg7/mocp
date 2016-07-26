@@ -47,6 +47,9 @@
 #ifdef HAVE_JACK
 # include "jack.h"
 #endif
+#ifdef HAVE_LIBAO
+# include "libao_out.h"
+#endif
 
 #include "softmixer.h"
 #include "equalizer.h"
@@ -1038,6 +1041,15 @@ static void find_working_driver (lists_t_strs *drivers, struct hw_funcs *funcs)
 			moc_jack_funcs (funcs);
 			printf ("Trying JACK...\n");
 			if (funcs->init(&hw_caps))
+				return;
+		}
+#endif
+
+#ifdef HAVE_LIBAO
+		if(!strcasecmp(name, "ao")) {
+			libao_funcs (funcs);
+			printf ("Trying libao...\n");
+			if(funcs->init(&hw_caps))
 				return;
 		}
 #endif

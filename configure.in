@@ -241,6 +241,19 @@ then
 			  [true])
 fi
 
+AC_ARG_WITH(ao, AS_HELP_STRING(--without-ao, Compile without libao support.))
+
+if test "x$with_ao" != "xno"
+then
+	PKG_CHECK_MODULES(AO, [ao],
+			  [SOUND_DRIVERS="$SOUND_DRIVERS LIBAO"
+			   EXTRA_OBJS="$EXTRA_OBJS libao_out.o"
+			   AC_DEFINE([HAVE_LIBAO], 1, [Define if you have libao.])
+			   EXTRA_LIBS="$EXTRA_LIBS $AO_LIBS"
+			   CFLAGS="$CFLAGS $AO_CFLAGS"],
+			  [true])
+fi
+
 AC_SUBST([SOUNDDRIVER])
 case "$host_os" in
 	openbsd*) SOUNDDRIVER="SNDIO:JACK:OSS";;

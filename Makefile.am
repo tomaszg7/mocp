@@ -78,7 +78,9 @@ EXTRA_mocp_SOURCES = \
 		     io_curl.c \
 		     io_curl.h \
 		     jack.c \
-		     jack.h
+		     jack.h \
+			 libao_out.c \
+			 libao_out.h
 man_MANS = mocp.1
 mocp_LDADD = @EXTRA_OBJS@ -lltdl -lm
 mocp_DEPENDENCIES = @EXTRA_OBJS@
