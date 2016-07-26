@@ -34,11 +34,9 @@ static struct sound_params params;
 
 static int libao_init (struct output_driver_caps *caps)
 {
-	assert (caps != NULL);
+	ao_info *device_info;
 
-	caps->formats = SFMT_S8 | SFMT_S16 | SFMT_NE;
-	caps->min_channels = 1;
-	caps->max_channels = 6;
+	assert (caps != NULL);
 
 	/** Call ao_initalize */
 	ao_initialize( );
@@ -52,7 +50,31 @@ static int libao_init (struct output_driver_caps *caps)
 		return 0;
 	}
 
-	logit( "Found libao device = %d.", output_id );
+	device_info = ao_driver_info (output_id);
+	logit( "Found libao device = %d: %s.", output_id, device_info->name);
+
+	if (device_info->type == AO_TYPE_FILE) {
+		error( "Output to file with libao not implemented." );
+		ao_shutdown( );
+		return 0;
+	}
+
+	caps->min_channels = 1;
+	caps->max_channels = 6;
+	caps->formats = SFMT_S8 | SFMT_S16;
+
+	switch (device_info->preferred_byte_format) {
+		case AO_FMT_LITTLE:
+			caps->formats |= SFMT_LE;
+			break;
+		case AO_FMT_BIG:
+			caps->formats |= SFMT_BE;
+			break;
+		default:
+			caps->formats |= SFMT_NE;
+			break;
+	}
+
 	return 1;
 }
 
@@ -69,7 +91,7 @@ static int libao_open (struct sound_params *sound_params)
 	assert( output_device == NULL );
 
 	/** Open */
-	format.byte_format = AO_FMT_NATIVE;
+	format.byte_format = ao_driver_info (output_id) -> preferred_byte_format;
 	format.matrix = NULL;
 	format.rate = sound_params->rate;
 	format.channels = sound_params->channels;
