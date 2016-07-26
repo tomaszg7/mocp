@@ -589,6 +589,8 @@ void options_init ()
 	add_str  ("ALSAMixer1", "PCM", CHECK_NONE);
 	add_str  ("ALSAMixer2", "Master", CHECK_NONE);
 
+	add_str  ("AODevice", NULL, CHECK_NONE);
+
 	add_bool ("Softmixer_SaveState", true);
 	add_bool ("Equalizer_SaveState", true);
 

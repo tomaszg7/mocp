@@ -24,6 +24,7 @@
 
 #include "common.h"
 #include "audio.h"
+#include "options.h"
 #include "log.h"
 
 
@@ -35,16 +36,25 @@ static struct sound_params params;
 static int libao_init (struct output_driver_caps *caps)
 {
 	ao_info *device_info;
+	char *device;
 
 	assert (caps != NULL);
 
 	/** Call ao_initalize */
 	ao_initialize( );
 
-
-	/** Check to see if we have a default device */
-	if( ( output_id = ao_default_driver_id( ) ) == -1 )
-	{
+	device = options_get_str("AODevice");
+	/** Check if there is option selecting a device */
+	if (device) {
+		if( ( output_id = ao_driver_id(device) ) == -1 ) {
+			error( "Failed to open device %s for libao output.", device);
+			      ao_shutdown( );
+			return 0;
+		}
+	}
+	else
+	/** Check if default device is available */
+	if( ( output_id = ao_default_driver_id( ) ) == -1 ) {
 		error( "Failed to find default device for libao output." );
 		ao_shutdown( );
 		return 0;
