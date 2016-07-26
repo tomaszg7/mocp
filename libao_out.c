@@ -198,7 +198,7 @@ static void libao_toggle_mixer_channel ()
 
 static char *libao_get_mixer_channel_name ()
 {
-	return xstrdup ("moc");
+	return xstrdup ("Dummy mixer");
 }
 
 void libao_funcs (struct hw_funcs *funcs)
