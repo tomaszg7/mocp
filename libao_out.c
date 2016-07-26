@@ -60,8 +60,8 @@ static int libao_init (struct output_driver_caps *caps)
 	}
 
 	caps->min_channels = 1;
-	caps->max_channels = 6;
-	caps->formats = SFMT_S8 | SFMT_S16;
+	caps->max_channels = 100;
+	caps->formats = SFMT_S8 | SFMT_S16 | SFMT_S32;
 
 	switch (device_info->preferred_byte_format) {
 		case AO_FMT_LITTLE:
@@ -97,10 +97,12 @@ static int libao_open (struct sound_params *sound_params)
 	format.channels = sound_params->channels;
 	params = *sound_params;
 
-	if( sound_params->fmt & SFMT_S8 || sound_params->fmt & SFMT_U8 )
+	if( sound_params->fmt & SFMT_S8 )
 			format.bits = 8;
-	else if( sound_params->fmt & SFMT_S16 || sound_params->fmt & SFMT_U16 )
+	else if( sound_params->fmt & SFMT_S16 )
 			format.bits = 16;
+	else if( sound_params->fmt & SFMT_S32 )
+			format.bits = 32;
 
 	if( ( output_device = ao_open_live( output_id, &format, NULL ) ) == NULL )
 	{
