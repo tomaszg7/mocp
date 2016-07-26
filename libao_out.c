@@ -104,7 +104,26 @@ static int libao_open (struct sound_params *sound_params)
 
 	if( ( output_device = ao_open_live( output_id, &format, NULL ) ) == NULL )
 	{
-		logit( "Failed to open libao output device." );
+		const char *result;
+
+		switch (errno) {
+			case AO_ENODRIVER:
+				result = "No driver corresponds to driver_id.";
+				break;
+			case AO_ENOTLIVE:
+				result = "This driver is not a live output device.";
+				break;
+			case AO_EBADOPTION:
+				result = "A valid option key has an invalid value.";
+				break;
+			case AO_EOPENDEVICE:
+				result = "Cannot open the device (for example, if /dev/dsp cannot be opened for writing).";
+				break;
+			case AO_EFAIL:
+			default:
+				result = "Unknown error.";
+		}
+		logit( "Failed to open libao output device: %s", result );
 		return 0;
 	}
 
