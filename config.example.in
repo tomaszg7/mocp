@@ -405,9 +405,10 @@
 #
 #ResampleMethod = Linear
 
-# Always use this sample rate (in Hz) when opening the audio device (and
-# resample the sound if necessary).  When set to 0 the device is opened
-# with the file's rate.
+# Enable resample. When set to 1 resampling is done when necessary. When set
+# to 2, resampling is forced on to MaxSamplerate. When set to 0 the device is
+# opened with the file's rate.
+#EnableResample = 0
 #ForceSampleRate = 0
 
 # Forbid MOC from using listed audio formats. Useful when your soundcard 
