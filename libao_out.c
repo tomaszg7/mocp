@@ -148,7 +148,7 @@ static int libao_play (const char *buff, const size_t size)
 	int ret;
 	assert (output_device != NULL);
 
-	logit("Playing buffer, %d bytes.", size);
+	logit("Playing buffer, %d bytes.", (int)size);
 
 	ret = ao_play (output_device, (void*)buff, size);
 	logit("Result = %d.", ret);
@@ -173,7 +173,7 @@ static int libao_read_mixer ()
 	return 100;
 }
 
-static void libao_set_mixer (int vol)
+static void libao_set_mixer (int vol ATTR_UNUSED)
 {
 }
 
