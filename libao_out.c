@@ -148,7 +148,7 @@ static int libao_play (const char *buff, const size_t size)
 	int ret;
 	assert (output_device != NULL);
 
-	logit("Playing buffer, %d bytes.", (int)size);
+	logit("Playing buffer, %zu bytes.", size);
 
 	ret = ao_play (output_device, (void*)buff, size);
 	logit("Result = %d.", ret);
