@@ -331,6 +331,9 @@ void softmixer_process_buffer(char *buf, size_t size, const struct sound_params 
       if(do_monomix)
         mix_mono_float((float *)buf, sound_params->channels, size / sizeof(float));
       break;
+    default:
+      debug ("No softmixer/monomixer for chosen format.");
+
   }
 }
 
