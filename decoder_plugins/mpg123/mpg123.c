@@ -208,7 +208,7 @@ static void mpg123_open_stream_internal (struct mpg123_data *data)
 				mpg123_format(data->mf, rates[i], MPG123_MONO|MPG123_STEREO,
 				              MPG123_ENC_SIGNED_32);
 				data->encoding = SFMT_S32|SFMT_NE;
-				debug("TG: unsupported sizeof(float): %d, falling back to S32",
+				debug("TG: unsupported sizeof(float): %zu, falling back to S32",
 				      sizeof(float));
 				break;
 			}
