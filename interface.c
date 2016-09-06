@@ -3528,7 +3528,18 @@ void init_interface (const int sock, const int logging, lists_t_strs *args)
 	signal (SIGINT, sig_interrupt);
 
 #ifdef SIGWINCH
-	signal (SIGWINCH, sig_winch);
+	//signal (SIGWINCH, sig_winch);
+	{
+
+		struct sigaction act;
+
+		act.sa_handler = sig_winch;
+		act.sa_flags = 0;
+		sigemptyset (&act.sa_mask);
+
+		if (sigaction(SIGWINCH, &act, 0) == -1)
+			fatal ("sigaction() failed: %s", xstrerror (errno));
+	}
 #endif
 
 	if (!lists_strs_empty (args)) {
