@@ -62,6 +62,7 @@
 struct ffmpeg_data
 {
 	AVFormatContext *ic;
+	AVIOContext *pb;
 	AVStream *stream;
 	AVCodecContext *enc;
 	AVCodec *codec;
@@ -226,9 +227,7 @@ static void load_audio_extns (lists_t_strs *list)
 		{"vgz", "libgme"},
 		{"vqf", "vqf"},
 		{"wav", "wav"},
-#if defined(LIBAV) || LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(54,59,103)
 		{"w64", "w64"},
-#endif
 		{"wma", "asf"},
 		{"wv", "wv"},
 		{NULL, NULL}
@@ -370,8 +369,12 @@ static void ffmpeg_init ()
 	load_video_extns (supported_extns);
 
 	rc = av_lockmgr_register (locking_cb);
-	if (rc < 0)
-		fatal ("Lock manager initialisation failed");
+	if (rc < 0) {
+		char buf[128];
+
+		av_strerror (rc, buf, sizeof (buf));
+		fatal ("Lock manager initialisation failed: %s", buf);
+	}
 }
 
 static void ffmpeg_destroy ()
@@ -396,15 +399,21 @@ static void ffmpeg_info (const char *file_name,
 
 	err = avformat_open_input (&ic, file_name, NULL, NULL);
 	if (err < 0) {
+		char buf[128];
+
 		ffmpeg_log_repeats (NULL);
-		logit ("avformat_open_input() failed (%d)", err);
+		av_strerror (err, buf, sizeof (buf));
+		logit ("avformat_open_input() failed: %s", buf);
 		return;
 	}
 
 	err = avformat_find_stream_info (ic, NULL);
 	if (err < 0) {
+		char buf[128];
+
 		ffmpeg_log_repeats (NULL);
-		logit ("avformat_find_stream_info() failed (%d)", err);
+		av_strerror (err, buf, sizeof (buf));
+		logit ("avformat_find_stream_info() failed: %s", buf);
 		goto end;
 	}
 
@@ -497,18 +506,20 @@ static bool is_seek_broken (struct ffmpeg_data *data)
 		return true;
 	}
 
-	/* ASF/MP2 (.wma): Seeks outside of file. */
-	if (!strcmp (data->ic->iformat->name, "asf") &&
-	    data->codec->id == AV_CODEC_ID_MP2)
-		return true;
-
 #if !SEEK_IN_DECODER
 	/* FLV (.flv): av_seek_frame always returns an error (even on success).
 	 *             Seeking from the decoder works for false errors (but
 	 *             probably not for real ones) because the player doesn't
 	 *             get to see them. */
-	if (!strcmp (data->ic->iformat->name, "flv"))
-		return true;
+# ifdef HAVE_FFMPEG
+	if (avcodec_version () < AV_VERSION_INT(55,8,100))
+# else
+	if (avcodec_version () < AV_VERSION_INT(55,57,1))
+# endif
+	{
+		if (!strcmp (data->ic->iformat->name, "flv"))
+			return true;
+	}
 #endif
 
 	return false;
@@ -536,6 +547,10 @@ static int64_t ffmpeg_io_seek_cb (void *s, int64_t offset, int whence)
 	int w;
 	int64_t result = -1;
 
+	/* Warning: Do not blindly accept the avio.h comments for AVSEEK_FORCE
+	 *          and AVSEEK_SIZE; they are incorrect for later FFmpeg/LibAV
+	 *          versions. */
+
 	w = whence & ~AVSEEK_FORCE;
 
 	switch (w) {
@@ -559,6 +574,7 @@ static struct ffmpeg_data *ffmpeg_make_data (void)
 	data = (struct ffmpeg_data *)xmalloc (sizeof (struct ffmpeg_data));
 
 	data->ic = NULL;
+	data->pb = NULL;
 	data->stream = NULL;
 	data->enc = NULL;
 	data->codec = NULL;
@@ -598,17 +614,24 @@ static void *ffmpeg_open_internal (struct ffmpeg_data *data)
 	if (!data->ic)
 		fatal ("Can't allocate format context!");
 
-	/* data->ic->pb is freed by FFmpeg on close. */
 	data->ic->pb = avio_alloc_context (NULL, 0, 0, data->iostream,
 	                                   ffmpeg_io_read_cb, NULL,
 	                                   ffmpeg_io_seek_cb);
 	if (!data->ic->pb)
 		fatal ("Can't allocate avio context!");
 
+	/* Save AVIO context pointer so we can workaround an FFmpeg
+	 * memory leak later in ffmpeg_close(). */
+	data->pb = data->ic->pb;
+
 	err = avformat_open_input (&data->ic, NULL, NULL, NULL);
 	if (err < 0) {
+		char buf[128];
+
 		ffmpeg_log_repeats (NULL);
-		decoder_error (&data->error, ERROR_FATAL, 0, "Can't open audio");
+		av_strerror (err, buf, sizeof (buf));
+		decoder_error (&data->error, ERROR_FATAL, 0,
+		               "Can't open audio: %s", buf);
 		return data;
 	}
 
@@ -631,8 +654,11 @@ static void *ffmpeg_open_internal (struct ffmpeg_data *data)
 		/* Depending on the particular FFmpeg/LibAV version in use, this
 		 * may misreport experimental codecs.  Given we don't know the
 		 * codec at this time, we will have to live with it. */
+		char buf[128];
+
+		av_strerror (err, buf, sizeof (buf));
 		decoder_error (&data->error, ERROR_FATAL, 0,
-				"Could not find codec parameters (err %d)", err);
+				"Could not find codec parameters: %s", buf);
 		goto end;
 	}
 
@@ -702,12 +728,8 @@ static void *ffmpeg_open_internal (struct ffmpeg_data *data)
 
 	if (data->timing_broken && extn && !strcasecmp (extn, "wav")) {
 		ffmpeg_log_repeats (NULL);
-#if defined(LIBAV) || LIBAVFORMAT_VERSION_INT < AV_VERSION_INT(54,59,103)
 		decoder_error (&data->error, ERROR_FATAL, 0,
 		                   "Broken WAV file; use W64!");
-#else
-		decoder_error (&data->error, ERROR_FATAL, 0, "Broken WAV file!");
-#endif
 		avcodec_close (data->enc);
 		goto end;
 	}
@@ -920,7 +942,11 @@ static AVPacket *get_packet (struct ffmpeg_data *data)
 		data->eof = true;
 
 	if (!data->eof && rc < 0) {
-		decoder_error (&data->error, ERROR_FATAL, 0, "Error in the stream!");
+		char buf[128];
+
+		av_strerror (rc, buf, sizeof (buf));
+		decoder_error (&data->error, ERROR_FATAL, 0,
+		               "Error in the stream: %s", buf);
 		return NULL;
 	}
 
@@ -1046,8 +1072,11 @@ static bool seek_in_stream (struct ffmpeg_data *data, int sec)
 
 	rc = av_seek_frame (data->ic, data->stream->index, seek_ts, flags);
 	if (rc < 0) {
+		char buf[128];
+
 		ffmpeg_log_repeats (NULL);
-		logit ("Seek error %d", rc);
+		av_strerror (rc, buf, sizeof (buf));
+		logit ("Seek error: %s", buf);
 		return false;
 	}
 
@@ -1173,8 +1202,15 @@ static void ffmpeg_close (void *prv_data)
 {
 	struct ffmpeg_data *data = (struct ffmpeg_data *)prv_data;
 
+	/* We need to delve into the AVIOContext struct to free the
+	 * buffer FFmpeg leaked if avformat_open_input() failed.  Do
+	 * not be tempted to call avio_close() here; it will segfault. */
+	if (data->pb) {
+		av_freep (&data->pb->buffer);
+		av_freep (&data->pb);
+	}
+
 	if (data->okay) {
-		av_freep (&data->ic->pb->buffer);
 		avcodec_close (data->enc);
 		avformat_close_input (&data->ic);
 		free_remain_buf (data);
