@@ -289,6 +289,7 @@ static int alsa_read_mixer_raw (snd_mixer_elem_t *elem, bool raw)
 	if (mixer_handle) {
 		long volume = 0;
 		int nchannels = 0;
+		bool joined;
 		int i;
 		int err;
 
@@ -296,7 +297,9 @@ static int alsa_read_mixer_raw (snd_mixer_elem_t *elem, bool raw)
 
 		handle_mixer_events (mixer_handle);
 
-		for (i = 0; i < SND_MIXER_SCHN_LAST; i++)
+		joined = snd_mixer_selem_has_playback_volume_joined (elem);
+
+		for (i = 0; i < SND_MIXER_SCHN_LAST; i++) {
 			if (snd_mixer_selem_has_playback_channel (elem, i)) {
 				long vol;
 
@@ -311,6 +314,9 @@ static int alsa_read_mixer_raw (snd_mixer_elem_t *elem, bool raw)
 //				logit ("Vol %d: %ld", i, vol);
 				volume += vol;
 			}
+			if (joined)
+				break;
+		}
 
 		if (nchannels > 0)
 			volume /= nchannels;
