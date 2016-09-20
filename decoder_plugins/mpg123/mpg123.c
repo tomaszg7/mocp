@@ -340,12 +340,17 @@ static int mpg123_decodeX (void *prv_data, char *buf, int buf_len, struct sound_
 		if (ret != MPG123_OK && ret != MPG123_DONE && ret != MPG123_NEW_FORMAT) {
 			decoder_error (&data->error, ERROR_STREAM, 0, "Error in the stream: %s",mpg123_plain_strerror (ret));
 			debug ("mpg123 decoder error: %s", mpg123_plain_strerror (ret));
-			continue;
+			if (decoded_bytes == 0)
+				continue; //try to play more
+			else
+				break; //play what you decoded
 		}
 
-		if (decoded_bytes == 0)
+		if (ret == MPG123_DONE)
 			return 0;
-
+ 		else if (decoded_bytes == 0)
+ 			continue;
+		
 		if (ret == MPG123_NEW_FORMAT) {
 			mpg123_getformat (data->mf,&rate,&ch,&enc);
 			debug ("Encoding change: %i, sample rate: %li, channels: %i",enc,rate,ch);
