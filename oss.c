@@ -112,6 +112,18 @@ static int set_capabilities (struct output_driver_caps *caps)
 		caps->formats |= SFMT_S32 | SFMT_BE;
 #endif
 
+#if defined(AFMT_S24_LE) && defined(AFMT_S24_BE)
+	if (format_mask & AFMT_S24_LE)
+		caps->formats |= SFMT_S24 | SFMT_LE;
+	if (format_mask & AFMT_S24_BE)
+		caps->formats |= SFMT_S24 | SFMT_BE;
+#endif
+
+#if defined(AFMT_FLOAT)
+	if (format_mask & AFMT_FLOAT)
+		caps->formats |= SFMT_FLOAT | SFMT_NE;
+#endif
+
 	if (!caps->formats) {
 		/* Workaround for vmix that lies that it doesn't support any
 		 * format. */
@@ -280,12 +292,25 @@ static int oss_set_params ()
 			else
 				req_format = AFMT_S16_BE;
 			break;
+#if defined(AFMT_S24_LE) && defined(AFMT_S24_BE)
+		case SFMT_S24:
+			if (params.fmt & SFMT_LE)
+				req_format = AFMT_S24_LE;
+			else
+				req_format = AFMT_S24_BE;
+			break;
+#endif
 #if defined(AFMT_S32_LE) && defined(AFMT_S32_BE)
 		case SFMT_S32:
 			if (params.fmt & SFMT_LE)
 				req_format = AFMT_S32_LE;
 			else
 				req_format = AFMT_S32_BE;
+			break;
+#endif
+#if defined(AFMT_FLOAT)
+		case SFMT_FLOAT:
+			req_format = AFMT_S32_FLOAT;
 			break;
 #endif
 		default:
