@@ -7,7 +7,7 @@ extern "C" {
 
 #define SOFTMIXER_MIN 0
 /* Allow amplification, might result in clipping... */
-#define SOFTMIXER_MAX 200
+#define SOFTMIXER_MAX 2000
 
 #define SOFTMIXER_NAME "Soft"
 #define SOFTMIXER_NAME_OFF "S.Off"
