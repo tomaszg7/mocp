@@ -30,6 +30,10 @@
 # include <samplerate.h>
 #endif
 
+#ifdef HAVE_SPEEX_RESAMPLER
+#include <speex/speex_resampler.h>
+#endif
+
 #define DEBUG
 
 #include "common.h"
@@ -342,7 +346,6 @@ static void s24_3_to_float (const char *in, float *out,
 #endif
 		in_8+=3;
 	}
-}
 
 static void u24_3_to_float (const char *in, float *out,
 		const size_t samples)
@@ -686,7 +689,17 @@ int audio_conv_new (struct audio_conversion *conv,
 			error ("Resampling disabled!");
 			return 0;
 		}
-#ifdef HAVE_SAMPLERATE
+
+#ifdef HAVE_SPEEX_RESAMPLER
+		int err;
+		int quality = options_get_int ("SpeexResampleQuality");
+		conv->resampler = speex_resampler_init(to->channels, from->rate, to->rate, quality, &err);
+		if (!conv->resampler) {
+			error ("Can't resample with Speex from %dHz to %dHz: %s",
+					from->rate, to->rate, speex_resampler_strerror (err));
+			return 0;
+		}
+/*#ifdef HAVE_SAMPLERATE
 		int err;
 		int resample_type = -1;
 		char *method = options_get_symb ("ResampleMethod");
@@ -709,17 +722,20 @@ int audio_conv_new (struct audio_conversion *conv,
 			error ("Can't resample from %dHz to %dHz: %s",
 					from->rate, to->rate, src_strerror (err));
 			return 0;
-		}
-		logit ("Resampling from %dHz to %dHz using %s",from->rate, to->rate, method);
+		}*/
 #else
 		error ("Resampling not supported!");
 		return 0;
 #endif
 	}
+	else {
 #ifdef HAVE_SAMPLERATE
-	else
 		conv->src_state = NULL;
 #endif
+#ifdef HAVE_SPEEX_RESAMPLER
+		conv->src_state = NULL;
+#endif
+	}
 
 	conv->from = *from;
 	conv->to = *to;
@@ -813,6 +829,23 @@ static float *resample_sound (struct audio_conversion *conv, const float *buf,
 		conv->resample_buf = NULL;
 		conv->resample_buf_nsamples = 0;
 	}
+
+	return output;
+}
+#endif
+
+#ifdef HAVE_SPEEX_RESAMPLER
+static float *speex_resample_sound (struct audio_conversion *conv, const float *buf,
+		const size_t samples, const int nchannels, size_t *resampled_samples)
+{
+	float *output;
+
+	double ratio = conv->to.rate / (double)conv->from.rate;
+	output = (float *)xmalloc (sizeof(float) * (int)(samples * ratio+1));
+	size_t out_len;
+
+	speex_resampler_process_interleaved_float(conv -> resampler, buf, samples, output, out_len);
+
 
 	return output;
 }
@@ -1140,9 +1173,23 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 	}
 
-#ifdef HAVE_SAMPLERATE
+#ifdef 0
+// HAVE_SAMPLERATE
 	if (conv->from.rate != conv->to.rate) {
 		char *new_sound = (char *)resample_sound (conv,
+				(float *)curr_sound,
+				*conv_len / sizeof(float), conv->to.channels,
+				conv_len);
+		*conv_len *= sizeof(float);
+		if (curr_sound != buf)
+			free (curr_sound);
+		curr_sound = new_sound;
+	}
+#endif
+
+#ifdef HAVE_SPEEX_RESAMPLER
+	if (conv->from.rate != conv->to.rate) {
+		char *new_sound = (char *)speex_resample_sound (conv,
 				(float *)curr_sound,
 				*conv_len / sizeof(float), conv->to.channels,
 				conv_len);

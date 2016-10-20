@@ -376,6 +376,21 @@ then
 			   [true])
 fi
 
+dnl samplerate
+AC_ARG_WITH(speexresampler, AS_HELP_STRING([--without-speexresampler],
+                                       [Compile without Speex resampler]))
+COMPILE_SPEEXRESAMPLER="no"
+if test "x$with_speexresampler" != "xno"
+then
+	PKG_CHECK_MODULES(speexdsp, speexdsp >= 1.1,
+			  [EXTRA_LIBS="$EXTRA_LIBS $speexdsp_LIBS"
+			   CFLAGS="$CFLAGS $speexdsp_CFLAGS"
+			   AC_DEFINE([HAVE_SPEEX_RESAMPLER], 1,
+				     [Define if you have Speex resampler])
+			   COMPILE_SPEEXRESAMPLER="yes"],
+			   [true])
+fi
+
 dnl Decoder plugins
 m4_include(decoder_plugins/decoders.m4)
 
@@ -451,6 +466,7 @@ echo "DEBUG:             "$COMPILE_DEBUG
 echo "RCC:               "$COMPILE_RCC
 echo "Network streams:   "$COMPILE_CURL
 echo "Resampling:        "$COMPILE_SAMPLERATE
+echo "Resampling (Speex):"$COMPILE_SPEEXRESAMPLER
 echo "MIME magic:        "$COMPILE_MAGIC
 echo "-----------------------------------------------------------------------"
 echo

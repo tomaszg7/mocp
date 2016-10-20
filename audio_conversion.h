@@ -11,6 +11,10 @@
 # include <samplerate.h>
 #endif
 
+#ifdef HAVE_SPEEX_RESAMPLER
+#include <speex/speex_resampler.h>
+#endif
+
 #include "audio.h"
 
 #ifdef __cplusplus
@@ -24,6 +28,12 @@ struct audio_conversion
 
 #ifdef HAVE_SAMPLERATE
 	SRC_STATE *src_state;
+	float *resample_buf;
+	size_t resample_buf_nsamples; /* in samples ( sizeof(float) ) */
+#endif
+
+#ifdef HAVE_SPEEX_RESAMPLER
+	SpeexResamplerState *speex_resampler;
 	float *resample_buf;
 	size_t resample_buf_nsamples; /* in samples ( sizeof(float) ) */
 #endif
