@@ -824,10 +824,8 @@ int audio_open (struct sound_params *sound_params)
 
 	switch (options_get_int("EnableResample")) {
 		case 2:
-			if (max_rate == 0) {
-				logit ("You need to set MaxSamplerate when EnableResample is set to 2");
-				return 0;
-			}
+			assert (max_rate > 0);
+
 			driver_sound_params.rate = max_rate;
 			logit ("Setting forced output sample.");
 			break;

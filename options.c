@@ -989,6 +989,9 @@ static void sanity_check ()
 {
 	if (options_get_int ("Prebuffering") > options_get_int ("InputBuffer"))
 		fatal ("Prebuffering is set to a value greater than InputBuffer!");
+
+	if ((options_get_int("EnableResample") == 2) && (options_get_int("MaxSamplerate") == 0))
+		fatal ("You need to set MaxSamplerate when EnableResample is set to 2.");
 }
 
 /* Parse the configuration file. */
