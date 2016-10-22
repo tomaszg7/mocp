@@ -833,7 +833,7 @@ int audio_open (struct sound_params *sound_params)
 			break;
 		case 1:
 			max_rate = (max_rate == 0) || (hw_caps.max_rate < max_rate) ? hw_caps.max_rate : max_rate;
-			driver_sound_params.rate = CLAMP(req_sound_params.rate,hw_caps.min_rate,max_rate);
+			driver_sound_params.rate = CLAMP(hw_caps.min_rate,req_sound_params.rate,max_rate);
 			break;
 		default:
 			driver_sound_params.rate = req_sound_params.rate;
