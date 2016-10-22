@@ -705,7 +705,7 @@ void options_init ()
 	                 CHECK_SYMBOL(4), "FIR", "SPLINE", "LINEAR", "NEAREST");
 	add_int  ("ModPlug_Channels", 2, CHECK_DISCRETE(2), 1, 2);
 	add_int  ("ModPlug_Bits", 16, CHECK_DISCRETE(3), 8, 16, 32);
-	add_int  ("ModPlug_Frequency", 44100,
+	add_int  ("ModPlug_Frequency", 48000,
 	                 CHECK_DISCRETE(4), 11025, 22050, 44100, 48000);
 	add_int  ("ModPlug_ReverbDepth", 0, CHECK_RANGE(1), 0, 100);
 	add_int  ("ModPlug_ReverbDelay", 0, CHECK_RANGE(1), 0, INT_MAX);
@@ -715,8 +715,7 @@ void options_init ()
 	add_int  ("ModPlug_SurroundDelay", 0, CHECK_RANGE(1), 0, INT_MAX);
 	add_int  ("ModPlug_LoopCount", 0, CHECK_RANGE(1), -1, INT_MAX);
 
-	add_int  ("TiMidity_Rate", 44100, CHECK_RANGE(1), 8000, 48000);
-		// not sure about the limits... I like 44100
+	add_int  ("TiMidity_Rate", 48000, CHECK_RANGE(1), 8000, 48000);
 	add_int  ("TiMidity_Bits", 16, CHECK_DISCRETE(2), 8, 16);
 	add_int  ("TiMidity_Channels", 2, CHECK_DISCRETE(2), 1, 2);
 	add_int  ("TiMidity_Volume", 100, CHECK_RANGE(1), 0, 800);
@@ -727,7 +726,7 @@ void options_init ()
 	add_int  ("SidPlay2_MinimumSongLength", 0,
 	                 CHECK_RANGE(1), 0, INT_MAX);
 	add_str  ("SidPlay2_Database", NULL, CHECK_NONE);
-	add_int  ("SidPlay2_Frequency", 44100, CHECK_RANGE(1), 4000, 48000);
+	add_int  ("SidPlay2_Frequency", 48000, CHECK_RANGE(1), 4000, 48000);
 	add_int  ("SidPlay2_Bits", 16, CHECK_DISCRETE(2), 8, 16);
 	add_int  ("SidPlay2_Optimisation", 0, CHECK_RANGE(1), 0, 2);
 	add_symb ("SidPlay2_PlayMode", "M",

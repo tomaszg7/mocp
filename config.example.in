@@ -601,7 +601,7 @@
 # (Note that the 32 bit sample size seems to be buggy.)
 #ModPlug_Channels = 2               # 1 or 2 channels
 #ModPlug_Bits = 16                  # 8, 16 or 32 bits
-#ModPlug_Frequency = 44100          # 11025, 22050, 44100 or 48000 Hz
+#ModPlug_Frequency = 48000          # 11025, 22050, 44100 or 48000 Hz
 #ModPlug_ReverbDepth = 0            # 0 (quiet) to 100 (loud)
 #ModPlug_ReverbDelay = 0            # Delay in ms (usually 40-200ms)
 #ModPlug_BassAmount = 0             # 0 (quiet) to 100 (loud).
@@ -611,7 +611,7 @@
 #ModPlug_LoopCount = 0              # 0 (never), n (times) or -1 (forever)
 
 # Self-describing TiMidity audio characteristic options.
-#TiMidity_Rate = 44100              # Between 8000 and 48000
+#TiMidity_Rate = 48000              # Between 8000 and 48000
 #TiMidity_Bits = 16                 # 8 or 16
 #TiMidity_Channels = 2              # 1 or 2
 #TiMidity_Volume = 100              # 0 to 800
@@ -626,7 +626,7 @@
 # Self-describing SidPlay2 audio characteristic options.
 #SidPlay2_DefaultSongLength = 180   # If not in database (in seconds)
 #SidPlay2_MinimumSongLength = 0     # Play at least n (in seconds)
-#SidPlay2_Frequency = 44100         # 4000 to 48000
+#SidPlay2_Frequency = 48000         # 4000 to 48000
 #SidPlay2_Bits = 16                 # 8 or 16
 #SidPlay2_Optimisation = 0          # 0 (worst quality) to 2 (best quality)
 
