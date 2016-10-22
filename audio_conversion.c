@@ -710,6 +710,7 @@ int audio_conv_new (struct audio_conversion *conv,
 					from->rate, to->rate, src_strerror (err));
 			return 0;
 		}
+		logit ("Resampling from %dHz to %dHz using %s",from->rate, to->rate, method);
 #else
 		error ("Resampling not supported!");
 		return 0;

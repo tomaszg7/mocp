@@ -824,28 +824,23 @@ int audio_open (struct sound_params *sound_params)
 
 	switch (options_get_int("EnableResample")) {
 		case 2:
-			driver_sound_params.rate = max_rate;
-			if (driver_sound_params.rate == 0) {
+			if (max_rate == 0) {
 				logit ("You need to set MaxSamplerate when EnableResample is set to 2");
 				return 0;
 			}
-			logit ("Setting forced output sample rate to %dHz", max_rate);
+			driver_sound_params.rate = max_rate;
+			logit ("Setting forced output sample.");
 			break;
 		case 1:
-			if (((max_rate > 0) && (req_sound_params.rate > max_rate)) ||
-			   (req_sound_params.rate > hw_caps.max_rate) ||
-			   (req_sound_params.rate < hw_caps.min_rate)) {
-				driver_sound_params.rate = CLAMP(req_sound_params.rate,hw_caps.min_rate,
-				MAX(hw_caps.max_rate,options_get_int("MaxSamplerate")));
-				logit ("Enabling resampling to %dHz", driver_sound_params.rate);
-			}
+			max_rate = (max_rate == 0) || (hw_caps.max_rate < max_rate) ? hw_caps.max_rate : max_rate;
+			driver_sound_params.rate = CLAMP(req_sound_params.rate,hw_caps.min_rate,max_rate);
 			break;
 		default:
 			driver_sound_params.rate = req_sound_params.rate;
 	}
+	logit ("Requested sample rate: %dHz, output sample rate: %dHz", req_sound_params.rate, driver_sound_params.rate);
 
-	driver_sound_params.fmt = sfmt_best_matching (hw_caps.formats,
-			req_sound_params.fmt);
+	driver_sound_params.fmt = sfmt_best_matching (hw_caps.formats, req_sound_params.fmt);
 
 	/* number of channels */
 	driver_sound_params.channels = CLAMP(hw_caps.min_channels,
