@@ -346,6 +346,7 @@ static void s24_3_to_float (const char *in, float *out,
 #endif
 		in_8+=3;
 	}
+}
 
 static void u24_3_to_float (const char *in, float *out,
 		const size_t samples)
@@ -693,12 +694,13 @@ int audio_conv_new (struct audio_conversion *conv,
 #ifdef HAVE_SPEEX_RESAMPLER
 		int err;
 		int quality = options_get_int ("SpeexResampleQuality");
-		conv->resampler = speex_resampler_init(to->channels, from->rate, to->rate, quality, &err);
-		if (!conv->resampler) {
+		conv->speex_resampler = speex_resampler_init(to->channels, from->rate, to->rate, quality, &err);
+		if (!conv->speex_resampler) {
 			error ("Can't resample with Speex from %dHz to %dHz: %s",
 					from->rate, to->rate, speex_resampler_strerror (err));
 			return 0;
 		}
+		logit ("Speex resampler initialized from %dHz to %dHz for %d channels, quality: %d, error: %d", from->rate, to->rate, to->channels, quality, err);
 /*#ifdef HAVE_SAMPLERATE
 		int err;
 		int resample_type = -1;
@@ -729,10 +731,7 @@ int audio_conv_new (struct audio_conversion *conv,
 #endif
 	}
 	else {
-#ifdef HAVE_SAMPLERATE
-		conv->src_state = NULL;
-#endif
-#ifdef HAVE_SPEEX_RESAMPLER
+#ifdef HAVE_RESAMPLER
 		conv->src_state = NULL;
 #endif
 	}
@@ -740,7 +739,7 @@ int audio_conv_new (struct audio_conversion *conv,
 	conv->from = *from;
 	conv->to = *to;
 
-#ifdef HAVE_SAMPLERATE
+#ifdef HAVE_RESAMPLER
 	conv->resample_buf = NULL;
 	conv->resample_buf_nsamples = 0;
 #endif
@@ -839,14 +838,30 @@ static float *speex_resample_sound (struct audio_conversion *conv, const float *
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
 	float *output;
+	int err;
 
 	double ratio = conv->to.rate / (double)conv->from.rate;
-	output = (float *)xmalloc (sizeof(float) * (int)(samples * ratio+1));
-	size_t out_len;
+	*resampled_samples = (int)(ratio * samples + 10);
+	output = (float *)xmalloc (sizeof(float) * *resampled_samples);
 
-	speex_resampler_process_interleaved_float(conv -> resampler, buf, samples, output, out_len);
+	debug ("TG: ratio: %f, samples: %zu, channels: %d, resampled_samples %zu",ratio,samples,nchannels,*resampled_samples);
 
+	spx_uint32_t in_len = samples/nchannels;
+	spx_uint32_t out_len = *resampled_samples/nchannels;
 
+	err = speex_resampler_process_interleaved_float(conv -> speex_resampler, buf, &in_len, output, &out_len);
+
+	if (err > 0) {
+		debug ("TG: resampler error %s!",speex_resampler_strerror (err));
+	}
+
+	debug ("TG: processed %zu input samples, got %zu output samples", (size_t)in_len*nchannels, (size_t)out_len*nchannels);
+
+	if (in_len != samples/nchannels) {
+		debug ("TG: some samples not processed!");
+	}
+
+	*resampled_samples = out_len*nchannels;
 	return output;
 }
 #endif
@@ -1156,7 +1171,6 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		logit ("Fast conversion: 32bit -> 16bit!");
 	}
 
-	
 	/* convert to float if necessary */
 	if ((conv->from.rate != conv->to.rate
 				|| (conv->to.fmt & SFMT_MASK_FORMAT) == SFMT_FLOAT
@@ -1173,7 +1187,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 	}
 
-#ifdef 0
+#if 0
 // HAVE_SAMPLERATE
 	if (conv->from.rate != conv->to.rate) {
 		char *new_sound = (char *)resample_sound (conv,

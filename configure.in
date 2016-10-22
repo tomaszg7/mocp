@@ -372,11 +372,13 @@ then
 			   CFLAGS="$CFLAGS $samplerate_CFLAGS"
 			   AC_DEFINE([HAVE_SAMPLERATE], 1,
 				     [Define if you have libsamplerate])
+			   AC_DEFINE([HAVE_RESAMPLER], 1,
+				     [Define if you have any resampler])
 			   COMPILE_SAMPLERATE="yes"],
 			   [true])
 fi
 
-dnl samplerate
+dnl speexresampler
 AC_ARG_WITH(speexresampler, AS_HELP_STRING([--without-speexresampler],
                                        [Compile without Speex resampler]))
 COMPILE_SPEEXRESAMPLER="no"
@@ -387,6 +389,8 @@ then
 			   CFLAGS="$CFLAGS $speexdsp_CFLAGS"
 			   AC_DEFINE([HAVE_SPEEX_RESAMPLER], 1,
 				     [Define if you have Speex resampler])
+			   AC_DEFINE([HAVE_RESAMPLER], 1,
+				     [Define if you have any resampler])
 			   COMPILE_SPEEXRESAMPLER="yes"],
 			   [true])
 fi
