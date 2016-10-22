@@ -656,7 +656,9 @@ void options_init ()
 	                 "spx(speex)",
 	                 CHECK_FUNCTION);
 
-	add_symb ("ResampleMethod", "Linear",
+	add_symb ("ResampleLibrary", "SRC",
+	                 CHECK_SYMBOL(2), "SRC", "Speex");
+	add_symb ("SRCResampleMethod", "Linear",
 	                 CHECK_SYMBOL(5), "SincBestQuality", "SincMediumQuality",
 	                                  "SincFastest", "ZeroOrderHold", "Linear");
 	add_int  ("SpeexResampleQuality", 3, CHECK_RANGE(1), 0, 10);

@@ -385,6 +385,9 @@
 #PreferredDecoders += opus(opus,ffmpeg)
 #PreferredDecoders += spx(speex)
 
+# Which resampling library to use. Possible choices: SRC (libsamplerate) and Speex
+#ResampleLibrary = SRC
+
 # Which resampling method to use.  There are a few methods of resampling
 # sound supported by libresamplerate.  The default is 'Linear') which is
 # also the fastest.  A better description can be found at:
@@ -407,6 +410,13 @@
 #    Linear - a bit better and a bit slower.
 #
 #ResampleMethod = Linear
+
+# Quality of Speex resampler (0 to 10). Using a higher quality setting means
+# less noise/aliasing and higher complexity. Usually, a quality of 3 is
+# acceptable for most desktop uses and quality 10 is mostly recommended for
+# pro audio work. Quality 0 usually has a decent sound (certainly better than
+# using linear interpolation resampling), but artifacts may be heard.
+#SpeexResampleQuality = 3
 
 # Enable resample. When set to 1 resampling is done when necessary. When set
 # to 2, resampling is forced on to MaxSamplerate. When set to 0 the device is

@@ -690,49 +690,60 @@ int audio_conv_new (struct audio_conversion *conv,
 			error ("Resampling disabled!");
 			return 0;
 		}
-
+		if (!strcasecmp(options_get_symb("ResampleLibrary"),"Speex")) {
 #ifdef HAVE_SPEEX_RESAMPLER
-		int err;
-		int quality = options_get_int ("SpeexResampleQuality");
-		conv->speex_resampler = speex_resampler_init(to->channels, from->rate, to->rate, quality, &err);
-		if (!conv->speex_resampler) {
-			error ("Can't resample with Speex from %dHz to %dHz: %s",
-					from->rate, to->rate, speex_resampler_strerror (err));
-			return 0;
-		}
-		logit ("Speex resampler initialized from %dHz to %dHz for %d channels, quality: %d, error: %d", from->rate, to->rate, to->channels, quality, err);
-/*#ifdef HAVE_SAMPLERATE
-		int err;
-		int resample_type = -1;
-		char *method = options_get_symb ("ResampleMethod");
-
-		if (!strcasecmp(method, "SincBestQuality"))
-			resample_type = SRC_SINC_BEST_QUALITY;
-		else if (!strcasecmp(method, "SincMediumQuality"))
-			resample_type = SRC_SINC_MEDIUM_QUALITY;
-		else if (!strcasecmp(method, "SincFastest"))
-			resample_type = SRC_SINC_FASTEST;
-		else if (!strcasecmp(method, "ZeroOrderHold"))
-			resample_type = SRC_ZERO_ORDER_HOLD;
-		else if (!strcasecmp(method, "Linear"))
-			resample_type = SRC_LINEAR;
-		else
-			fatal ("Bad ResampleMethod option: %s", method);
-
-		conv->src_state = src_new (resample_type, to->channels, &err);
-		if (!conv->src_state) {
-			error ("Can't resample from %dHz to %dHz: %s",
-					from->rate, to->rate, src_strerror (err));
-			return 0;
-		}*/
+			int err;
+			int quality = options_get_int ("SpeexResampleQuality");
+			conv->speex_resampler = speex_resampler_init(to->channels, from->rate, to->rate, quality, &err);
+			if (!conv->speex_resampler) {
+				error ("Can't resample with Speex from %dHz to %dHz: %s",
+						from->rate, to->rate, speex_resampler_strerror (err));
+				return 0;
+			}
+			logit ("Speex resampler initialized, resampling from %dHz to %dHz for %d channels, quality: %d", from->rate, to->rate, to->channels, quality);
 #else
-		error ("Resampling not supported!");
-		return 0;
+			error ("Speex resampling disabled!");
+			return 0;
 #endif
+		}
+		else {
+#ifdef HAVE_SAMPLERATE
+			int err;
+			int resample_type = -1;
+			char *method = options_get_symb ("SRCResampleMethod");
+
+			if (!strcasecmp(method, "SincBestQuality"))
+				resample_type = SRC_SINC_BEST_QUALITY;
+			else if (!strcasecmp(method, "SincMediumQuality"))
+				resample_type = SRC_SINC_MEDIUM_QUALITY;
+			else if (!strcasecmp(method, "SincFastest"))
+				resample_type = SRC_SINC_FASTEST;
+			else if (!strcasecmp(method, "ZeroOrderHold"))
+				resample_type = SRC_ZERO_ORDER_HOLD;
+			else if (!strcasecmp(method, "Linear"))
+				resample_type = SRC_LINEAR;
+			else
+				fatal ("Bad ResampleMethod option: %s", method);
+
+			conv->src_state = src_new (resample_type, to->channels, &err);
+			if (!conv->src_state) {
+				error ("Can't resample from %dHz to %dHz: %s",
+						from->rate, to->rate, src_strerror (err));
+				return 0;
+			}
+			logit ("SRC resampler initialized, resampling from %dHz to %dHz for %d channels, method: %s", from->rate, to->rate, to->channels, method);
+#else
+			error ("SRC resampling not supported!");
+			return 0;
+#endif
+		}
 	}
 	else {
-#ifdef HAVE_RESAMPLER
+#ifdef HAVE_SAMPLERATE
 		conv->src_state = NULL;
+#endif
+#ifdef HAVE_SPEEX_RESAMPLER
+		conv->speex_resampler = NULL;
 #endif
 	}
 
@@ -748,7 +759,7 @@ int audio_conv_new (struct audio_conversion *conv,
 }
 
 #ifdef HAVE_SAMPLERATE
-static float *resample_sound (struct audio_conversion *conv, const float *buf,
+static float *src_resample_sound (struct audio_conversion *conv, const float *buf,
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
 	SRC_DATA resample_data;
@@ -1187,10 +1198,9 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 	}
 
-#if 0
-// HAVE_SAMPLERATE
-	if (conv->from.rate != conv->to.rate) {
-		char *new_sound = (char *)resample_sound (conv,
+#if HAVE_SAMPLERATE
+	if (!strcasecmp(options_get_symb("ResampleLibrary"),"SRC") && (conv->from.rate != conv->to.rate)) {
+		char *new_sound = (char *)src_resample_sound (conv,
 				(float *)curr_sound,
 				*conv_len / sizeof(float), conv->to.channels,
 				conv_len);
@@ -1202,7 +1212,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 #endif
 
 #ifdef HAVE_SPEEX_RESAMPLER
-	if (conv->from.rate != conv->to.rate) {
+	if (!strcasecmp(options_get_symb("ResampleLibrary"),"Speex") && (conv->from.rate != conv->to.rate)) {
 		char *new_sound = (char *)speex_resample_sound (conv,
 				(float *)curr_sound,
 				*conv_len / sizeof(float), conv->to.channels,
