@@ -1364,10 +1364,20 @@ void audio_conv_destroy (struct audio_conversion *conv ASSERT_ONLY)
 {
 	assert (conv != NULL);
 
-#ifdef HAVE_SAMPLERATE
+#ifdef HAVE_RESAMPLER
 	if (conv->resample_buf)
 		free (conv->resample_buf);
+#endif
+#ifdef HAVE_SAMPLERATE
 	if (conv->src_state)
 		src_delete (conv->src_state);
+#endif
+#ifdef HAVE_SPEEX_RESAMPLER
+	if (conv->speex_resampler)
+		 speex_resampler_destroy (conv->speex_resampler);
+#endif
+#ifdef HAVE_SAMPLERATE
+	if (conv->soxr)
+		soxr_delete (conv->soxr);
 #endif
 }
