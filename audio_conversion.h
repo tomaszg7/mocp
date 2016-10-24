@@ -15,6 +15,10 @@
 #include <speex/speex_resampler.h>
 #endif
 
+#ifdef HAVE_SOXR
+#include <soxr.h>
+#endif
+
 #include "audio.h"
 
 #ifdef __cplusplus
@@ -31,6 +35,9 @@ struct audio_conversion
 #endif
 #ifdef HAVE_SPEEX_RESAMPLER
 	SpeexResamplerState *speex_resampler;
+#endif
+#ifdef HAVE_SOXR
+	soxr_t soxr;
 #endif
 
 #ifdef HAVE_RESAMPLER

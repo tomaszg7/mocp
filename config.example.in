@@ -385,7 +385,7 @@
 #PreferredDecoders += opus(opus,ffmpeg)
 #PreferredDecoders += spx(speex)
 
-# Which resampling library to use. Possible choices: SRC (libsamplerate) and Speex
+# Which resampling library to use. Possible choices: SRC (libsamplerate), Speex, soxr
 #ResampleLibrary = SRC
 
 # Which resampling method to use.  There are a few methods of resampling

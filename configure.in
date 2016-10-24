@@ -395,6 +395,23 @@ then
 			   [true])
 fi
 
+dnl soxr
+AC_ARG_WITH(soxr, AS_HELP_STRING([--without-soxr],
+                                       [Compile without SoX resampler]))
+COMPILE_SOXR="no"
+if test "x$with_soxr" != "xno"
+then
+	PKG_CHECK_MODULES(soxr, soxr >= 0.1,
+			  [EXTRA_LIBS="$EXTRA_LIBS $soxr_LIBS"
+			   CFLAGS="$CFLAGS $soxr_CFLAGS"
+			   AC_DEFINE([HAVE_SOXR], 1,
+				     [Define if you have SoX resampler])
+			   AC_DEFINE([HAVE_RESAMPLER], 1,
+				     [Define if you have any resampler])
+			   COMPILE_SOXR="yes"],
+			   [true])
+fi
+
 dnl Decoder plugins
 m4_include(decoder_plugins/decoders.m4)
 
@@ -465,13 +482,14 @@ else
 	echo "Decoder plugins:   $DECODERS_1"
 	echo "                   $DECODERS_2"
 fi
-echo "Sound Drivers:    "$SOUND_DRIVERS
-echo "DEBUG:             "$COMPILE_DEBUG
-echo "RCC:               "$COMPILE_RCC
-echo "Network streams:   "$COMPILE_CURL
-echo "Resampling:        "$COMPILE_SAMPLERATE
-echo "Resampling (Speex):"$COMPILE_SPEEXRESAMPLER
-echo "MIME magic:        "$COMPILE_MAGIC
+echo "Sound Drivers:     "$SOUND_DRIVERS
+echo "DEBUG:              "$COMPILE_DEBUG
+echo "RCC:                "$COMPILE_RCC
+echo "Network streams:    "$COMPILE_CURL
+echo "Resampling (SRC):   "$COMPILE_SAMPLERATE
+echo "Resampling (Speex): "$COMPILE_SPEEXRESAMPLER
+echo "Resampling (soxr):  "$COMPILE_SOXR
+echo "MIME magic:         "$COMPILE_MAGIC
 echo "-----------------------------------------------------------------------"
 echo
 

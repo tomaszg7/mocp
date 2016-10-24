@@ -657,7 +657,7 @@ void options_init ()
 	                 CHECK_FUNCTION);
 
 	add_symb ("ResampleLibrary", "SRC",
-	                 CHECK_SYMBOL(2), "SRC", "Speex");
+	                 CHECK_SYMBOL(3), "SRC", "Speex", "soxr");
 	add_symb ("SRCResampleMethod", "Linear",
 	                 CHECK_SYMBOL(5), "SincBestQuality", "SincMediumQuality",
 	                                  "SincFastest", "ZeroOrderHold", "Linear");

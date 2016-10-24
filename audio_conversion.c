@@ -34,6 +34,10 @@
 #include <speex/speex_resampler.h>
 #endif
 
+#ifdef HAVE_SOXR
+# include <soxr.h>
+#endif
+
 #define DEBUG
 
 #include "common.h"
@@ -706,7 +710,7 @@ int audio_conv_new (struct audio_conversion *conv,
 			return 0;
 #endif
 		}
-		else {
+		else if (!strcasecmp(options_get_symb("ResampleLibrary"),"SRC")) {
 #ifdef HAVE_SAMPLERATE
 			int err;
 			int resample_type = -1;
@@ -737,6 +741,34 @@ int audio_conv_new (struct audio_conversion *conv,
 			return 0;
 #endif
 		}
+		else if (!strcasecmp(options_get_symb("ResampleLibrary"),"soxr")) {
+#ifdef HAVE_SOXR
+			soxr_error_t err;
+/*			switch (sizeof(float))
+				case 4:
+					conv->soxr = soxr_create ( from->rate, to->rate, to->channels, &err, {SOXR_FLOAT32_I, SOXR_FLOAT32_I}, SOXR_MQ, NULL );
+					break;
+				case 8:
+					conv->soxr = soxr_create ( from->rate, to->rate, to->channels, &err, {SOXR_FLOAT64_I, SOXR_FLOAT64_I}, SOXR_MQ, NULL );
+					break;
+				default:
+					error ("SoX resampling not supported for sizeof(float)=%d!",sizeof(float));
+					return 0;*/
+			conv->soxr = soxr_create ( from->rate, to->rate, to->channels, &err, NULL, NULL, NULL );
+			if (err) {
+				error ("Can't resample with SoX from %dHz to %dHz: %s",
+						from->rate, to->rate, soxr_strerror (err));
+				return 0;
+			}
+#else
+			error ("SoX resampling not supported!");
+			return 0;
+#endif
+		}
+		else {
+			error ("Unknown resampling library.");
+			return 0;
+		}
 	}
 	else {
 #ifdef HAVE_SAMPLERATE
@@ -744,6 +776,9 @@ int audio_conv_new (struct audio_conversion *conv,
 #endif
 #ifdef HAVE_SPEEX_RESAMPLER
 		conv->speex_resampler = NULL;
+#endif
+#ifdef HAVE_SOXR
+		conv->soxr = NULL;
 #endif
 	}
 
@@ -873,6 +908,40 @@ static float *speex_resample_sound (struct audio_conversion *conv, const float *
 	}
 
 	*resampled_samples = out_len*nchannels;
+	return output;
+}
+#endif
+
+#ifdef HAVE_SOXR
+static float *soxr_resample_sound (struct audio_conversion *conv, const float *buf,
+		const size_t samples, const int nchannels, size_t *resampled_samples)
+{
+	float *output;
+	soxr_error_t err;
+	size_t in_done, out_done;
+
+	double ratio = conv->to.rate / (double)conv->from.rate;
+	*resampled_samples = (int)(ratio * samples + 10);
+	output = (soxr_out_t)xmalloc (sizeof(float) * *resampled_samples);
+
+	debug ("TG: ratio: %f, samples: %zu, channels: %d, resampled_samples %zu",ratio,samples,nchannels,*resampled_samples);
+
+	size_t in_len = samples/nchannels;
+	size_t out_len = *resampled_samples/nchannels;
+
+	err = soxr_process(conv -> soxr, (soxr_in_t)buf, in_len, &in_done, output, out_len, &out_done);
+
+	if (err) {
+		debug ("TG: soxr resampler error %s!",soxr_strerror (err));
+	}
+
+	debug ("TG: processed %zu input samples, got %zu output samples", (size_t)in_done*nchannels, (size_t)out_done*nchannels);
+
+	if (in_len != in_done) {
+		debug ("TG: some samples not processed!");
+	}
+
+	*resampled_samples = out_done*nchannels;
 	return output;
 }
 #endif
@@ -1214,6 +1283,19 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 #ifdef HAVE_SPEEX_RESAMPLER
 	if (!strcasecmp(options_get_symb("ResampleLibrary"),"Speex") && (conv->from.rate != conv->to.rate)) {
 		char *new_sound = (char *)speex_resample_sound (conv,
+				(float *)curr_sound,
+				*conv_len / sizeof(float), conv->to.channels,
+				conv_len);
+		*conv_len *= sizeof(float);
+		if (curr_sound != buf)
+			free (curr_sound);
+		curr_sound = new_sound;
+	}
+#endif
+
+#ifdef HAVE_SOXR
+	if (!strcasecmp(options_get_symb("ResampleLibrary"),"soxr") && (conv->from.rate != conv->to.rate)) {
+		char *new_sound = (char *)soxr_resample_sound (conv,
 				(float *)curr_sound,
 				*conv_len / sizeof(float), conv->to.channels,
 				conv_len);
