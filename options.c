@@ -124,7 +124,7 @@ static int check_range (int opt, ...)
 
 	assert (opt != -1);
 	assert (options[opt].count % 2 == 0);
-	assert (options[opt].type & (OPTION_INT | OPTION_STR | OPTION_LIST));
+	assert (options[opt].type & (OPTION_INT | OPTION_STR | OPTION_PATH | OPTION_LIST));
 
 	rc = 0;
 	va_start (va, opt);
@@ -142,6 +142,7 @@ static int check_range (int opt, ...)
 			break;
 
 		case OPTION_STR:
+		case OPTION_PATH:
 		case OPTION_LIST:
 			str_val = va_arg (va, char *);
 			for (ix = 0; ix < options[opt].count; ix += 2) {
@@ -201,6 +202,7 @@ static int check_discrete (int opt, ...)
 
 		case OPTION_BOOL:
 		case OPTION_STR:
+		case OPTION_PATH:
 		case OPTION_ANY:
 		case OPTION_FREE:
 			break;
@@ -218,7 +220,7 @@ static int check_length (int opt, ...)
 
 	assert (opt != -1);
 	assert (options[opt].count % 2 == 0);
-	assert (options[opt].type & (OPTION_STR | OPTION_LIST));
+	assert (options[opt].type & (OPTION_STR | OPTION_PATH | OPTION_LIST));
 
 	rc = 0;
 	va_start (va, opt);
@@ -246,7 +248,7 @@ static int check_function (int opt, ...)
 
 	assert (opt != -1);
 	assert (options[opt].count == 0);
-	assert (options[opt].type & (OPTION_STR | OPTION_LIST));
+	assert (options[opt].type & (OPTION_STR | OPTION_PATH | OPTION_LIST));
 
 	if (preg == NULL) {
 		preg = (regex_t *)xmalloc (sizeof (regex_t));
@@ -331,6 +333,43 @@ static void add_str (const char *name, const char *value, options_t_check *check
 
 	pos = init_option (name, OPTION_STR);
 	options[pos].value.str = xstrdup (value);
+	options[pos].check = check;
+	options[pos].count = count;
+	if (count > 0) {
+		va_start (va, count);
+		if (check == check_length) {
+			options[pos].constraints = xcalloc (count, sizeof (int));
+			for (ix = 0; ix < count; ix += 1)
+				((int *) options[pos].constraints)[ix] = va_arg (va, int);
+		} else {
+			options[pos].constraints = xcalloc (count, sizeof (char *));
+			for (ix = 0; ix < count; ix += 1)
+				((char **) options[pos].constraints)[ix] = xstrdup (va_arg (va, char *));
+		}
+		va_end (va);
+	}
+}
+
+/* Add a path option to the options table. It differs from add_str only in that respect
+ * that it parses initial ~ in path. */
+static void add_path (const char *name, const char *value, options_t_check *check, const int count, ...)
+{
+	int ix, pos;
+	va_list va;
+
+	pos = init_option (name, OPTION_PATH);
+
+	if (value && value[0] == '~') {
+		char *path = xmalloc (PATH_MAX);
+		int rc = snprintf(path, PATH_MAX, "%s/%s",
+			get_home(), (value[1] == '/') ? value + 2 : value + 1);
+		if (rc >= PATH_MAX)
+			fatal ("Path too long!");
+		options[pos].value.str = xstrdup (path);
+	}
+	else
+		options[pos].value.str = xstrdup (value);
+
 	options[pos].check = check;
 	options[pos].count = count;
 	if (count > 0) {
@@ -457,6 +496,29 @@ void options_set_str (const char *name, const char *value)
 	options[opt].value.str = xstrdup (value);
 }
 
+/* Set a path option to the value. The string is duplicated. */
+void options_set_path (const char *name, const char *value)
+{
+	int opt = find_option (name, OPTION_PATH);
+
+	if (opt == -1)
+		fatal ("Tried to set wrong option '%s'!", name);
+
+	if (options[opt].value.str)
+		free (options[opt].value.str);
+
+	if (value[0] == '~') {
+		char *path = xmalloc (PATH_MAX);
+		int rc = snprintf(path, PATH_MAX, "%s/%s",
+			get_home(), (value[1] == '/') ? value + 2 : value + 1);
+		if (rc >= PATH_MAX)
+			fatal ("Path too long!");
+		options[opt].value.str = xstrdup (path);
+	}
+	else
+		options[opt].value.str = xstrdup (value);
+}
+
 /* Set list option values to the colon separated value. */
 void options_set_list (const char *name, const char *value, bool append)
 {
@@ -506,6 +568,12 @@ bool options_set_pair (const char *name, const char *value, bool append)
 			options_set_str (name, value);
 			break;
 
+		case OPTION_PATH:
+			if (!options_check_str (name, value))
+				return false;
+			options_set_path (name, value);
+			break;
+
 		case OPTION_SYMB:
 			if (!options_check_symb (name, value))
 				return false;
@@ -549,7 +617,7 @@ void options_init ()
 	memset (options, 0, sizeof(options));
 
 	add_bool ("ReadTags", true);
-	add_str  ("MusicDir", NULL, CHECK_NONE);
+	add_path ("MusicDir", NULL, CHECK_NONE);
 	add_bool ("StartInMusicDir", false);
 	add_int  ("CircularLogSize", 0, CHECK_RANGE(1), 0, INT_MAX);
 	add_symb ("Sort", "FileName", CHECK_SYMBOL(1), "FileName");
@@ -627,16 +695,16 @@ void options_init ()
 	add_str  ("Keymap", NULL, CHECK_NONE);
 	add_bool ("ASCIILines", false);
 
-	add_str  ("FastDir1", NULL, CHECK_NONE);
-	add_str  ("FastDir2", NULL, CHECK_NONE);
-	add_str  ("FastDir3", NULL, CHECK_NONE);
-	add_str  ("FastDir4", NULL, CHECK_NONE);
-	add_str  ("FastDir5", NULL, CHECK_NONE);
-	add_str  ("FastDir6", NULL, CHECK_NONE);
-	add_str  ("FastDir7", NULL, CHECK_NONE);
-	add_str  ("FastDir8", NULL, CHECK_NONE);
-	add_str  ("FastDir9", NULL, CHECK_NONE);
-	add_str  ("FastDir10", NULL, CHECK_NONE);
+	add_path ("FastDir1", NULL, CHECK_NONE);
+	add_path ("FastDir2", NULL, CHECK_NONE);
+	add_path ("FastDir3", NULL, CHECK_NONE);
+	add_path ("FastDir4", NULL, CHECK_NONE);
+	add_path ("FastDir5", NULL, CHECK_NONE);
+	add_path ("FastDir6", NULL, CHECK_NONE);
+	add_path ("FastDir7", NULL, CHECK_NONE);
+	add_path ("FastDir8", NULL, CHECK_NONE);
+	add_path ("FastDir9", NULL, CHECK_NONE);
+	add_path ("FastDir10", NULL, CHECK_NONE);
 
 	add_int  ("SeekTime", 1, CHECK_RANGE(1), 1, INT_MAX);
 	add_int  ("SilentSeekTime", 5, CHECK_RANGE(1), 1, INT_MAX);
@@ -675,16 +743,16 @@ void options_init ()
 
 	add_bool ("FollowPlayedFile", true);
 	add_bool ("CanStartInPlaylist", true);
-	add_str  ("ExecCommand1", NULL, CHECK_NONE);
-	add_str  ("ExecCommand2", NULL, CHECK_NONE);
-	add_str  ("ExecCommand3", NULL, CHECK_NONE);
-	add_str  ("ExecCommand4", NULL, CHECK_NONE);
-	add_str  ("ExecCommand5", NULL, CHECK_NONE);
-	add_str  ("ExecCommand6", NULL, CHECK_NONE);
-	add_str  ("ExecCommand7", NULL, CHECK_NONE);
-	add_str  ("ExecCommand8", NULL, CHECK_NONE);
-	add_str  ("ExecCommand9", NULL, CHECK_NONE);
-	add_str  ("ExecCommand10", NULL, CHECK_NONE);
+	add_path ("ExecCommand1", NULL, CHECK_NONE);
+	add_path ("ExecCommand2", NULL, CHECK_NONE);
+	add_path ("ExecCommand3", NULL, CHECK_NONE);
+	add_path ("ExecCommand4", NULL, CHECK_NONE);
+	add_path ("ExecCommand5", NULL, CHECK_NONE);
+	add_path ("ExecCommand6", NULL, CHECK_NONE);
+	add_path ("ExecCommand7", NULL, CHECK_NONE);
+	add_path ("ExecCommand8", NULL, CHECK_NONE);
+	add_path ("ExecCommand9", NULL, CHECK_NONE);
+	add_path ("ExecCommand10", NULL, CHECK_NONE);
 
 	add_bool ("UseCursorSelection", false);
 	add_bool ("SetXtermTitle", true);
@@ -734,9 +802,9 @@ void options_init ()
 	add_bool ("SidPlay2_StartAtStart", true);
 	add_bool ("SidPlay2_PlaySubTunes", true);
 
-	add_str  ("OnSongChange", NULL, CHECK_NONE);
+	add_path ("OnSongChange", NULL, CHECK_NONE);
 	add_bool ("RepeatSongChange", false);
-	add_str  ("OnStop", NULL, CHECK_NONE);
+	add_path ("OnStop", NULL, CHECK_NONE);
 
 	add_bool ("QueueNextSongReturn", false);
 }
@@ -774,6 +842,8 @@ int options_check_str (const char *name, const char *val)
 	int opt;
 
 	opt = find_option (name, OPTION_STR);
+	if (opt == -1)
+		opt = find_option (name, OPTION_PATH);
 	if (opt == -1)
 		return 0;
 	return options[opt].check (opt, val);
@@ -900,6 +970,7 @@ static char *substitute_variable (const char *name_in, const char *value_in)
 				value = xstrdup (options_get_bool (name) ? "yes" : "no");
 				break;
 			case OPTION_STR:
+			case OPTION_PATH:
 				value = xstrdup (options_get_str (name));
 				break;
 			case OPTION_SYMB:
@@ -1133,7 +1204,7 @@ void options_free ()
 	int i, ix;
 
 	for (i = 0; i < options_num; i++) {
-		if (options[i].type == OPTION_STR && options[i].value.str) {
+		if (options[i].type & (OPTION_STR | OPTION_PATH) && options[i].value.str) {
 			free (options[i].value.str);
 			options[i].value.str = NULL;
 		}
@@ -1145,7 +1216,7 @@ void options_free ()
 		}
 		else if (options[i].type == OPTION_SYMB)
 			options[i].value.str = NULL;
-		if (options[i].type & (OPTION_STR | OPTION_SYMB)) {
+		if (options[i].type & (OPTION_STR | OPTION_PATH | OPTION_SYMB)) {
 			if (options[i].check != check_length) {
 				for (ix = 0; ix < options[i].count; ix += 1)
 					free (((char **) options[i].constraints)[ix]);
@@ -1183,6 +1254,8 @@ char *options_get_str (const char *name)
 {
 	int i = find_option (name, OPTION_STR);
 
+	if (i == -1)
+		i = find_option (name, OPTION_PATH);
 	if (i == -1)
 		fatal ("Tried to get wrong option '%s'!", name);
 

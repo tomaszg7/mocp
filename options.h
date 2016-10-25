@@ -15,6 +15,7 @@ enum option_type
 	OPTION_STR  = 4,
 	OPTION_SYMB = 8,
 	OPTION_LIST = 16,
+	OPTION_PATH = 32,
 	OPTION_ANY  = 255
 };
 
@@ -26,6 +27,7 @@ lists_t_strs *options_get_list (const char *name);
 void options_set_int (const char *name, const int value);
 void options_set_bool (const char *name, const bool value);
 void options_set_str (const char *name, const char *value);
+void options_set_path (const char *name, const char *value);
 void options_set_symb (const char *name, const char *value);
 void options_set_list (const char *name, const char *value, bool append);
 bool options_set_pair (const char *name, const char *value, bool append);

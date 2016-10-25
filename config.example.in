@@ -67,7 +67,7 @@
 # you will be able to jump straight to this directory with the '-m'
 # parameter or the 'm' command.  This can also point to a playlist.
 #
-# Example:    MusicDir = "/home/joe/music"
+# Example:    MusicDir = "~/music"
 #
 #MusicDir =
 
@@ -289,10 +289,10 @@
 # FastDirs, these allow you to jump directly to a directory, the key
 # bindings are in the keymap file.
 #
-# Examples:   Fastdir1 = /mp3/rock
-#             Fastdir2 = /mp3/electronic
-#             Fastdir3 = /mp3/rap
-#             Fastdir4 = /mp3/etc
+# Examples:   Fastdir1 = ~/mp3/rock
+#             Fastdir2 = ~/mp3/electronic
+#             Fastdir3 = ~/mp3/rap
+#             Fastdir4 = ~/mp3/etc
 #
 #Fastdir1 =
 #Fastdir2 =
@@ -520,6 +520,8 @@
 # the title of the file currently playing.  Even if the title contains
 # spaces, it's still one parameter and it's safe if it contains `rm -rf /`.
 #
+# You can use ~ at the beginning of command.
+#
 # Examples:   ExecCommand1 = "cp %f /mnt/usb_drive"
 #             ExecCommand2 = "/home/joe/now_playing %I"
 #
@@ -662,6 +664,8 @@
 #
 # No pipes/redirects can be used directly, but writing a shell script
 # can do the job.
+#
+# You can use ~ at the beginning of command.
 #
 # Example:    OnSongChange = "/home/jack/.moc/myscript %a %r"
 #
