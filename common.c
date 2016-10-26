@@ -342,12 +342,7 @@ char *create_file_name (const char *file)
 	static char fname[PATH_MAX];
 	char *moc_dir = options_get_str ("MOCDir");
 
-	if (moc_dir[0] == '~')
-		rc = snprintf(fname, sizeof(fname), "%s/%s/%s", get_home (),
-		              (moc_dir[1] == '/') ? moc_dir + 2 : moc_dir + 1,
-		              file);
-	else
-		rc = snprintf(fname, sizeof(fname), "%s/%s", moc_dir, file);
+	rc = snprintf(fname, sizeof(fname), "%s/%s", moc_dir, file);
 
 	if (rc >= ssizeof(fname))
 		fatal ("Path too long!");
