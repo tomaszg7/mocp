@@ -1007,7 +1007,7 @@ static void process_options (poptContext ctx, lists_t_strs *deferred)
 			override_config_option (arg, deferred);
 			break;
 		case CL_MOCDIR:
-			options_set_str ("MOCDir", arg);
+			options_set_path ("MOCDir", arg);
 			options_ignore_config ("MOCDir");
 			break;
 		case CL_SYNCPL:
