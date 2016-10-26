@@ -1376,7 +1376,7 @@ void audio_conv_destroy (struct audio_conversion *conv ASSERT_ONLY)
 	if (conv->speex_resampler)
 		 speex_resampler_destroy (conv->speex_resampler);
 #endif
-#ifdef HAVE_SAMPLERATE
+#ifdef HAVE_SOXR
 	if (conv->soxr)
 		soxr_delete (conv->soxr);
 #endif
