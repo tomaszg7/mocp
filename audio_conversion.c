@@ -709,6 +709,132 @@ static char *float_to_fixed (const float *buf, const size_t samples,
 	return new_snd;
 }
 
+/* Convert fixed point samples in format fmt (size in bytes) to S16.
+ * Size of converted sound is put in new_size. Returned memory is malloced. */
+static int16_t *fixed_to_s16 (const char *buf, const size_t size,
+		const long fmt, size_t *new_size)
+{
+	int16_t *out = NULL;
+	char fmt_name[SFMT_STR_MAX];
+
+//	debug ("TG: converting %s to S16", sfmt_str (fmt, fmt_name, sizeof (fmt_name)));
+
+	assert ((fmt & SFMT_MASK_FORMAT) != SFMT_FLOAT && (fmt & SFMT_MASK_FORMAT) != SFMT_S16);
+
+	switch (fmt & SFMT_MASK_FORMAT) {
+// 		case SFMT_U8:
+// 			*new_size = 2 * size;
+// 			out = (int16_t *)xmalloc (*new_size);
+// 			u8_to_s16 ((unsigned char *)buf, out, size);
+// 			break;
+// 		case SFMT_S8:
+// 			*new_size = 2 * size;
+// 			out = (int16_t *)xmalloc (*new_size);
+// 			s8_to_s16 (buf, out, size);
+// 			break;
+ 		case SFMT_U16:
+			*new_size = size;
+			out = (int16_t *)xmalloc (*new_size);
+			memcpy (out, buf, size);
+			change_sign_16 ((uint16_t *)out, size / 2);
+			break;
+// 		case SFMT_U24:
+// 			*new_size = size / 2;
+// 			out = (int16_t *)xmalloc (*new_size);
+// 			u24_to_s16 ((unsigned char *)buf, out, size / 4);
+// 			break;
+		case SFMT_S24:
+			*new_size = size / 2;
+			out = s24_to_s16 ((int32_t *)buf, size / 4);
+			break;
+// 		case SFMT_S24_3:
+// 			*new_size = 2 * size / 3;
+// 			out = (int16_t *)xmalloc (*new_size);
+// 			s24_3_to_s16 (buf, out, size / 3);
+// 			break;
+// 		case SFMT_U24_3:
+// 			*new_size = 2 * size / 3;
+// 			out = (int16_t *)xmalloc (*new_size);
+// 			u24_3_to_s16 (buf, out, size / 3);
+// 			break;
+// 		case SFMT_U32:
+// 			*new_size = size / 2;
+// 			out = (int16_t *)xmalloc (*new_size);
+// 			u32_to_s16 ((unsigned char *)buf, out, size / 4);
+// 			break;
+		case SFMT_S32:
+			*new_size = size / 2;
+			out = s32_to_s16 ((int32_t *)buf, size / 4);
+			break;
+		default:
+			error ("Can't convert from %s to S32!",
+			       sfmt_str (fmt, fmt_name, sizeof (fmt_name)));
+			abort ();
+	}
+
+	return out;
+}
+
+/* Convert S16 samples to fixed point format fmt. Returned samples of size
+ * new_size bytes is malloced. */
+static char *s16_to_fixed (const int16_t *buf, const size_t samples,
+		const long fmt, size_t *new_size)
+{
+	char fmt_name[SFMT_STR_MAX];
+	char *new_snd = NULL;
+
+	assert ((fmt & SFMT_MASK_FORMAT) != SFMT_FLOAT && (fmt & SFMT_MASK_FORMAT) != SFMT_S16);
+
+	switch (fmt & SFMT_MASK_FORMAT) {
+// 		case SFMT_U8:
+// 			*new_size = samples;
+// 			new_snd = (char *)xmalloc (samples);
+// 			s16_to_u8 (buf, (unsigned char *)new_snd, samples);
+// 			break;
+// 		case SFMT_S8:
+// 			*new_size = samples;
+// 			new_snd = (char *)xmalloc (samples);
+// 			s16_to_s8 (buf, new_snd, samples);
+// 			break;
+		case SFMT_U16:
+			*new_size = samples * 2;
+			new_snd = (char *)xmalloc (*new_size);
+			memcpy (new_snd, buf, *new_size);
+			change_sign_16 ((uint16_t *)new_snd, samples);
+			break;
+// 		case SFMT_U24:
+// 			*new_size = samples * 4;
+// 			new_snd = (char *)s16_to_u24 (buf, samples);
+// 			break;
+// 		case SFMT_S24:
+// 			*new_size = samples * 4;
+// 			new_snd = (char *)s16_to_s24 (buf, samples);
+// 			break;
+// 		case SFMT_U24_3:
+// 			*new_size = samples * 3;
+// 			new_snd = (char *)s16_to_u24_3 (buf, samples);
+// 			break;
+// 		case SFMT_S24_3:
+// 			*new_size = samples * 3;
+// 			new_snd = (char *)s16_to_s24_3 (buf, samples);
+// 			break;
+// 		case SFMT_U32:
+// 			*new_size = samples * 4;
+// 			new_snd = (char *)s16_to_u32 (buf, samples);
+// 			break;
+// 		case SFMT_S32:
+// 			*new_size = samples * 4;
+// 			new_snd = (char *)s16_to_s32 (buf, samples);
+// 			break;
+		default:
+			error ("Can't convert from S16 to %s!",
+			       sfmt_str (fmt, fmt_name, sizeof (fmt_name)));
+			abort ();
+	}
+
+	return new_snd;
+}
+
 void audio_conv_bswap_16 (int16_t *buf, const size_t num)
 {
 	size_t i;
@@ -806,7 +932,7 @@ int audio_conv_new (struct audio_conversion *conv,
 #endif
 		}
 		else if (!strcasecmp(options_get_symb("ResampleLibrary"),"SRC")) {
-#ifdef HAVE_SAMPLERATE
+#if HAVE_SAMPLERATE && INTERNAL_FLOAT
 			int err;
 			int resample_type = -1;
 			char *method = options_get_symb ("SRCResampleMethod");
@@ -837,7 +963,7 @@ int audio_conv_new (struct audio_conversion *conv,
 #endif
 		}
 		else if (!strcasecmp(options_get_symb("ResampleLibrary"),"soxr")) {
-#ifdef HAVE_SOXR
+#if HAVE_SOXR && INTERNAL_FLOAT
 			soxr_error_t err;
 /*			switch (sizeof(float))
 				case 4:
@@ -888,7 +1014,7 @@ int audio_conv_new (struct audio_conversion *conv,
 	return 1;
 }
 
-#ifdef HAVE_SAMPLERATE
+#if HAVE_SAMPLERATE && INTERNAL_FLOAT
 static float *src_resample_sound (struct audio_conversion *conv, const float *buf,
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
@@ -975,22 +1101,28 @@ static float *src_resample_sound (struct audio_conversion *conv, const float *bu
 #endif
 
 #ifdef HAVE_SPEEX_RESAMPLER
-static float *speex_resample_sound (struct audio_conversion *conv, const float *buf,
+static char *speex_resample_sound (struct audio_conversion *conv, const char *buf,
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
-	float *output;
+	char *output;
 	int err;
 
 	double ratio = conv->to.rate / (double)conv->from.rate;
 	*resampled_samples = (int)(ratio * samples + 10);
-	output = (float *)xmalloc (sizeof(float) * *resampled_samples);
-
-	debug ("TG: ratio: %f, samples: %zu, channels: %d, resampled_samples %zu",ratio,samples,nchannels,*resampled_samples);
-
 	spx_uint32_t in_len = samples/nchannels;
 	spx_uint32_t out_len = *resampled_samples/nchannels;
 
-	err = speex_resampler_process_interleaved_float(conv -> speex_resampler, buf, &in_len, output, &out_len);
+	debug ("TG: ratio: %f, samples: %zu, channels: %d, resampled_samples %zu",ratio,samples,nchannels,*resampled_samples);
+
+#ifdef INTERNAL_FLOAT
+	output = (char *)xmalloc (sizeof(float) * *resampled_samples);
+
+	err = speex_resampler_process_interleaved_float(conv -> speex_resampler, (float *)buf, &in_len, (float *)output, &out_len);
+#else
+	output = (char *)xmalloc (*resampled_samples * 2);
+
+	err = speex_resampler_process_interleaved_int(conv -> speex_resampler, (spx_int16_t *)buf, &in_len, (spx_int16_t *)output, &out_len);
+#endif
 
 	if (err > 0) {
 		debug ("TG: resampler error %s!",speex_resampler_strerror (err));
@@ -1007,7 +1139,7 @@ static float *speex_resample_sound (struct audio_conversion *conv, const float *
 }
 #endif
 
-#ifdef HAVE_SOXR
+#if HAVE_SOXR && INTERNAL_FLOAT
 static float *soxr_resample_sound (struct audio_conversion *conv, const float *buf,
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
@@ -1252,7 +1384,8 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		logit ("Fast conversion: 32bit -> 16bit!");
 	}
 
-	/* convert to float if necessary */
+	/* convert to float or S16 if necessary */
+#ifdef INTERNAL_FLOAT
 	if ((conv->from.rate != conv->to.rate
 				|| (conv->to.fmt & SFMT_MASK_FORMAT) == SFMT_FLOAT
 				|| !sfmt_same_bps(conv->to.fmt, curr_sfmt))
@@ -1267,8 +1400,24 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 			free (curr_sound);
 		curr_sound = new_sound;
 	}
+#else
+	if ((conv->from.rate != conv->to.rate
+				|| (conv->to.fmt & SFMT_MASK_FORMAT) == SFMT_S16
+				|| !sfmt_same_bps(conv->to.fmt, curr_sfmt))
+			&& (curr_sfmt & SFMT_MASK_FORMAT) != SFMT_S16) {
+		char *new_sound;
 
-#if HAVE_SAMPLERATE
+		new_sound = (char *)fixed_to_s16 (curr_sound, *conv_len,
+				curr_sfmt, conv_len);
+		curr_sfmt = sfmt_set_fmt (curr_sfmt, SFMT_S16);
+
+		if (curr_sound != buf)
+			free (curr_sound);
+		curr_sound = new_sound;
+	}
+#endif
+
+#if HAVE_SAMPLERATE && INTERNAL_FLOAT
 	if (!strcasecmp(options_get_symb("ResampleLibrary"),"SRC") && (conv->from.rate != conv->to.rate)) {
 		char *new_sound = (char *)src_resample_sound (conv,
 				(float *)curr_sound,
@@ -1283,18 +1432,24 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 
 #ifdef HAVE_SPEEX_RESAMPLER
 	if (!strcasecmp(options_get_symb("ResampleLibrary"),"Speex") && (conv->from.rate != conv->to.rate)) {
-		char *new_sound = (char *)speex_resample_sound (conv,
-				(float *)curr_sound,
+#ifdef INTERNAL_FLOAT
+		char *new_sound = speex_resample_sound (conv, curr_sound,
 				*conv_len / sizeof(float), conv->to.channels,
 				conv_len);
 		*conv_len *= sizeof(float);
+#else
+		char *new_sound = speex_resample_sound (conv, curr_sound,
+				*conv_len / 2, conv->to.channels, conv_len);
+		*conv_len *= 2;
+#endif
+
 		if (curr_sound != buf)
 			free (curr_sound);
 		curr_sound = new_sound;
 	}
 #endif
 
-#ifdef HAVE_SOXR
+#if HAVE_SOXR && INTERNAL_FLOAT
 	if (!strcasecmp(options_get_symb("ResampleLibrary"),"soxr") && (conv->from.rate != conv->to.rate)) {
 		char *new_sound = (char *)soxr_resample_sound (conv,
 				(float *)curr_sound,
@@ -1315,11 +1470,18 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		else {
 			char *new_sound;
 
+#ifdef INTERNAL_FLOAT
 			assert (curr_sfmt & SFMT_FLOAT);
 
 			new_sound = float_to_fixed ((float *)curr_sound,
 					*conv_len / sizeof(float),
 					conv->to.fmt, conv_len);
+#else
+			assert (curr_sfmt & SFMT_S32);
+
+			new_sound = s16_to_fixed ((int16_t *)curr_sound,
+					*conv_len / 2, conv->to.fmt, conv_len);
+#endif
 			curr_sfmt = sfmt_set_fmt (curr_sfmt, conv->to.fmt);
 
 			if (curr_sound != buf)
