@@ -119,7 +119,7 @@ static int set_capabilities (struct output_driver_caps *caps)
 		caps->formats |= SFMT_S24 | SFMT_BE;
 #endif
 
-#if defined(AFMT_FLOAT)
+#if defined(AFMT_FLOAT) && INTERNAL_FLOAT
 	if (format_mask & AFMT_FLOAT)
 		caps->formats |= SFMT_FLOAT | SFMT_NE;
 #endif
@@ -308,7 +308,7 @@ static int oss_set_params ()
 				req_format = AFMT_S32_BE;
 			break;
 #endif
-#if defined(AFMT_FLOAT)
+#if defined(AFMT_FLOAT) && INTERNAL_FLOAT
 		case SFMT_FLOAT:
 			req_format = AFMT_S32_FLOAT;
 			break;

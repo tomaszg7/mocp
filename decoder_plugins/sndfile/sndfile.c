@@ -279,10 +279,8 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 		sound_params->fmt = SFMT_S16 | SFMT_NE;
 		break;
 	default:
-		logit("sizeof(int)=%d is not supported. Please report this error. Falling back to float decoding.",
+		fatal("sizeof(int)=%d is not supported. Please report this error.",
 		      (int)sizeof(int));
-		sound_params->fmt = SFMT_FLOAT;
-		use_float = 1;
 	}
 
 	if (use_float)

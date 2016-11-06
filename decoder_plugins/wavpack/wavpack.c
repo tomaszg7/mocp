@@ -58,11 +58,16 @@ static void wav_data_init (struct wavpack_data *data)
 	data->mode = WavpackGetMode (data->wpc);
 	data->avg_bitrate = WavpackGetAverageBitrate (data->wpc, 1) / 1000;
 
-	data->ok = 1;
-	debug ("File opened. S_num %d. S_rate %d. Time %d. Avg_Bitrate %d. Channels %d",
-		data->sample_num, data->sample_rate,
-		data->duration, data->avg_bitrate, data->channels
-		);
+	if (data->mode & MODE_FLOAT) {
+		decoder_error (&data->error, ERROR_FATAL, 0, "Can't load float Wavpack file.");
+	}
+	else {
+		data->ok = 1;
+		debug ("File opened. S_num %d. S_rate %d. Time %d. Avg_Bitrate %d. Channels %d",
+			data->sample_num, data->sample_rate,
+			data->duration, data->avg_bitrate, data->channels
+			);
+	}
 }
 
 
@@ -225,8 +230,12 @@ static int wav_decode (void *prv_data, char *buf, int buf_len,
 	}
 
 	if (data->mode & MODE_FLOAT) {
+#ifdef INTERNAL_FLOAT
 		sound_params->fmt = SFMT_FLOAT;
 		memcpy (buf, dbuf, ret * oBps);
+#else
+		fatal ("Got float Wavfile. Should not happen");
+#endif
 	} else	{
 		debug ("iBps %d", iBps);
 		switch (Bps){

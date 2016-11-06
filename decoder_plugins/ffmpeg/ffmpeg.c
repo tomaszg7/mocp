@@ -475,10 +475,12 @@ static long fmt_from_sample_fmt (struct ffmpeg_data *data)
 	case AV_SAMPLE_FMT_S32P:
 		result = SFMT_S32;
 		break;
+#ifdef INTERNAL_FLOAT
 	case AV_SAMPLE_FMT_FLT:
 	case AV_SAMPLE_FMT_FLTP:
 		result = SFMT_FLOAT;
 		break;
+#endif
 	default:
 		result = 0;
 	}

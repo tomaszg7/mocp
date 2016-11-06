@@ -24,7 +24,9 @@ enum sfmt_fmt
 	SFMT_U32 =   0x00000080, /*!< unsigned 24-bit (for 24-bit data LSB is 0) */
 	SFMT_S24_3 = 0x00000100, /*!< signed 24-bit (in 3bytes format) */
 	SFMT_U24_3 = 0x00000200, /*!< unsigned 24-bit (in 3bytes format) */
+#ifdef INTERNAL_FLOAT
 	SFMT_FLOAT = 0x00000400 /*!< float in range -1.0 to 1.0 */
+#endif
 };
 
 /** Sample endianness.

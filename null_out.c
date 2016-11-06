@@ -60,7 +60,11 @@ static int null_reset ()
 
 static int null_init (struct output_driver_caps *caps)
 {
+#ifdef INTERNAL_FLOAT
 	caps->formats = SFMT_S8 | SFMT_S16 | SFMT_S32 | SFMT_FLOAT | SFMT_NE;
+#else
+	caps->formats = SFMT_S8 | SFMT_S16 | SFMT_S32 | SFMT_NE;
+#endif
 	caps->min_channels = 1;
 	caps->max_channels = 8;
 

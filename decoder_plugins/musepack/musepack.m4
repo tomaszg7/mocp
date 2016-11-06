@@ -3,7 +3,7 @@ dnl libmpcdec
 AC_ARG_WITH(musepack, AS_HELP_STRING([--without-musepack],
                                      [Compile without musepack (mpc) support]))
 
-if test "x$with_musepack" != "xno"
+if test "x$with_musepack" != "xno" -a  test "x$enable_internal_float" = "xyes"
 then
 	dnl taken from gstreamer
 	AC_CHECK_HEADER([mpc/mpcdec.h],
