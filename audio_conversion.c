@@ -45,6 +45,84 @@
 #include "log.h"
 #include "options.h"
 
+static void change_sign_8 (uint8_t *buf, const size_t samples)
+{
+	size_t i;
+
+	for (i = 0; i < samples; i++)
+		*buf++ ^= 1 << 7;
+}
+
+static void change_sign_16 (uint16_t *buf, const size_t samples)
+{
+	size_t i;
+
+	for (i = 0; i < samples; i++)
+		*buf++ ^= 1 << 15;
+}
+
+static void change_sign_24 (uint32_t *buf, const size_t samples)
+{
+	size_t i;
+
+	for (i = 0; i < samples; i++)
+		*buf++ ^= 1 << 23;
+}
+
+static void change_sign_32 (uint32_t *buf, const size_t samples)
+{
+	size_t i;
+
+	for (i = 0; i < samples; i++)
+		*buf++ ^= 1 << 31;
+}
+
+/* Change the signs of samples in format *fmt.  Also changes fmt to the new
+ * format. */
+static void change_sign (char *buf, const size_t size, long *fmt)
+{
+	char fmt_name[SFMT_STR_MAX];
+
+	switch (*fmt & SFMT_MASK_FORMAT) {
+		case SFMT_S8:
+		case SFMT_U8:
+			change_sign_8 ((uint8_t *)buf, size);
+			if (*fmt & SFMT_S8)
+				*fmt = sfmt_set_fmt (*fmt, SFMT_U8);
+			else
+				*fmt = sfmt_set_fmt (*fmt, SFMT_S8);
+			break;
+		case SFMT_S16:
+		case SFMT_U16:
+			change_sign_16 ((uint16_t *)buf, size / 2);
+			if (*fmt & SFMT_S16)
+				*fmt = sfmt_set_fmt (*fmt, SFMT_U16);
+			else
+				*fmt = sfmt_set_fmt (*fmt, SFMT_S16);
+			break;
+		case SFMT_S24:
+		case SFMT_U24:
+			change_sign_24 ((uint32_t *)buf, size/4);
+			if (*fmt & SFMT_S24)
+				*fmt = sfmt_set_fmt (*fmt, SFMT_U24);
+			else
+				*fmt = sfmt_set_fmt (*fmt, SFMT_S24);
+			break;
+		case SFMT_S32:
+		case SFMT_U32:
+			change_sign_32 ((uint32_t *)buf, size/4);
+			if (*fmt & SFMT_S32)
+				*fmt = sfmt_set_fmt (*fmt, SFMT_U32);
+			else
+				*fmt = sfmt_set_fmt (*fmt, SFMT_S32);
+			break;
+		default:
+			error ("Request for changing sign of unknown format: %s",
+			       sfmt_str (*fmt, fmt_name, sizeof (fmt_name)));
+			abort ();
+	}
+}
+
 static void float_to_u8 (const float *in, unsigned char *out, const size_t samples)
 {
 	size_t i;
@@ -396,8 +474,103 @@ static void s32_to_float (const char *in, float *out, const size_t samples)
 		out[i] = *in_32++ / ((float)INT32_MAX + 1.0);
 }
 
+static int8_t *s32_to_s24_3 (const int32_t *in, const size_t samples)
+{
+	size_t i;
+	int8_t *new;
+
+	new = (int8_t *)xmalloc (samples * 3);
+
+	for (i = 0; i < samples; i++)
+	{
+		new[3*i] = (in[i]&0x0000FF00)>>8;
+		new[3*i+1] = (in[i]&0x00FF0000)>>16;
+		new[3*i+2] = (in[i]&0xFF000000)>>24;
+	}
+	return new;
+}
+
+
+static int16_t *s32_to_s16 (const int32_t *in, const size_t samples)
+{
+	size_t i;
+	int16_t *new;
+
+	new = (int16_t *)xmalloc (samples * 2);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 16;
+
+	return new;
+}
+
+static uint16_t *u32_to_u16 (const uint32_t *in, const size_t samples)
+{
+	size_t i;
+	uint16_t *new;
+
+	new = (uint16_t *)xmalloc (samples * 2);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 16;
+
+	return new;
+}
+
+static int32_t *s32_to_s24 (const int32_t *in, const size_t samples)
+{
+	size_t i;
+	int32_t *new;
+
+	new = (int32_t *)xmalloc (samples * 4);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 8;
+
+	return new;
+}
+
+static uint32_t *u32_to_u24 (const uint32_t *in, const size_t samples)
+{
+	size_t i;
+	uint32_t *new;
+
+	new = (uint32_t *)xmalloc (samples * 4);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 8;
+
+	return new;
+}
+
+static int16_t *s24_to_s16 (const int32_t *in, const size_t samples)
+{
+	size_t i;
+	int16_t *new;
+
+	new = (int16_t *)xmalloc (samples * 2);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 8;
+
+	return new;
+}
+
+static uint16_t *u24_to_u16 (const uint32_t *in, const size_t samples)
+{
+	size_t i;
+	uint16_t *new;
+
+	new = (uint16_t *)xmalloc (samples * 2);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 8;
+
+	return new;
+}
+
 /* Convert fixed point samples in format fmt (size in bytes) to float.
- * Size of converted sound is put in new_size. Returned memory is malloc()ed. */
+ * Size of converted sound is put in new_size. Returned memory is malloced. */
 static float *fixed_to_float (const char *buf, const size_t size,
 		const long fmt, size_t *new_size)
 {
@@ -467,7 +640,7 @@ static float *fixed_to_float (const char *buf, const size_t size,
 }
 
 /* Convert float samples to fixed point format fmt. Returned samples of size
- * new_size bytes is malloc()ed. */
+ * new_size bytes is malloced. */
 static char *float_to_fixed (const float *buf, const size_t samples,
 		const long fmt, size_t *new_size)
 {
@@ -534,84 +707,6 @@ static char *float_to_fixed (const float *buf, const size_t samples,
 	}
 
 	return new_snd;
-}
-
-static void change_sign_8 (uint8_t *buf, const size_t samples)
-{
-	size_t i;
-
-	for (i = 0; i < samples; i++)
-		*buf++ ^= 1 << 7;
-}
-
-static void change_sign_16 (uint16_t *buf, const size_t samples)
-{
-	size_t i;
-
-	for (i = 0; i < samples; i++)
-		*buf++ ^= 1 << 15;
-}
-
-static void change_sign_24 (uint32_t *buf, const size_t samples)
-{
-	size_t i;
-
-	for (i = 0; i < samples; i++)
-		*buf++ ^= 1 << 23;
-}
-
-static void change_sign_32 (uint32_t *buf, const size_t samples)
-{
-	size_t i;
-
-	for (i = 0; i < samples; i++)
-		*buf++ ^= 1 << 31;
-}
-
-/* Change the signs of samples in format *fmt.  Also changes fmt to the new
- * format. */
-static void change_sign (char *buf, const size_t size, long *fmt)
-{
-	char fmt_name[SFMT_STR_MAX];
-
-	switch (*fmt & SFMT_MASK_FORMAT) {
-		case SFMT_S8:
-		case SFMT_U8:
-			change_sign_8 ((uint8_t *)buf, size);
-			if (*fmt & SFMT_S8)
-				*fmt = sfmt_set_fmt (*fmt, SFMT_U8);
-			else
-				*fmt = sfmt_set_fmt (*fmt, SFMT_S8);
-			break;
-		case SFMT_S16:
-		case SFMT_U16:
-			change_sign_16 ((uint16_t *)buf, size / 2);
-			if (*fmt & SFMT_S16)
-				*fmt = sfmt_set_fmt (*fmt, SFMT_U16);
-			else
-				*fmt = sfmt_set_fmt (*fmt, SFMT_S16);
-			break;
-		case SFMT_S24:
-		case SFMT_U24:
-			change_sign_24 ((uint32_t *)buf, size/4);
-			if (*fmt & SFMT_S24)
-				*fmt = sfmt_set_fmt (*fmt, SFMT_U24);
-			else
-				*fmt = sfmt_set_fmt (*fmt, SFMT_S24);
-			break;
-		case SFMT_S32:
-		case SFMT_U32:
-			change_sign_32 ((uint32_t *)buf, size/4);
-			if (*fmt & SFMT_S32)
-				*fmt = sfmt_set_fmt (*fmt, SFMT_U32);
-			else
-				*fmt = sfmt_set_fmt (*fmt, SFMT_S32);
-			break;
-		default:
-			error ("Request for changing sign of unknown format: %s",
-			       sfmt_str (*fmt, fmt_name, sizeof (fmt_name)));
-			abort ();
-	}
 }
 
 void audio_conv_bswap_16 (int16_t *buf, const size_t num)
@@ -1036,104 +1131,10 @@ a[1][0] = 0; a[1][2]=0.707; a[1][1]=1.0; a[1][4]= 0.5774; a[1][5]=0.8165; a[1][3
 	return stereo;
 }
 
-static int8_t *s32_to_s24_3 (int32_t *in, const size_t samples)
-{
-	size_t i;
-	int8_t *new;
-
-	new = (int8_t *)xmalloc (samples * 3);
-
-	for (i = 0; i < samples; i++)
-	{
-		new[3*i] = (in[i]&0x0000FF00)>>8;
-		new[3*i+1] = (in[i]&0x00FF0000)>>16;
-		new[3*i+2] = (in[i]&0xFF000000)>>24;
-	}
-	return new;
-}
-
-
-static int16_t *s32_to_s16 (int32_t *in, const size_t samples)
-{
-	size_t i;
-	int16_t *new;
-
-	new = (int16_t *)xmalloc (samples * 2);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 16;
-
-	return new;
-}
-
-static uint16_t *u32_to_u16 (uint32_t *in, const size_t samples)
-{
-	size_t i;
-	uint16_t *new;
-
-	new = (uint16_t *)xmalloc (samples * 2);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 16;
-
-	return new;
-}
-
-static int32_t *s32_to_s24 (int32_t *in, const size_t samples)
-{
-	size_t i;
-	int32_t *new;
-
-	new = (int32_t *)xmalloc (samples * 4);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 8;
-
-	return new;
-}
-
-static uint32_t *u32_to_u24 (uint32_t *in, const size_t samples)
-{
-	size_t i;
-	uint32_t *new;
-
-	new = (uint32_t *)xmalloc (samples * 4);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 8;
-
-	return new;
-}
-
-static int16_t *s24_to_s16 (int32_t *in, const size_t samples)
-{
-	size_t i;
-	int16_t *new;
-
-	new = (int16_t *)xmalloc (samples * 2);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 8;
-
-	return new;
-}
-
-static uint16_t *u24_to_u16 (uint32_t *in, const size_t samples)
-{
-	size_t i;
-	uint16_t *new;
-
-	new = (uint16_t *)xmalloc (samples * 2);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 8;
-
-	return new;
-}
 
 /* Do the sound conversion.  buf of length size is the sample buffer to
  * convert and the size of the converted sound is put into *conv_len.
- * Return the converted sound in malloc()ed memory. */
+ * Return the converted sound in malloced memory. */
 char *audio_conv (struct audio_conversion *conv, const char *buf,
 		const size_t size, size_t *conv_len)
 {
