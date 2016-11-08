@@ -568,6 +568,58 @@ static uint16_t *u24_to_u16 (const uint32_t *in, const size_t samples)
 	return new;
 }
 
+static int8_t *s16_to_s8 (const int16_t *in, const size_t samples)
+{
+	size_t i;
+	int8_t *new;
+
+	new = (int8_t *)xmalloc (samples);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 8;
+
+	return new;
+}
+
+static uint8_t *u16_to_u8 (const uint16_t *in, const size_t samples)
+{
+	size_t i;
+	uint8_t *new;
+
+	new = (uint8_t *)xmalloc (samples);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] >> 8;
+
+	return new;
+}
+
+static int32_t *s16_to_s24 (const int16_t *in, const size_t samples)
+{
+	size_t i;
+	int32_t *new;
+
+	new = (int32_t *)xmalloc (samples * 4);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] << 8;
+
+	return new;
+}
+
+static uint32_t *u16_to_u24 (const uint16_t *in, const size_t samples)
+{
+	size_t i;
+	uint32_t *new;
+
+	new = (uint32_t *)xmalloc (samples * 4);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] << 8;
+
+	return new;
+}
+
 static int32_t *s16_to_s32 (const int16_t *in, const size_t samples)
 {
 	size_t i;
@@ -763,11 +815,11 @@ static int16_t *fixed_to_s16 (const char *buf, const size_t size,
 			memcpy (out, buf, size);
 			change_sign_16 ((uint16_t *)out, size / 2);
 			break;
-// 		case SFMT_U24:
-// 			*new_size = size / 2;
-// 			out = (int16_t *)xmalloc (*new_size);
-// 			u24_to_s16 ((unsigned char *)buf, out, size / 4);
-// 			break;
+		case SFMT_U24:
+			*new_size = size / 2;
+			out = s24_to_s16 ((int32_t *)buf, size / 4);
+			change_sign_16 ((uint16_t *)out, size / 4);
+			break;
 		case SFMT_S24:
 			*new_size = size / 2;
 			out = s24_to_s16 ((int32_t *)buf, size / 4);
@@ -785,7 +837,7 @@ static int16_t *fixed_to_s16 (const char *buf, const size_t size,
 		case SFMT_U32: // should change_sign be before s32_to_s16?
 			*new_size = size / 2;
 			out = s32_to_s16 ((int32_t *)buf, size / 4);
-			change_sign_16 (out, size / 4);
+			change_sign_16 ((uint16_t *)out, size / 4);
 			break;
 		case SFMT_S32:
 			*new_size = size / 2;
@@ -811,30 +863,30 @@ static char *s16_to_fixed (const int16_t *buf, const size_t samples,
 	assert ((fmt & SFMT_MASK_FORMAT) != SFMT_FLOAT && (fmt & SFMT_MASK_FORMAT) != SFMT_S16);
 
 	switch (fmt & SFMT_MASK_FORMAT) {
-// 		case SFMT_U8:
-// 			*new_size = samples;
-// 			new_snd = (char *)xmalloc (samples);
-// 			s16_to_u8 (buf, (unsigned char *)new_snd, samples);
-// 			break;
-// 		case SFMT_S8:
-// 			*new_size = samples;
-// 			new_snd = (char *)xmalloc (samples);
-// 			s16_to_s8 (buf, new_snd, samples);
-// 			break;
+		case SFMT_U8:
+			*new_size = samples;
+			new_snd = (char *)s16_to_s8 (buf, samples);
+			change_sign_8 ((uint8_t *)new_snd, samples);
+			break;
+		case SFMT_S8:
+			*new_size = samples;
+			new_snd = (char *)s16_to_s8 (buf, samples);
+			break;
 		case SFMT_U16:
 			*new_size = samples * 2;
 			new_snd = (char *)xmalloc (*new_size);
 			memcpy (new_snd, buf, *new_size);
 			change_sign_16 ((uint16_t *)new_snd, samples);
 			break;
-// 		case SFMT_U24:
-// 			*new_size = samples * 4;
-// 			new_snd = (char *)s16_to_u24 (buf, samples);
-// 			break;
-// 		case SFMT_S24:
-// 			*new_size = samples * 4;
-// 			new_snd = (char *)s16_to_s24 (buf, samples);
-// 			break;
+		case SFMT_U24:
+			*new_size = samples * 4;
+			new_snd = (char *)s16_to_s24 (buf, samples);
+			change_sign_24 ((uint32_t *)new_snd, samples);
+			break;
+		case SFMT_S24:
+			*new_size = samples * 4;
+			new_snd = (char *)s16_to_s24 (buf, samples);
+			break;
 // 		case SFMT_U24_3:
 // 			*new_size = samples * 3;
 // 			new_snd = (char *)s16_to_u24_3 (buf, samples);
