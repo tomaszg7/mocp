@@ -123,6 +123,7 @@ static void change_sign (char *buf, const size_t size, long *fmt)
 	}
 }
 
+#ifdef INTERNAL_FLOAT
 static void float_to_u8 (const float *in, unsigned char *out, const size_t samples)
 {
 	size_t i;
@@ -473,6 +474,7 @@ static void s32_to_float (const char *in, float *out, const size_t samples)
 	for (i = 0; i < samples; i++)
 		out[i] = *in_32++ / ((float)INT32_MAX + 1.0);
 }
+#endif
 
 static int8_t *s32_to_s24_3 (const int32_t *in, const size_t samples)
 {
@@ -568,6 +570,7 @@ static uint16_t *u24_to_u16 (const uint32_t *in, const size_t samples)
 	return new;
 }
 
+#if !defined(INTERNAL_FLOAT)
 static int8_t *s16_to_s8 (const int16_t *in, const size_t samples)
 {
 	size_t i;
@@ -581,18 +584,18 @@ static int8_t *s16_to_s8 (const int16_t *in, const size_t samples)
 	return new;
 }
 
-static uint8_t *u16_to_u8 (const uint16_t *in, const size_t samples)
-{
-	size_t i;
-	uint8_t *new;
-
-	new = (uint8_t *)xmalloc (samples);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] >> 8;
-
-	return new;
-}
+// static uint8_t *u16_to_u8 (const uint16_t *in, const size_t samples)
+// {
+// 	size_t i;
+// 	uint8_t *new;
+// 
+// 	new = (uint8_t *)xmalloc (samples);
+// 
+// 	for (i = 0; i < samples; i++)
+// 		new[i] = in[i] >> 8;
+// 
+// 	return new;
+// }
 
 static int32_t *s16_to_s24 (const int16_t *in, const size_t samples)
 {
@@ -607,18 +610,18 @@ static int32_t *s16_to_s24 (const int16_t *in, const size_t samples)
 	return new;
 }
 
-static uint32_t *u16_to_u24 (const uint16_t *in, const size_t samples)
-{
-	size_t i;
-	uint32_t *new;
-
-	new = (uint32_t *)xmalloc (samples * 4);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] << 8;
-
-	return new;
-}
+// static uint32_t *u16_to_u24 (const uint16_t *in, const size_t samples)
+// {
+// 	size_t i;
+// 	uint32_t *new;
+// 
+// 	new = (uint32_t *)xmalloc (samples * 4);
+// 
+// 	for (i = 0; i < samples; i++)
+// 		new[i] = in[i] << 8;
+// 
+// 	return new;
+// }
 
 static int32_t *s16_to_s32 (const int16_t *in, const size_t samples)
 {
@@ -633,19 +636,21 @@ static int32_t *s16_to_s32 (const int16_t *in, const size_t samples)
 	return new;
 }
 
-static uint32_t *u16_to_u32 (const uint16_t *in, const size_t samples)
-{
-	size_t i;
-	uint32_t *new;
+// static uint32_t *u16_to_u32 (const uint16_t *in, const size_t samples)
+// {
+// 	size_t i;
+// 	uint32_t *new;
+// 
+// 	new = (uint32_t *)xmalloc (samples * 4);
+// 
+// 	for (i = 0; i < samples; i++)
+// 		new[i] = in[i] << 16;
+// 
+// 	return new;
+// }
+#endif
 
-	new = (uint32_t *)xmalloc (samples * 4);
-
-	for (i = 0; i < samples; i++)
-		new[i] = in[i] << 16;
-
-	return new;
-}
-
+#ifdef INTERNAL_FLOAT
 /* Convert fixed point samples in format fmt (size in bytes) to float.
  * Size of converted sound is put in new_size. Returned memory is malloced. */
 static float *fixed_to_float (const char *buf, const size_t size,
@@ -786,6 +791,8 @@ static char *float_to_fixed (const float *buf, const size_t samples,
 	return new_snd;
 }
 
+#else
+
 /* Convert fixed point samples in format fmt (size in bytes) to S16.
  * Size of converted sound is put in new_size. Returned memory is malloced. */
 static int16_t *fixed_to_s16 (const char *buf, const size_t size,
@@ -912,6 +919,7 @@ static char *s16_to_fixed (const int16_t *buf, const size_t samples,
 
 	return new_snd;
 }
+#endif
 
 void audio_conv_bswap_16 (int16_t *buf, const size_t num)
 {
