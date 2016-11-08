@@ -1503,7 +1503,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 					*conv_len / sizeof(float),
 					conv->to.fmt, conv_len);
 #else
-			assert (curr_sfmt & SFMT_S32);
+			assert (curr_sfmt & SFMT_S16);
 
 			new_sound = s16_to_fixed ((int16_t *)curr_sound,
 					*conv_len / 2, conv->to.fmt, conv_len);
