@@ -490,7 +490,6 @@ static int8_t *s32_to_s24_3 (const int32_t *in, const size_t samples)
 	return new;
 }
 
-
 static int16_t *s32_to_s16 (const int32_t *in, const size_t samples)
 {
 	size_t i;
@@ -565,6 +564,32 @@ static uint16_t *u24_to_u16 (const uint32_t *in, const size_t samples)
 
 	for (i = 0; i < samples; i++)
 		new[i] = in[i] >> 8;
+
+	return new;
+}
+
+static int32_t *s16_to_s32 (const int16_t *in, const size_t samples)
+{
+	size_t i;
+	int32_t *new;
+
+	new = (int32_t *)xmalloc (samples * 4);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] << 16;
+
+	return new;
+}
+
+static uint32_t *u16_to_u32 (const uint16_t *in, const size_t samples)
+{
+	size_t i;
+	uint32_t *new;
+
+	new = (uint32_t *)xmalloc (samples * 4);
+
+	for (i = 0; i < samples; i++)
+		new[i] = in[i] << 16;
 
 	return new;
 }
@@ -757,11 +782,11 @@ static int16_t *fixed_to_s16 (const char *buf, const size_t size,
 // 			out = (int16_t *)xmalloc (*new_size);
 // 			u24_3_to_s16 (buf, out, size / 3);
 // 			break;
-// 		case SFMT_U32:
-// 			*new_size = size / 2;
-// 			out = (int16_t *)xmalloc (*new_size);
-// 			u32_to_s16 ((unsigned char *)buf, out, size / 4);
-// 			break;
+		case SFMT_U32: // should change_sign be before s32_to_s16?
+			*new_size = size / 2;
+			out = s32_to_s16 ((int32_t *)buf, size / 4);
+			change_sign_16 (out, size / 4);
+			break;
 		case SFMT_S32:
 			*new_size = size / 2;
 			out = s32_to_s16 ((int32_t *)buf, size / 4);
@@ -818,14 +843,15 @@ static char *s16_to_fixed (const int16_t *buf, const size_t samples,
 // 			*new_size = samples * 3;
 // 			new_snd = (char *)s16_to_s24_3 (buf, samples);
 // 			break;
-// 		case SFMT_U32:
-// 			*new_size = samples * 4;
-// 			new_snd = (char *)s16_to_u32 (buf, samples);
-// 			break;
-// 		case SFMT_S32:
-// 			*new_size = samples * 4;
-// 			new_snd = (char *)s16_to_s32 (buf, samples);
-// 			break;
+		case SFMT_U32:
+			*new_size = samples * 4;
+			new_snd = (char *)s16_to_s32 (buf, samples);
+			change_sign_32 ((uint32_t *)new_snd, samples);
+			break;
+		case SFMT_S32:
+			*new_size = samples * 4;
+			new_snd = (char *)s16_to_s32 (buf, samples);
+			break;
 		default:
 			error ("Can't convert from S16 to %s!",
 			       sfmt_str (fmt, fmt_name, sizeof (fmt_name)));
@@ -1305,7 +1331,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 		*conv_len = *conv_len *3/ 4;
 
-		logit ("Fast conversion: 32bit -> 24bit_3!");
+		logit ("Fast conversion: 32bit -> 24_3bit!");
 	}
 	
 	/* Special case (optimization): if we only need to convert 32bit samples
@@ -1381,7 +1407,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 		*conv_len /= 2;
 
-		logit ("Fast conversion: 32bit -> 16bit!");
+		logit ("Fast conversion: 24bit -> 16bit!");
 	}
 
 	/* convert to float or S16 if necessary */
