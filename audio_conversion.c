@@ -1044,7 +1044,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 		*conv_len = *conv_len *3/ 4;
 
-		logit ("Fast conversion: 32bit -> 24bit_3!");
+		logit ("Fast conversion: 32bit -> 24_3bit!");
 	}
 	
 	/* Special case (optimization): if we only need to convert 32bit samples
@@ -1120,7 +1120,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 		curr_sound = new_sound;
 		*conv_len /= 2;
 
-		logit ("Fast conversion: 32bit -> 16bit!");
+		logit ("Fast conversion: 24bit -> 16bit!");
 	}
 
 	
