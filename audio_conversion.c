@@ -1018,7 +1018,7 @@ int audio_conv_new (struct audio_conversion *conv,
 #endif
 		}
 		else if (!strcasecmp(options_get_symb("ResampleLibrary"),"SRC")) {
-#if HAVE_SAMPLERATE && INTERNAL_FLOAT
+#ifdef HAVE_SAMPLERATE
 			int err;
 			int resample_type = -1;
 			char *method = options_get_symb ("SRCResampleMethod");
@@ -1049,7 +1049,7 @@ int audio_conv_new (struct audio_conversion *conv,
 #endif
 		}
 		else if (!strcasecmp(options_get_symb("ResampleLibrary"),"soxr")) {
-#if HAVE_SOXR && INTERNAL_FLOAT
+#ifdef HAVE_SOXR
 			soxr_error_t err;
 /*			switch (sizeof(float))
 				case 4:
@@ -1100,7 +1100,7 @@ int audio_conv_new (struct audio_conversion *conv,
 	return 1;
 }
 
-#if HAVE_SAMPLERATE && INTERNAL_FLOAT
+#ifdef HAVE_SAMPLERATE
 static float *src_resample_sound (struct audio_conversion *conv, const float *buf,
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
@@ -1225,7 +1225,7 @@ static char *speex_resample_sound (struct audio_conversion *conv, const char *bu
 }
 #endif
 
-#if HAVE_SOXR && INTERNAL_FLOAT
+#ifdef HAVE_SOXR
 static float *soxr_resample_sound (struct audio_conversion *conv, const float *buf,
 		const size_t samples, const int nchannels, size_t *resampled_samples)
 {
@@ -1503,7 +1503,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 	}
 #endif
 
-#if HAVE_SAMPLERATE && INTERNAL_FLOAT
+#ifdef HAVE_SAMPLERATE
 	if (!strcasecmp(options_get_symb("ResampleLibrary"),"SRC") && (conv->from.rate != conv->to.rate)) {
 		char *new_sound = (char *)src_resample_sound (conv,
 				(float *)curr_sound,
@@ -1535,7 +1535,7 @@ char *audio_conv (struct audio_conversion *conv, const char *buf,
 	}
 #endif
 
-#if HAVE_SOXR && INTERNAL_FLOAT
+#ifdef HAVE_SOXR
 	if (!strcasecmp(options_get_symb("ResampleLibrary"),"soxr") && (conv->from.rate != conv->to.rate)) {
 		char *new_sound = (char *)soxr_resample_sound (conv,
 				(float *)curr_sound,
