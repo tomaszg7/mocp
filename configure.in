@@ -157,6 +157,14 @@ then
 	                             [#include <db.h>]])
 fi
 
+AC_ARG_ENABLE(internal-float, AS_HELP_STRING([--enable-internal-float],
+                                             [Enable internal float processing]))
+
+if test "x$enable_internal_float" != "xno"
+then
+AC_DEFINE([INTERNAL_FLOAT],1,[Float internal processing.])
+fi
+
 AC_ARG_WITH(oss, AS_HELP_STRING([--without-oss],
                                 [Compile without OSS support]))
 

@@ -14,14 +14,6 @@ else
 	HAVE_ID3TAG=no
 fi
 
-AC_ARG_ENABLE(internal-float, AS_HELP_STRING([--enable-internal-float],
-                                             [Enable internal float output]))
-
-if test "x$enable_internal_float" = "xyes"
-then
-AC_DEFINE([INTERNAL_FLOAT],1,[Float decoder output.])
-fi
-
 m4_include(decoder_plugins/aac/aac.m4)
 m4_include(decoder_plugins/ffmpeg/ffmpeg.m4)
 m4_include(decoder_plugins/flac/flac.m4)
