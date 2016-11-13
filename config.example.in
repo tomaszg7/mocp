@@ -410,7 +410,8 @@
 
 # Enable resample. When set to 1 resampling is done when necessary. When set
 # to 2, resampling is forced on to MaxSamplerate. When set to 0 the device is
-# opened with the file's rate.
+# opened with the file's rate. Note that setting it to 1 acts as
+# "ALSAStutterDefeat" from mainline MOC.
 #EnableResample = 0
 #ForceSampleRate = 0
 

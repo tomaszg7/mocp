@@ -888,6 +888,23 @@ int options_check_list (const char *name, const char *val)
 	return result;
 }
 
+/* Return 1 if the named option was defaulted. */
+int options_was_defaulted (const char *name)
+{
+	int opt, result = 0;
+
+	assert (name);
+
+	opt = find_option (name, OPTION_ANY);
+	if (opt == -1)
+		return 0;
+
+	if (!options[opt].set_in_config && !options[opt].ignore_in_config)
+		result = 1;
+
+	return result;
+}
+
 /* Find and substitute variables enclosed by '${...}'.  Variables are
  * substituted first from the environment then, if not found, from
  * the configuration options.  Strings of the form '$${' are reduced to
