@@ -32,14 +32,11 @@ typedef unsigned short u_short;
 typedef unsigned int u_int;
 typedef unsigned long int u_long;
 # endif
-#include <db.h>
+# include <db.h>
+# define STRERROR_FN bdb_strerror
 #endif
 
 #define DEBUG
-
-#ifdef HAVE_DB_H
-#define STRERROR_FN bdb_strerror
-#endif
 
 #include "common.h"
 #include "server.h"
