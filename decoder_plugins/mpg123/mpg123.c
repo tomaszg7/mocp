@@ -103,10 +103,10 @@ static void get_tags (mpg123_handle *mf, struct file_tags *info)
 		}
 	  }
 	  if (v1) { debug("TG: v1 tags present");
-		if (!info->title && v1->title) {info->title  = safe_string(v1->title); debug("TG: title v1 %s", info->title);}
-		if (!info->artist && v1->artist) { info->artist = safe_string(v1->artist);  debug("TG: artist v1 %s", info->artist);}
-		if (!info->album && v1->album) {info->album = safe_string(v1->album); debug("TG: album v1 %s", info->album);}
-		if (info->track==-1 && v1->comment && v1->comment[28]==0 && v1->comment[29]>0) { info->track = (int)(v1->comment[29]); debug("TG: track v1 %d", info->track);}
+		if (!info->title) {info->title  = safe_string(v1->title); debug("TG: title v1 %s", info->title);}
+		if (!info->artist) { info->artist = safe_string(v1->artist);  debug("TG: artist v1 %s", info->artist);}
+		if (!info->album) {info->album = safe_string(v1->album); debug("TG: album v1 %s", info->album);}
+		if (info->track==-1 && v1->comment[28]==0 && v1->comment[29]>0) { info->track = (int)(v1->comment[29]); debug("TG: track v1 %d", info->track);}
 	  }
 	mpg123_meta_free(mf);
 	}
