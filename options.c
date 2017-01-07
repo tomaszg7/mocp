@@ -767,6 +767,7 @@ void options_init ()
 	add_bool ("SetXtermTitle", true);
 	add_bool ("SetScreenTitle", true);
 	add_bool ("PlaylistFullPaths", true);
+	add_bool ("SaveRelativePlaylists", true);
 
 	add_str  ("BlockDecorators", "`\"'", CHECK_LENGTH(1), 3, 3);
 	add_int  ("MessageLingerTime", 3, CHECK_RANGE(1), 0, INT_MAX);

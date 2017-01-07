@@ -472,10 +472,23 @@ err:
 int plist_save (struct plist *plist, const char *file, const char *cwd,
 		const int save_serial)
 {
-	char common_path[PATH_MAX+1];
+	int rel_path = 0;
+	if (cwd && options_get_bool("SaveRelativePlaylists")) {
+		int i;
+		rel_path = 1;
+
+		/* check if all elements of playlist are in CWD or below */
+		for (i = 0; i < plist->num; i++) {
+			if (!plist_deleted (plist, i) &&
+			(strstr(plist->items[i].file,cwd) != plist->items[i].file)) {
+				debug ("TG: relative playlist impossible for elem %d, file = %s",i,plist->items[i].file);
+				rel_path = 0;
+				break;
+			}
+		}
+	}
 
 	/* FIXME: check if it possible to just add some directories to make
 	 * relative path working. */
-	return plist_save_m3u (plist, file, cwd && !strcmp(common_path, cwd) ?
-			strlen(common_path) : 0, save_serial);
+	return plist_save_m3u (plist, file, rel_path ? strlen(cwd)+1 : 0, save_serial);
 }
