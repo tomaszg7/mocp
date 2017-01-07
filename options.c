@@ -633,6 +633,7 @@ void options_init ()
 	add_bool ("MP3IgnoreCRCErrors", true);
 	add_bool ("Repeat", false);
 	add_bool ("Shuffle", false);
+	add_bool ("ForceShufflePlaylistOnly", false);
 	add_bool ("AutoNext", true);
 	add_str  ("FormatString",
 	          "%(n:%n :)%(a:%a - :)%(t:%t:)%(A: \\(%A\\):)", CHECK_NONE);

@@ -1708,6 +1708,13 @@ static void play_it (const char *file)
 	else
 		curr_plist = playlist;
 
+	if (options_get_bool("ForceShufflePlaylistOnly")) {
+		send_int_to_srv (CMD_SET_OPTION);
+		send_str_to_srv ("Shuffle");
+		send_bool_to_srv (!iface_in_dir_menu());
+		sync_bool_option ("Shuffle");
+	}
+
 	send_int_to_srv (CMD_LOCK);
 
 	if (plist_get_serial(curr_plist) == -1 || get_server_plist_serial()

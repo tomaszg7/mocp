@@ -104,6 +104,9 @@
 #Shuffle = no
 #AutoNext = yes
 
+# Enable shuffle automatically for all playlists and disable for directories
+#ForceShufflePlaylistOnly = no
+
 # Default FormatString:
 #
 #   %n - Track number
