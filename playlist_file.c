@@ -488,7 +488,5 @@ int plist_save (struct plist *plist, const char *file, const char *cwd,
 		}
 	}
 
-	/* FIXME: check if it possible to just add some directories to make
-	 * relative path working. */
 	return plist_save_m3u (plist, file, rel_path ? strlen(cwd)+1 : 0, save_serial);
 }

@@ -560,6 +560,10 @@
 # Display full paths instead of just file names in the playlist.
 #PlaylistFullPaths = yes
 
+# Whenever possible, playlists will be saved with relative paths, instead
+# of absolute.
+#SaveRelativePlaylists = yes
+
 # The following setting describes how block markers are displayed in
 # the play time progress bar.  Its value is a string of exactly three
 # characters.  The first character is displayed in a position which
