@@ -21,6 +21,7 @@
 #include <ctype.h>
 #include <errno.h>
 #include <assert.h>
+#include <libgen.h>
 
 #define DEBUG
 
@@ -472,21 +473,32 @@ err:
 int plist_save (struct plist *plist, const char *file, const char *cwd,
 		const int save_serial)
 {
-	int rel_path = 0;
-	if (cwd && options_get_bool("SaveRelativePlaylists")) {
-		int i;
-		rel_path = 1;
+	int offset = 0;
+	char *dir,*file_copy;
 
-		/* check if all elements of playlist are in CWD or below */
+	debug("TG: saving playlist %s", file);
+
+	if (options_get_bool("SaveRelativePlaylists")) {
+		int i;
+
+		file_copy = xstrdup(file);
+		dir = xstrdup(dirname(file_copy));
+		offset = strlen(dir)+1;
+
+		assert (strcmp(dir,".") != 0); // file should already include path
+
+		/* check if all elements of playlist are in dir or below */
 		for (i = 0; i < plist->num; i++) {
 			if (!plist_deleted (plist, i) &&
-			(strstr(plist->items[i].file,cwd) != plist->items[i].file)) {
-				debug ("TG: relative playlist impossible for elem %d, file = %s",i,plist->items[i].file);
-				rel_path = 0;
+			(strstr(plist->items[i].file,dir) != plist->items[i].file)) {
+				debug ("TG: relative paths in playlist disabled due to entry %d, file = %s",i,plist->items[i].file);
+				offset = 0;
 				break;
 			}
 		}
+		free(dir);
+		free(file_copy);
 	}
 
-	return plist_save_m3u (plist, file, rel_path ? strlen(cwd)+1 : 0, save_serial);
+	return plist_save_m3u (plist, file, offset, save_serial);
 }
