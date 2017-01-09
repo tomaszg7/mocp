@@ -3681,9 +3681,9 @@ void interface_loop ()
 				do_silent_seek ();
 #ifdef HAVE_SYS_INOTIFY_H
 				if (FD_ISSET(inotify_fd, &fds)) {
-					char buffer[1024];
+//					char buffer[1024];
 					debug("TG: inotify event, refreshing");
-					ret = read(inotify_fd, buffer, 1024); // only needed to empty the event queue
+					ret = read(inotify_fd, NULL, 100 * sizeof (struct inotify_event)); // only needed to empty the event queue
 //					lseek(inotify_fd,0,SEEK_END);
 					reread_dir();
 				}
