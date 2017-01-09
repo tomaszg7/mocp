@@ -380,6 +380,7 @@ static int vorbis_decode (void *prv_data, char *buf, int buf_len,
 		if (bitrate > 0)
 			data->bitrate = bitrate / 1000;
 
+#ifndef HAVE_TREMOR
 #ifdef INTERNAL_FLOAT
 		if (sound_params->channels==1) {
 			assert (sizeof(float) * ret <= (unsigned)buf_len);
@@ -403,6 +404,7 @@ static int vorbis_decode (void *prv_data, char *buf, int buf_len,
 			}
 			free(out);
 		}
+#endif
 #endif
 		break;
 	}
