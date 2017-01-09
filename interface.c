@@ -2365,13 +2365,12 @@ static void entry_key_search (const struct iface_key *k)
 		iface_entry_handle_key (k);
 }
 
-static void save_playlist (const char *file, const char *cwd,
-		const int save_serial)
+static void save_playlist (const char *file, const int save_serial)
 {
 	iface_set_status ("Saving the playlist...");
 	fill_tags (playlist, TAGS_COMMENTS | TAGS_TIME, 0);
 	if (!user_wants_interrupt()) {
-		if (plist_save(playlist, file, cwd, save_serial))
+		if (plist_save(playlist, file, save_serial))
 			interface_message ("Playlist saved");
 	}
 	else
@@ -2407,8 +2406,7 @@ static void entry_key_plist_save (const struct iface_key *k)
 				iface_entry_set_file (file);
 			}
 			else {
-				save_playlist (file, strchr(text, '/')
-						? NULL : cwd, 0);
+				save_playlist (file, 0);
 
 				if (iface_in_dir_menu())
 					reread_dir ();
@@ -2432,7 +2430,7 @@ static void entry_key_plist_overwrite (const struct iface_key *k)
 
 		iface_entry_disable ();
 
-		save_playlist (file, NULL, 0); /* FIXME: not always NULL! */
+		save_playlist (file, 0);
 		if (iface_in_dir_menu())
 			reread_dir ();
 
@@ -3676,7 +3674,7 @@ static void save_playlist_in_moc ()
 	char *plist_file = create_file_name (PLAYLIST_FILE);
 
 	if (plist_count(playlist) && options_get_bool("SavePlaylist"))
-		save_playlist (plist_file, NULL, 1);
+		save_playlist (plist_file, 1);
 	else
 		unlink (plist_file);
 }
@@ -3855,8 +3853,7 @@ void interface_cmdline_append (int server_sock, lists_t_strs *args)
 				fill_tags (&saved_plist, TAGS_COMMENTS
 						| TAGS_TIME, 1);
 				plist_save (&saved_plist,
-						create_file_name (PLAYLIST_FILE),
-						NULL, 1);
+						create_file_name (PLAYLIST_FILE), 1);
 			}
 
 			plist_free (&saved_plist);

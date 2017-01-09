@@ -470,8 +470,7 @@ err:
 
 /* Save the playlist into the file. Return 0 on error. If cwd is NULL, use
  * absolute paths. */
-int plist_save (struct plist *plist, const char *file, const char *cwd,
-		const int save_serial)
+int plist_save (struct plist *plist, const char *file, const int save_serial)
 {
 	int offset = 0;
 	char *dir,*file_copy;
