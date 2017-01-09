@@ -30,6 +30,10 @@
 #include <dirent.h>
 #include <sys/select.h>
 
+#ifdef HAVE_SYS_INOTIFY_H
+#include <sys/inotify.h>
+#endif
+
 #define DEBUG
 
 #include "common.h"
@@ -91,6 +95,12 @@ static time_t silent_seek_key_last = (time_t)0; /* when the silent seek key was
 
 /* When the menu was last moved (arrow keys, page up, etc.) */
 static time_t last_menu_move_time = (time_t)0;
+
+/* File descriptors for inotify (inotify, watch) */
+#ifdef HAVE_SYS_INOTIFY_H
+static int inotify_fd = -1;
+static int inotify_wd = -1;
+#endif
 
 static void sig_quit (int sig LOGIT_ONLY)
 {
@@ -1300,6 +1310,13 @@ static int go_to_dir (const char *dir, const int reload)
 	plist_free (old_dir_plist);
 	free (old_dir_plist);
 
+#ifdef HAVE_SYS_INOTIFY_H
+	if (!reload && inotify_wd >= 0) {
+		int res = inotify_rm_watch(inotify_fd, inotify_wd);
+		debug("TG: removing watch: %s", (res == -1) ? xstrerror (errno) : "OK");
+	}
+#endif
+
 	if (dir) /* if dir is NULL, we went to cwd */
 		strcpy (cwd, dir);
 
@@ -1313,8 +1330,15 @@ static int go_to_dir (const char *dir, const int reload)
 
 	if (reload)
 		iface_update_dir_content (IFACE_MENU_DIR, dir_plist, dirs, playlists);
-	else
+	else {
 		iface_set_dir_content (IFACE_MENU_DIR, dir_plist, dirs, playlists);
+#ifdef HAVE_SYS_INOTIFY_H
+		if (inotify_fd >=0) {
+			inotify_wd = inotify_add_watch(inotify_fd, new_dir, IN_MODIFY | IN_CREATE | IN_DELETE);
+			debug("TG: adding watch for dir %s: %s", new_dir, (inotify_wd == -1) ? xstrerror (errno) : "OK");
+		}
+#endif
+	}
 	lists_strs_free (dirs);
 	lists_strs_free (playlists);
 	if (going_up)
@@ -3526,6 +3550,12 @@ void init_interface (const int sock, const int logging, lists_t_strs *args)
 	get_server_options ();
 	update_mixer_name ();
 
+#ifdef HAVE_SYS_INOTIFY_H
+	inotify_fd = inotify_init();
+	debug("TG: initialization of inotify: %s", (inotify_fd == -1) ? xstrerror (errno) : "OK");
+//	debug("TG: values of fds: serv %d, inotify %d",srv_sock,inotify_fd);
+#endif
+
 	xsignal (SIGQUIT, sig_quit);
 	xsignal (SIGTERM, sig_quit);
 	xsignal (SIGHUP, sig_quit);
@@ -3610,9 +3640,18 @@ void interface_loop ()
 		FD_ZERO (&fds);
 		FD_SET (srv_sock, &fds);
 		FD_SET (STDIN_FILENO, &fds);
+#ifdef HAVE_SYS_INOTIFY_H
+		if (inotify_fd >= 0)
+			FD_SET (inotify_fd, &fds);
+
+#endif
 
 		dequeue_events ();
+#ifdef HAVE_SYS_INOTIFY_H
+		ret = pselect (MAX(srv_sock,inotify_fd) + 1, &fds, NULL, NULL, &timeout, NULL);
+#else
 		ret = pselect (srv_sock + 1, &fds, NULL, NULL, &timeout, NULL);
+#endif
 		if (ret == -1 && !want_quit && errno != EINTR)
 			interface_fatal ("pselect() failed: %s", xstrerror (errno));
 
@@ -3640,6 +3679,16 @@ void interface_loop ()
 				if (FD_ISSET(srv_sock, &fds))
 					get_and_handle_event ();
 				do_silent_seek ();
+#ifdef HAVE_SYS_INOTIFY_H
+				if (FD_ISSET(inotify_fd, &fds)) {
+					char buffer[1024];
+					debug("TG: inotify event, refreshing");
+					ret = read(inotify_fd, buffer, 1024); // only needed to empty the event queue
+//					lseek(inotify_fd,0,SEEK_END);
+					reread_dir();
+				}
+#endif
+
 			}
 		}
 		else if (user_wants_interrupt())
@@ -3688,6 +3737,13 @@ void interface_end ()
 	else
 		send_int_to_srv (CMD_DISCONNECT);
 	srv_sock = -1;
+
+#ifdef HAVE_SYS_INOTIFY_H
+	if (inotify_wd >= 0)
+		inotify_rm_watch(inotify_fd, inotify_wd);
+	if (inotify_fd >= 0)
+		close(inotify_fd);
+#endif
 
 	windows_end ();
 	keys_cleanup ();

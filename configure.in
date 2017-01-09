@@ -403,6 +403,9 @@ then
 		[true])
 fi
 
+dnl Check for inotify
+AC_CHECK_HEADERS([sys/inotify.h])
+
 dnl Capture configuration options for this build.
 AC_DEFINE_UNQUOTED([CONFIGURATION], ["$ac_configure_args"],
                    [Define to the configuration used to build MOC.])
