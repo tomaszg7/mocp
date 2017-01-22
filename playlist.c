@@ -846,8 +846,12 @@ void plist_remove_common_items (struct plist *a, struct plist *b)
 	assert (b != NULL);
 
 	for (i = 0; i < a->num; i += 1) {
-		if (plist_find_fname(b, a->items[i].file) != -1)
-			plist_delete (a, i);
+		if (a->items[i].deleted == 0) {
+			assert (a->items[i].file != NULL);
+
+			if (plist_find_fname(b, a->items[i].file) != -1)
+				plist_delete (a, i);
+		}
 	}
 }
 
