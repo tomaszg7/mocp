@@ -2394,7 +2394,7 @@ static void save_playlist (const char *file, const int save_serial)
 	iface_set_status ("Saving the playlist...");
 	fill_tags (playlist, TAGS_COMMENTS | TAGS_TIME, 0);
 	if (!user_wants_interrupt()) {
-		if (plist_save(playlist, file, save_serial))
+		if (plist_save (playlist, file, save_serial))
 			interface_message ("Playlist saved");
 	}
 	else
@@ -2611,8 +2611,8 @@ static time_t rounded_time ()
 	struct timespec exact_time;
 	time_t curr_time;
 
-	if (clock_gettime (CLOCK_REALTIME, &exact_time) == -1)
-		interface_fatal ("clock_gettime() failed: %s", xstrerror (errno));
+	if (get_realtime (&exact_time) == -1)
+		interface_fatal ("get_realtime() failed: %s", xstrerror (errno));
 
 	curr_time = exact_time.tv_sec;
 	if (exact_time.tv_nsec > 500000000L)
@@ -3908,8 +3908,7 @@ void interface_cmdline_append (int server_sock, lists_t_strs *args)
 			if (options_get_bool("SavePlaylist")) {
 				fill_tags (&saved_plist, TAGS_COMMENTS
 						| TAGS_TIME, 1);
-				plist_save (&saved_plist,
-						create_file_name (PLAYLIST_FILE), 1);
+				plist_save (&saved_plist, create_file_name (PLAYLIST_FILE), 1);
 			}
 
 			plist_free (&saved_plist);
