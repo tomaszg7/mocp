@@ -14,6 +14,7 @@
 #endif
 
 #include <unistd.h>
+#include <fcntl.h>
 #include <sys/file.h>
 #include <stdio.h>
 #include <string.h>
@@ -86,6 +87,7 @@ static int plist_load_m3u (struct plist *plist, const char *fname,
 	int last_added = -1;
 	int after_extinf = 0;
 	int added = 0;
+	struct flock read_lock = {.l_type = F_RDLCK, .l_whence = SEEK_SET};
 
 	file = fopen (fname, "r");
 	if (!file) {
@@ -94,7 +96,7 @@ static int plist_load_m3u (struct plist *plist, const char *fname,
 	}
 
 	/* Lock gets released by fclose(). */
-	if (lockf (fileno (file), F_LOCK, 0) == -1)
+	if (fcntl (fileno (file), F_SETLKW, &read_lock) == -1)
 		log_errno ("Can't lock the playlist file", errno);
 
 	while ((line = read_line (file))) {
@@ -405,6 +407,7 @@ static int plist_save_m3u (struct plist *plist, const char *fname,
 {
 	FILE *file = NULL;
 	int i, ret, result = 0;
+	struct flock write_lock = {.l_type = F_WRLCK, .l_whence = SEEK_SET};
 
 	debug ("Saving playlist to '%s'", fname);
 
@@ -415,7 +418,7 @@ static int plist_save_m3u (struct plist *plist, const char *fname,
 	}
 
 	/* Lock gets released by fclose(). */
-	if (lockf (fileno (file), F_LOCK, 0) == -1)
+	if (fcntl (fileno (file), F_SETLKW, &write_lock) == -1)
 		log_errno ("Can't lock the playlist file", errno);
 
 	if (fprintf (file, "#EXTM3U\r\n") < 0) {
