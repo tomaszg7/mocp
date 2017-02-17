@@ -795,10 +795,26 @@ static int req_set_rating (struct client *cli)
 	char *file;
 	int   rating;
 
-	if (!(file = get_str(cli->socket)) || !*file) return 0;
-	if (!get_int(cli->socket, &rating)) return 0;
+	if (!(file = get_str(cli->socket))) return 0;
+	if (!get_int(cli->socket, &rating))
+	{
+		free (file);
+		return 0;
+	}
 
-	logit ("Rating %s %d/5", *file ? file : "first element on the list", rating);
+	if (!*file)
+	{
+		free (file);
+		file = audio_get_sname ();
+		if (!file) return 0;
+		if (!*file)
+		{
+			free (file);
+			return 0;
+		}
+	}
+
+	logit ("Rating %s %d/5", file, rating);
 	
 	ratings_write_file (file, rating);
 	// TODO: update tags for file?

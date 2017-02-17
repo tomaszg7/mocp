@@ -78,10 +78,12 @@ struct parameters
 	int unpause;
 	int next;
 	int previous;
+	int rate;
 	int get_file_info;
 	int toggle_pause;
 	int playit;
 	int seek_by;
+	int new_rating;
 	char jump_type;
 	int jump_to;
 	char *formatted_info_param;
@@ -255,6 +257,8 @@ static void server_command (struct parameters *params, lists_t_strs *args)
 		interface_cmdline_file_info (sock);
 	if (params->seek_by)
 		interface_cmdline_seek_by (sock, params->seek_by);
+	if (params->rate)
+		interface_cmdline_set_rating (sock, params->new_rating);
 	if (params->jump_type=='%')
 		interface_cmdline_jump_to_percent (sock,params->jump_to);
 	if (params->jump_type=='s')
@@ -473,6 +477,7 @@ enum {
 	CL_NOSYNC,
 	CL_ASCII,
 	CL_JUMP,
+	CL_RATE,
 	CL_GETINFO
 };
 
@@ -527,6 +532,8 @@ static struct poptOption server_opts[] = {
 			"Play the previous song", NULL},
 	{"seek", 'k', POPT_ARG_INT, &params.seek_by, CL_NOIFACE,
 			"Seek by N seconds (can be negative)", "N"},
+	{"rate", '*', POPT_ARG_INT, &params.new_rating, CL_RATE,
+			"Rate current song N stars (N=0..5)", "N"},
 	{"jump", 'j', POPT_ARG_STRING, NULL, CL_JUMP,
 			"Jump to some position in the current track", "N{%,s}"},
 	{"volume", 'v', POPT_ARG_STRING, &params.adj_volume, CL_NOIFACE,
@@ -1032,6 +1039,10 @@ static void process_options (poptContext ctx, lists_t_strs *deferred)
 			//TODO: Add message explaining the error
 			show_usage (ctx);
 			exit (EXIT_FAILURE);
+		case CL_RATE:
+			params.rate = 1;
+			params.allow_iface = 0;
+			break;
 		case CL_GETINFO:
 			params.get_formatted_info = 1;
 			params.allow_iface = 0;

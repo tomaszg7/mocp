@@ -643,6 +643,10 @@ static void update_item_tags (struct plist *plist, const int num,
 	if (!(tags->filled & TAGS_TIME) && old_tags && old_tags->time != -1)
 		plist_set_item_time (plist, num, old_tags->time);
 
+	/* Same thing for ratings */
+	if (!(tags->filled & TAGS_RATING) && old_tags && old_tags->filled & TAGS_RATING)
+		plist_set_item_rating (plist, num, old_tags->rating);
+
 	if (plist->items[num].title_tags) {
 		free (plist->items[num].title_tags);
 		plist->items[num].title_tags = NULL;
@@ -892,6 +896,9 @@ static void event_plist_add (const struct plist_item *item)
 		if (options_get_bool("ReadTags")
 				&& (!item->tags || !item->tags->title))
 			needed_tags |= TAGS_COMMENTS;
+		if (options_get_bool("RatingShow")
+				&& (!item->tags || !(item->tags->filled & TAGS_RATING)))
+			needed_tags |= TAGS_RATING;
 		if (!strcasecmp(options_get_symb("ShowTime"), "yes")
 				&& (!item->tags || item->tags->time == -1))
 			needed_tags |= TAGS_TIME;
@@ -4211,6 +4218,18 @@ void interface_cmdline_seek_by (int server_sock, const int seek_by)
 	srv_sock = server_sock; /* the interface is not initialized, so set it
 				   here */
 	seek (seek_by);
+}
+
+void interface_cmdline_set_rating (int server_sock, int rating)
+{
+	if (rating < 0) rating = 0;
+	if (rating > 5) rating = 5;
+
+	srv_sock = server_sock; /* the interface is not initialized, so set it here */
+
+	send_int_to_srv (CMD_SET_RATING);
+	send_str_to_srv ("");
+	send_int_to_srv (rating);
 }
 
 void interface_cmdline_jump_to (int server_sock, const int pos)

@@ -45,6 +45,7 @@ void interface_cmdline_play_first (int server_sock);
 void interface_cmdline_file_info (const int server_sock);
 void interface_cmdline_playit (int server_sock, lists_t_strs *args);
 void interface_cmdline_seek_by (int server_sock, const int seek_by);
+void interface_cmdline_set_rating (int server_sock, int rating);
 void interface_cmdline_jump_to_percent (int server_sock, const int percent);
 void interface_cmdline_jump_to (int server_sock, const int pos);
 void interface_cmdline_adj_volume (int server_sock, const char *arg);
