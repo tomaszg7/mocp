@@ -69,7 +69,7 @@ typedef unsigned long int u_long;
  * temporarily set it to zero to disable cache activity during structural
  * changes which require multiple commits.
  */
-#define CACHE_DB_FORMAT_VERSION	1
+#define CACHE_DB_FORMAT_VERSION	2
 
 /* How frequently to flush the tags database to disk.  A value of zero
  * disables flushing. */
@@ -262,6 +262,7 @@ static char *cache_record_serialize (const struct cache_record *rec, int *len)
 		+ album_len
 		+ title_len
 		+ sizeof(rec->tags->track)
+		+ 1 /* tags->rating */
 		+ sizeof(rec->tags->time);
 
 	buf = p = (char *)xmalloc (*len);
@@ -298,6 +299,8 @@ static char *cache_record_serialize (const struct cache_record *rec, int *len)
 
 	memcpy (p, &rec->tags->time, sizeof(rec->tags->time));
 	p += sizeof(rec->tags->time);
+
+	*p++ = (char)rec->tags->rating;
 
 	return buf;
 }
@@ -351,6 +354,10 @@ static int cache_record_deserialize (struct cache_record *rec,
 		extract_str (rec->tags->title);
 		extract_num (rec->tags->track);
 		extract_num (rec->tags->time);
+
+		if (!bytes_left) goto err;
+		rec->tags->rating = *p++;
+		--bytes_left;
 
 		if (rec->tags->title)
 			rec->tags->filled |= TAGS_COMMENTS;

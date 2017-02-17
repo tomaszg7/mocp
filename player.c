@@ -379,6 +379,7 @@ static void show_tags (const struct file_tags *tags DEBUG_ONLY)
 	debug ("TAG[album]: %s", tags->album ? tags->album : "N/A");
 	debug ("TAG[artist]: %s", tags->artist ? tags->artist : "N/A");
 	debug ("TAG[track]: %d", tags->track);
+	debug ("TAG[track]: %d", tags->rating);
 }
 
 /* Update tags if tags from the decoder or the stream are available. */

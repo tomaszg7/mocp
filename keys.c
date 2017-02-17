@@ -503,6 +503,54 @@ static struct command commands[] = {
 		{ '9' | META_KEY_FLAG, -1 },
 		1
 	},
+	{
+		KEY_CMD_RATE_0,
+		"rate_0",
+		"Set rating to 0 stars",
+		CON_MENU,
+		{ '0', -1 },
+		1
+	},
+	{
+		KEY_CMD_RATE_1,
+		"rate_1",
+		"Set rating to 1 star",
+		CON_MENU,
+		{ '1', -1 },
+		1
+	},
+	{
+		KEY_CMD_RATE_2,
+		"rate_2",
+		"Set rating to 2 stars",
+		CON_MENU,
+		{ '2', -1 },
+		1
+	},
+	{
+		KEY_CMD_RATE_3,
+		"rate_3",
+		"Set rating to 3 stars",
+		CON_MENU,
+		{ '3', -1 },
+		1
+	},
+	{
+		KEY_CMD_RATE_4,
+		"rate_4",
+		"Set rating to 4 stars",
+		CON_MENU,
+		{ '4', -1 },
+		1
+	},
+	{
+		KEY_CMD_RATE_5,
+		"rate_5",
+		"Set rating to 5 stars",
+		CON_MENU,
+		{ '5', -1 },
+		1
+	},
  	{
  		KEY_CMD_MARK_START,
  		"mark_start",

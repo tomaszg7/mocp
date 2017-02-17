@@ -785,6 +785,8 @@ static void side_menu_init (struct side_menu *m, const enum side_menu_type type,
 				options_get_bool("ShowFormat"));
 		menu_set_show_time (m->menu.list.main,
 				strcasecmp(options_get_symb("ShowTime"), "no"));
+		menu_set_show_rating (m->menu.list.main,
+				options_get_bool("RatingShow"));
 		menu_set_info_attr_normal (m->menu.list.main,
 				get_color(CLR_MENU_ITEM_INFO));
 		menu_set_info_attr_sel (m->menu.list.main,
@@ -1085,6 +1087,7 @@ static void side_menu_clear (struct side_menu *m)
 	menu_set_show_format (m->menu.list.main, options_get_bool("ShowFormat"));
 	menu_set_show_time (m->menu.list.main,
 			strcasecmp(options_get_symb("ShowTime"), "no"));
+	menu_set_show_rating (m->menu.list.main, options_get_bool("RatingShow"));
 	menu_set_info_attr_normal (m->menu.list.main, get_color(CLR_MENU_ITEM_INFO));
 	menu_set_info_attr_sel (m->menu.list.main, get_color(CLR_MENU_ITEM_INFO_SELECTED));
 	menu_set_info_attr_marked (m->menu.list.main, get_color(CLR_MENU_ITEM_INFO_MARKED));
@@ -1406,6 +1409,11 @@ static void update_menu_item (struct menu_item *mi,
 	}
 	else
 		menu_item_set_time (mi, "");
+
+	int r = (item->tags && item->tags->filled & TAGS_RATING) ? item->tags->rating : 0;
+	if (r < 0) r = 0;
+	if (r > 5) r = 5;
+	menu_item_set_rating (mi, options_rating_strings[r]);
 
 	made_from_tags = (options_get_bool ("ReadTags") && item->title_tags);
 

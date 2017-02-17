@@ -42,6 +42,7 @@ int options_check_bool (const char *name, const bool val);
 int options_check_list (const char *name, const char *val);
 int options_was_defaulted (const char *name);
 enum option_type options_get_type (const char *name);
+const char * options_rating_strings[6];
 
 #ifdef __cplusplus
 }

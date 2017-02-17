@@ -37,6 +37,7 @@ enum menu_align
 };
 
 #define FILE_TIME_STR_SZ        6
+#define FILE_RATING_STR_SZ     20
 #define FILE_FORMAT_SZ          4
 
 struct menu_item
@@ -57,6 +58,7 @@ struct menu_item
 
 	/* Additional information shown: */
 	char time[FILE_TIME_STR_SZ];		/* File time string */
+	char rating[FILE_RATING_STR_SZ];	/* File rating string */
 	char format[FILE_FORMAT_SZ];		/* File format */
 	int queue_pos;				/* Position in the queue */
 
@@ -83,6 +85,7 @@ struct menu
 
 	/* Flags for displaying information about the file. */
 	int show_time;
+	bool show_rating;
 	bool show_format;
 
 	int info_attr_normal;	/* attributes for information about the file */
@@ -113,6 +116,7 @@ void menu_item_set_attr_sel_marked (struct menu_item *mi, const int attr);
 void menu_item_set_attr_marked (struct menu_item *mi, const int attr);
 
 void menu_item_set_time (struct menu_item *mi, const char *time);
+void menu_item_set_rating (struct menu_item *mi, const char *rating);
 void menu_item_set_format (struct menu_item *mi, const char *format);
 void menu_item_set_queue_pos (struct menu_item *mi, const int pos);
 
@@ -129,6 +133,7 @@ void menu_update_size (struct menu *menu, const int posx, const int posy,
 void menu_unmark_item (struct menu *menu);
 struct menu *menu_filter_pattern (const struct menu *menu, const char *pattern);
 void menu_set_show_time (struct menu *menu, const int t);
+void menu_set_show_rating (struct menu *menu, const bool t);
 void menu_set_show_format (struct menu *menu, const bool t);
 void menu_set_info_attr_normal (struct menu *menu, const int attr);
 void menu_set_info_attr_sel (struct menu *menu, const int attr);

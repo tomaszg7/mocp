@@ -61,6 +61,8 @@ struct option
 static struct option options[OPTIONS_MAX];
 static int options_num = 0;
 
+/* We build these only once in options_parse */
+const char * options_rating_strings[6] = {NULL};
 
 /* Returns the str's hash using djb2 algorithm. */
 static unsigned int hash (const char * str)
@@ -703,6 +705,10 @@ void options_init ()
 	add_bool ("SyncPlaylist", true);
 	add_str  ("Keymap", NULL, CHECK_NONE);
 	add_bool ("ASCIILines", false);
+	add_bool ("RatingShow", true);
+	add_str  ("RatingStar",  "*", CHECK_NONE);
+	add_str  ("RatingSpace", " ", CHECK_NONE);
+	add_str  ("RatingFile", "ratings", CHECK_NONE);
 
 	add_path ("FastDir1", NULL, CHECK_NONE);
 	add_path ("FastDir2", NULL, CHECK_NONE);
@@ -817,6 +823,39 @@ void options_init ()
 	add_path ("OnStop", NULL, CHECK_NONE);
 
 	add_bool ("QueueNextSongReturn", false);
+}
+
+static void build_rating_strings()
+{
+	const char **S = options_rating_strings;
+	const char *s0 = options_get_str ("RatingSpace");
+	const char *s1 = options_get_str ("RatingStar");
+	if (!s0) s0 = " ";
+	if (!s1) s1 = "*";
+	size_t l0 = strlen (s0), l1 = strlen (s1);
+	size_t l = l0 > l1 ? l0 : l1; // max
+
+	for (int i = 0; i <= 5; ++i)
+	{
+		free ((void*)S[i]);
+		char *s = xmalloc (5*l + 1);
+		if (!s) fatal ("Failed to allocate rating string %d (%zu bytes)!", i, 5*l + 1);
+		S[i] = s;
+		for (int j = 0; j < 5; ++j)
+		{
+			if (j >= i)
+			{
+				memcpy (s, s0, l0);
+				s += l0;
+			}
+			else
+			{
+				memcpy (s, s1, l1);
+				s += l1;
+			}
+		}
+		*s = 0;
+	}
 }
 
 /* Return 1 if a parameter to an integer option is valid. */
@@ -1224,6 +1263,8 @@ void options_parse (const char *config_file)
 	sanity_check ();
 
 	fclose (file);
+
+	build_rating_strings();
 }
 
 void options_free ()

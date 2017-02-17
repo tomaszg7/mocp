@@ -51,6 +51,7 @@
 #include "themes.h"
 #include "softmixer.h"
 #include "utf8.h"
+#include "ratings.h"
 
 #define INTERFACE_LOG	"mocp_client_log"
 #define PLAYLIST_FILE	"playlist.m3u"
@@ -580,6 +581,8 @@ static int get_tags_setting ()
 
 	if (options_get_bool("ReadTags"))
 		needed_tags |= TAGS_COMMENTS;
+	if (options_get_bool("RatingShow"))
+		needed_tags |= TAGS_RATING;
 	if (!strcasecmp(options_get_symb("ShowTime"), "yes"))
 		needed_tags |= TAGS_TIME;
 
@@ -2084,6 +2087,24 @@ static void reread_dir ()
 	go_to_dir (NULL, 1);
 }
 
+static void set_rating (int r)
+{
+	assert (r >= 0 && r <= 5);
+	/*send_int_to_srv (CMD_SET_RATING);
+	send_int_to_srv (r);*/
+
+	if (iface_curritem_get_type () != F_SOUND) return;
+	char *file = iface_get_curr_file ();
+	if (!file) return;
+
+	ratings_write_file (file, r);
+
+	free (file);
+
+	if (iface_in_dir_menu())
+		reread_dir ();
+}
+
 /* Clear the playlist on user request. */
 static void cmd_clear_playlist ()
 {
@@ -3363,6 +3384,24 @@ static void menu_key (const struct iface_key *k)
 				break;
 			case KEY_CMD_VOLUME_90:
 				set_mixer (90);
+				break;
+			case KEY_CMD_RATE_0:
+				set_rating (0);
+				break;
+			case KEY_CMD_RATE_1:
+				set_rating (1);
+				break;
+			case KEY_CMD_RATE_2:
+				set_rating (2);
+				break;
+			case KEY_CMD_RATE_3:
+				set_rating (3);
+				break;
+			case KEY_CMD_RATE_4:
+				set_rating (4);
+				break;
+			case KEY_CMD_RATE_5:
+				set_rating (5);
 				break;
 			case KEY_CMD_MARK_START:
 				file_info_block_mark (&curr_file.block_start);

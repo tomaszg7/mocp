@@ -13,7 +13,8 @@ extern "C" {
 enum tags_select
 {
 	TAGS_COMMENTS	= 0x01, /* artist, title, etc. */
-	TAGS_TIME	= 0x02 /* time of the file. */
+	TAGS_TIME	= 0x02, /* time of the file. */
+	TAGS_RATING	= 0x04  /* rating (0..5) */
 };
 
 struct file_tags
@@ -23,6 +24,7 @@ struct file_tags
 	char *album;
 	int track;
 	int time;
+	int rating;
 	int filled; /* Which tags are filled: TAGS_COMMENTS, TAGS_TIME. */
 };
 
@@ -89,7 +91,9 @@ int plist_deleted (const struct plist *plist, const int num);
 void plist_cat (struct plist *a, struct plist *b);
 void update_file (struct plist_item *item);
 void plist_set_item_time (struct plist *plist, const int num, const int time);
+void plist_set_item_rating (struct plist *plist, const int num, const int rating);
 int get_item_time (const struct plist *plist, const int i);
+int get_item_rating (const struct plist *plist, const int i);
 int plist_total_time (const struct plist *plisti, int *all_files);
 void plist_shuffle (struct plist *plist);
 void plist_swap_first_fname (struct plist *plist, const char *fname);

@@ -294,6 +294,7 @@ void packet_buf_add_tags (struct packet_buf *b, const struct file_tags *tags)
 		packet_buf_add_str (b, tags->album ? tags->album : "");
 		packet_buf_add_int (b, tags->track);
 		packet_buf_add_int (b, tags->filled & TAGS_TIME ? tags->time : -1);
+		packet_buf_add_int (b, tags->filled & TAGS_RATING ? tags->rating : -1);
 		packet_buf_add_int (b, tags->filled);
 	}
 	else {
@@ -304,7 +305,8 @@ void packet_buf_add_tags (struct packet_buf *b, const struct file_tags *tags)
 		packet_buf_add_str (b, ""); /* album */
 		packet_buf_add_int (b, -1); /* track */
 		packet_buf_add_int (b, -1); /* time */
-		packet_buf_add_int (b, 0); /* filled */
+		packet_buf_add_int (b, -1); /* rating */
+		packet_buf_add_int (b,  0); /* filled */
 	}
 }
 
@@ -391,6 +393,12 @@ struct file_tags *recv_tags (int sock)
 
 	if (!get_int(sock, &tags->time)) {
 		logit ("Error while receiving time");
+		tags_free (tags);
+		return NULL;
+	}
+
+	if (!get_int(sock, &tags->rating)) {
+		logit ("Error while receiving ratings");
 		tags_free (tags);
 		return NULL;
 	}
