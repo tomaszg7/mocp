@@ -2101,10 +2101,9 @@ static void set_rating (int r)
 	send_str_to_srv (file);
 	send_int_to_srv (r);
 
-	free (file);
+	send_tags_request (file, get_tags_setting ());
 
-	if (iface_in_dir_menu())
-		reread_dir ();
+	free (file);
 }
 
 /* Clear the playlist on user request. */
