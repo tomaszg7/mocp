@@ -2090,14 +2090,16 @@ static void reread_dir ()
 static void set_rating (int r)
 {
 	assert (r >= 0 && r <= 5);
-	/*send_int_to_srv (CMD_SET_RATING);
-	send_int_to_srv (r);*/
+
+	if (!options_get_bool("RatingShow")) return;
 
 	if (iface_curritem_get_type () != F_SOUND) return;
 	char *file = iface_get_curr_file ();
 	if (!file) return;
 
-	ratings_write_file (file, r);
+	send_int_to_srv (CMD_SET_RATING);
+	send_str_to_srv (file);
+	send_int_to_srv (r);
 
 	free (file);
 

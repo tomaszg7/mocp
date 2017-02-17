@@ -252,7 +252,7 @@ void ratings_read_all (const struct plist *plist)
 	}
 }
 
-void ratings_write_file (const char *fn, int rating)
+bool ratings_write_file (const char *fn, int rating)
 {
 	assert(fn && rating >= 0 && rating <= 5);
 
@@ -264,16 +264,16 @@ void ratings_write_file (const char *fn, int rating)
 	FILE *rf = open_ratings_file (path, "rb+");
 	if (!rf)
 	{
-		if (rating <= 0) return; // 0 rating needs no writing
+		if (rating <= 0) return 1; // 0 rating needs no writing
 
 		// file did not exist or could not be opened for reading
 		FILE *rf = open_ratings_file (path, "ab");
-		if (!rf) return; // can't create it either
+		if (!rf) return 0; // can't create it either
 
 		// append new rating
 		fprintf (rf, "%d %s\n", rating, fn);
 		fclose (rf);
-		return;
+		return 1;
 	}
 
 	long filepos;
@@ -295,18 +295,19 @@ void ratings_write_file (const char *fn, int rating)
 		}
 	}
 	fclose (rf);
+	return 1;
 }
 
-void ratings_write (const struct plist_item *item)
+bool ratings_write (const struct plist_item *item)
 {
 	assert(item && item->file);
-	if (item->type != F_SOUND) return;
-	if (item->type != F_SOUND || !item->tags) return;
-	if (!(item->tags->filled & TAGS_RATING)) return;
+	if (item->type != F_SOUND) return 0;
+	if (item->type != F_SOUND || !item->tags) return 0;
+	if (!(item->tags->filled & TAGS_RATING)) return 1;
 
 	const int rating = item->tags->rating;
 	const char *fn = item->file;
 
-	ratings_write_file (fn, rating);
+	return ratings_write_file (fn, rating);
 }
 

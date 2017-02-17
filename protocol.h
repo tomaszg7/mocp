@@ -146,6 +146,7 @@ enum noblock_io_status
 #define CMD_QUEUE_MOVE	0x3d /* move an item in the queue */
 #define CMD_QUEUE_CLEAR	0x3e /* clear the queue */
 #define CMD_GET_QUEUE	0x3f /* request the queue from the server */
+#define CMD_SET_RATING	0x40 /* change rating for a file */
 
 char *socket_name ();
 int get_int (int sock, int *i);

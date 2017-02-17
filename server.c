@@ -47,6 +47,7 @@
 #include "files.h"
 #include "softmixer.h"
 #include "equalizer.h"
+#include "ratings.h"
 
 #define SERVER_LOG	"mocp_server_log"
 #define PID_FILE	"pid"
@@ -783,6 +784,26 @@ static int req_play (struct client *cli)
 
 	logit ("Playing %s", *file ? file : "first element on the list");
 	audio_play (file);
+	free (file);
+
+	return 1;
+}
+
+/* Handle CMD_SET_RATING, return 1 if ok or 0 on error. */
+static int req_set_rating (struct client *cli)
+{
+	char *file;
+	int   rating;
+
+	if (!(file = get_str(cli->socket)) || !*file) return 0;
+	if (!get_int(cli->socket, &rating)) return 0;
+
+	logit ("Rating %s %d/5", *file ? file : "first element on the list", rating);
+	
+	ratings_write_file (file, rating);
+	// TODO: update tags for file?
+	// TODO: send updated tags to clients?
+
 	free (file);
 
 	return 1;
@@ -1635,6 +1656,10 @@ static void handle_command (const int client_id)
 			break;
 		case CMD_GET_QUEUE:
 			if (!req_send_queue(cli))
+				err = 1;
+			break;
+		case CMD_SET_RATING:
+			if (!req_set_rating(cli))
 				err = 1;
 			break;
 		default:
