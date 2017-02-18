@@ -2578,29 +2578,31 @@ static void delete_item ()
 /* Select the file that is currently played. */
 static void go_to_playing_file ()
 {
-	if (curr_file.file && file_type(curr_file.file) == F_SOUND) {
-		if (plist_find_fname(playlist, curr_file.file) != -1)
-			iface_switch_to_plist ();
-		else if (plist_find_fname(dir_plist, curr_file.file) != -1)
-			iface_switch_to_dir ();
-		else {
-			char *slash;
-			char *file = xstrdup (curr_file.file);
+	if (curr_file.file) {
+		if (iface_in_plist_menu() && plist_find_fname(playlist, curr_file.file) != -1)
+			iface_select_file (curr_file.file);
+		else if (iface_in_dir_menu() && file_type(curr_file.file) == F_SOUND) {
+			if (plist_find_fname(dir_plist, curr_file.file) != -1)
+				iface_select_file (curr_file.file);
+			else {
+				char *slash;
+				char *file = xstrdup (curr_file.file);
 
-			slash = strrchr (file, '/');
-			assert (slash != NULL);
-			*slash = 0;
+				slash = strrchr (file, '/');
+				assert (slash != NULL);
+				*slash = 0;
 
-			if (file[0])
-				go_to_dir (file, 0);
-			else
-				go_to_dir ("/", 0);
+				if (file[0])
+					go_to_dir (file, 0);
+				else
+					go_to_dir ("/", 0);
 
-			iface_switch_to_dir ();
-			free (file);
+				iface_switch_to_dir ();
+				free (file);
+
+				iface_select_file (curr_file.file);
+			}
 		}
-
-		iface_select_file (curr_file.file);
 	}
 }
 
