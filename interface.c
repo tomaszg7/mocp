@@ -1742,7 +1742,7 @@ static void play_it (const char *file)
 	send_int_to_srv (CMD_LOCK);
 
 	if (plist_get_serial(curr_plist) == -1 || get_server_plist_serial()
-			!= plist_get_serial(curr_plist)) {
+			!= plist_get_serial(curr_plist) || !options_get_bool("SyncPlaylist")) {
 		int serial;
 
 		logit ("The server has different playlist");
