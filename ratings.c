@@ -15,22 +15,15 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <stdint.h>
 #include <assert.h>
 
-#define DEBUG
-
-#include "common.h"
 #include "playlist.h"
-#include "log.h"
 #include "options.h"
-#include "files.h"
-#include "interface.h"
+#include "interface.h" /* for user_wants_interrupt() */
 
-/*
- * The ratings file should contain lines in this format:
- * [1-5] <filename>\n
- * Lines starting with '#' or garbage are ignored
+/* Ratings files should contain lines in this format:
+ * [0-5] <filename>\n
+ * Everything else is ignored.
  *
  * There must only be a single space after the rating, so that
  * files starting with spaces can be tagged without some
@@ -38,27 +31,27 @@
  * possible).
  *
  * Newlines in file names are not handled in all cases (things
- * like "<something>\n3 <some other filename>", but whatever).
- */
+ * like "<something>\n3 <some other filename>", but whatever). */
 
-
+/* We read files in chunks of BUF_SIZE bytes */
 #define BUF_SIZE (8*1024)
 
 
-// find rating for a file and returns that rating or
-// -1 if not found. If found, filepos is the position
-// of the rating character in rf
-// rf is assumed to be freshly opened (i.e. ftell()==0)
+/* find rating for a file and returns that rating or
+ * -1 if not found. If found, filepos is the position
+ * of the rating character in rf.
+ * rf is assumed to be freshly opened (i.e. ftell()==0). */
 static int find_rating (const char *fn, FILE *rf, long *filepos)
 {
-	assert(fn && rf && ftell(rf) == 0 && filepos);
+	assert(fn && rf && ftell(rf) == 0);
 
-	char buf[BUF_SIZE]; // storage for one chunk
-	char *s = NULL; // current position in chunk
-	int  n = 0;    // amount of characters left in chunk
-	long fpos = 0; // position of end of chunk
+	char buf[BUF_SIZE]; /* storage for one chunk */
+	char   *s = NULL;   /* current position in chunk */
+	int     n = 0;      /* characters left in chunk */
+	long fpos = 0;      /* ftell() of end of chunk */
 	const int fnlen = strlen(fn);
 
+	/* get next char, refill buffer if needed */
 	#define GETC(c) do{ \
 	if (!n) { \
 		n = fread(buf, 1, BUF_SIZE, rf); \
@@ -68,34 +61,42 @@ static int find_rating (const char *fn, FILE *rf, long *filepos)
 	} \
 	else { (c) = *(const unsigned char*)s++; --n; } \
 	} while (0)
-		
+	
+	/* loop over all lines in the file */
 	while (true)
 	{
 		int c0; GETC(c0);
-		if (c0 < 0) return -1;
 
-		if (c0 == '\n') continue; // empty line
-		if (c0 >= '0' && c0 <= '5')
+		if (c0 < 0) return -1; /* EOF */
+
+		if (c0 == '\n') continue; /* empty line */
+
+		if (c0 >= '0' && c0 <= '5') /* possible rating line */
 		{
 			char c; GETC(c);
-			if (c < 0) return -1;
-			if (c == '\n') continue;
-			if (c == ' ')
+
+			if (c < 0) return -1; /* EOF again */
+			
+			/* go straight to next line if we already read the newline */
+			if (c == '\n') continue; 
+			
+			if (c == ' ') /* still good */
 			{
-				// so far so good, now look for fn
-				const char *t = fn;
-				int nleft = fnlen;
+				/* find fn */
+				const char *t = fn; /* remaining string to match */
+				int nleft = fnlen; /* invariant: nleft == strlen(t) */
 				while (true)
 				{
+					/* compare as much as possible in this chunk */
 					int ncmp = (nleft < n ? nleft : n);
 					if (memcmp(t, s, ncmp))
 					{
-						// not our file. skip rest of line
+						/* not our file. skip rest of line */
 						break;
 					}
 
-					// next line is where things get weird
-					// if fn contains newlines
+					/* Note: next line is where things get weird
+					 * if fn contains newlines */
 					s += ncmp;
 					t += ncmp;
 					n -= ncmp;
@@ -103,18 +104,20 @@ static int find_rating (const char *fn, FILE *rf, long *filepos)
 
 					if (!nleft)
 					{
-						// might be our file. remember
-						// position
-						*filepos = fpos-n - fnlen - 2;
+						/* remember position of rating */
+						if (filepos)
+							*filepos = fpos-n - fnlen - 2;
 						
-						// check for trailing garbage
+						/* check for trailing garbage */
 						GETC(c);
-						if (c >= 0 && c != '\n') break;
+						if (c >= 0 && c != '\n')
+							break; /* skip rest of line */
 
+						/* success */
 						return c0 - '0';
 					}
 
-					if (!n)
+					if (!n) /* read next chunk */
 					{
 						n = fread(buf, 1, BUF_SIZE, rf);
 						if (!n) return -1;
@@ -124,16 +127,18 @@ static int find_rating (const char *fn, FILE *rf, long *filepos)
 			}
 		}
 
-		// skip to next line
+		/* skip to next line */
 		while (true)
 		{
 			char *e = memchr (s, '\n', n);
 			if (e)
 			{
+				/* found a newline, update position in buffer */
 				n -= e-s + 1;
 				s = e+1;
 				break;
 			}
+			/* look for newline in next chunk */
 			n = fread(buf, 1, BUF_SIZE, rf);
 			if (!n) return -1;
 			s = buf;
@@ -142,28 +147,31 @@ static int find_rating (const char *fn, FILE *rf, long *filepos)
 	#undef GETC
 }
 
+/* open ratings file in the same folder as fn */
 static FILE *open_ratings_file (const char *fn, const char *mode)
 {
 	assert(fn && mode && *mode);
 
-	char buf[512];
+	char buf[512]; /* buffer for file path */
 	size_t  N = sizeof(buf);
 	const char *rfn = options_get_str ("RatingFile");
 
 	char *sep = strrchr (fn, '/');
 	if (!sep)
 	{
+		/* current directory */
 		return fopen (rfn, mode);
 	}
 	else if ((sep-fn) + 1 + strlen (rfn) + 1 <= N)
 	{
-		// we can use stack buffer to hold the file name
+		/* buf can hold the file name */
 		memcpy (buf, fn, (sep-fn) + 1);
 		strcpy (buf + (sep-fn) + 1, rfn);
 		return fopen (buf, mode);
 	}
 	else
 	{
+		/* path is too long, allocate buffer on heap */
 		int N = (sep-fn) + 1 + strlen (rfn) + 1;
 		char *gbuf = xmalloc (N);
 		if (!gbuf) return NULL;
@@ -176,9 +184,12 @@ static FILE *open_ratings_file (const char *fn, const char *mode)
 	}
 }
 
+/* read rating into a plist_item */
 void ratings_read (struct plist_item *item)
 {
-	assert(item && item->file);
+	assert (item && item->file);
+
+	/* must be an actual file */
 	if (item->type != F_SOUND) return;
 
 	int rating = 0;
@@ -186,26 +197,28 @@ void ratings_read (struct plist_item *item)
 	FILE *rf = open_ratings_file (item->file, "rb");
 	if (rf)
 	{
-		// get filename
+		/* get filename */
 		const char *fn = item->file;
 		const char *sep = strrchr (fn, '/');
 		if (sep) fn = sep + 1;
 
-		// get rating
-		long filepos; // reading does not need this
-		rating = find_rating (fn, rf, &filepos);
+		/* read rating from ratings file */
+		rating = find_rating (fn, rf, NULL);
+
+		/* if fn has no rating, treat as 0-rating */
 		if (rating < 0) rating = 0;
 
 		fclose (rf);
 	}
 
-	// store the rating (or the default 0)
+	/* store the rating */
 	if (!item->tags) item->tags = tags_new ();
 	if (!item->tags) return;
 	item->tags->rating = rating;
 	item->tags->filled |= TAGS_RATING;
 }
 
+/* read rating for a file into file_tags */
 void ratings_read_file (const char *fn, struct file_tags *tags)
 {
 	assert(fn && tags);
@@ -215,23 +228,25 @@ void ratings_read_file (const char *fn, struct file_tags *tags)
 	FILE *rf = open_ratings_file (fn, "rb");
 	if (rf)
 	{
-		// get filename
+		/* get filename */
 		const char *sep = strrchr (fn, '/');
 		if (sep) fn = sep + 1;
 
-		// get rating
-		long filepos; // reading does not need this
-		rating = find_rating (fn, rf, &filepos);
+		/* read rating from ratings file */
+		rating = find_rating (fn, rf, NULL);
+
+		/* if fn has no rating, treat as 0-rating */
 		if (rating < 0) rating = 0;
 
 		fclose (rf);
 	}
 
-	// store the rating (or the default 0)
+	/* store the rating */
 	tags->rating = rating;
 	tags->filled |= TAGS_RATING;
 }
 
+/* read ratings for all items in a plist */
 void ratings_read_all (const struct plist *plist)
 {
 	assert (plist);
@@ -243,44 +258,49 @@ void ratings_read_all (const struct plist *plist)
 		if (!item || (item->tags && item->tags->filled & TAGS_RATING))
 			continue;
 
-		// open ratings file for item and read the
-		// entire thing, hopefully hitting lots of
-		// other items as well
+		/* TODO: open ratings file for item and read the
+		 * entire thing, hopefully hitting lots of
+		 * other items as well.
+		 * Currently this is dead code though! */
 		
-		// TODO: be stupid for now
 		ratings_read (item);
 	}
 }
 
+/* update ratings file for given file path and rating */
 bool ratings_write_file (const char *fn, int rating)
 {
 	assert(fn && rating >= 0 && rating <= 5);
 
-	// get filename
+	/* keep full path for open_ratings_file */
 	const char *path = fn;
+
+	/* get filename */
 	const char *sep = strrchr (fn, '/');
 	if (sep) fn = sep + 1;
 
 	FILE *rf = open_ratings_file (path, "rb+");
 	if (!rf)
 	{
-		if (rating <= 0) return 1; // 0 rating needs no writing
+		if (rating <= 0) return 1; /* 0 rating needs no writing */
 
-		// file did not exist or could not be opened for reading
+		/* ratings file did not exist or could not be opened
+		 * for reading. Try creating it */
 		FILE *rf = open_ratings_file (path, "ab");
-		if (!rf) return 0; // can't create it either
+		if (!rf) return 0; /* can't create it either */
 
-		// append new rating
+		/* append new rating */
 		fprintf (rf, "%d %s\n", rating, fn);
 		fclose (rf);
 		return 1;
 	}
 
+	/* ratings file exists, locate our file */
 	long filepos;
 	int r0 = find_rating (fn, rf, &filepos);
 	if (r0 < 0)
 	{
-		// not found - append
+		/* not found - append */
 		if (rating > 0 && 0 == fseek (rf, 0, SEEK_END))
 		{
 			fprintf (rf, "%d %s\n", rating, fn);
@@ -288,6 +308,7 @@ bool ratings_write_file (const char *fn, int rating)
 	}
 	else if (r0 != rating)
 	{
+		/* update existing entry */
 		assert (rating >= 0 && rating <= 5);
 		if (0 == fseek (rf, filepos, SEEK_SET))
 		{
@@ -298,6 +319,7 @@ bool ratings_write_file (const char *fn, int rating)
 	return 1;
 }
 
+/* update ratings file for plist_item */
 bool ratings_write (const struct plist_item *item)
 {
 	assert(item && item->file);
