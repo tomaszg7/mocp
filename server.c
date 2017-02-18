@@ -639,20 +639,24 @@ static void add_event_all (const int event, const void *data)
 
 		if (data) {
 			if (event == EV_PLIST_ADD
-					|| event == EV_QUEUE_ADD) {
+			 || event == EV_QUEUE_ADD) {
 				data_copy = plist_new_item ();
 				plist_item_copy (data_copy, data);
 			}
 			else if (event == EV_PLIST_DEL
-					|| event == EV_QUEUE_DEL
-					|| event == EV_STATUS_MSG
-					|| event == EV_SRV_ERROR) {
+			      || event == EV_QUEUE_DEL
+			      || event == EV_STATUS_MSG
+			      || event == EV_SRV_ERROR) {
 				data_copy = xstrdup (data);
 			}
 			else if (event == EV_PLIST_MOVE
-					|| event == EV_QUEUE_MOVE)
+			      || event == EV_QUEUE_MOVE)
 				data_copy = move_ev_data_dup (
 						(struct move_ev_data *)
+						data);
+			else if (event == EV_FILE_TAGS)
+				data_copy = tag_ev_data_dup (
+						(struct tag_ev_response *)
 						data);
 			else
 				logit ("Unhandled data!");
@@ -816,11 +820,27 @@ static int req_set_rating (struct client *cli)
 
 	logit ("Rating %s %d/5", file, rating);
 	
-	ratings_write_file (file, rating);
-	// TODO: update tags for file?
-	// TODO: send updated tags to clients?
+	if (ratings_write_file (file, rating))
+	{
 
-	free (file);
+		struct file_tags *tags;
+		struct tag_ev_response *data;
+
+		// TODO: is this enough?
+		tags = tags_cache_get_immediate (tags_cache, file, TAGS_RATING);
+
+		data = (struct tag_ev_response *)xmalloc (sizeof(struct tag_ev_response));
+		data->file = file;
+		data->tags = tags;
+
+		add_event_all (EV_FILE_TAGS, data);
+
+		free_tag_ev_data (data); /* frees file as well */
+	}
+	else
+	{
+		free (file);
+	}
 
 	return 1;
 }

@@ -77,6 +77,7 @@ int plist_find_fname (struct plist *plist, const char *file);
 struct file_tags *tags_new ();
 void tags_clear (struct file_tags *tags);
 void tags_copy (struct file_tags *dst, const struct file_tags *src);
+void tags_update (struct file_tags *dst, struct file_tags *src, int move);
 struct file_tags *tags_dup (const struct file_tags *tags);
 void tags_free (struct file_tags *tags);
 char *build_title_with_format (const struct file_tags *tags, const char *fmt);

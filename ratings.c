@@ -20,6 +20,7 @@
 #include "playlist.h"
 #include "options.h"
 #include "interface.h" /* for user_wants_interrupt() */
+#include "server.h" /* for server_error */
 
 /* Ratings files should contain lines in this format:
  * [0-5] <filename>\n
@@ -272,6 +273,12 @@ bool ratings_write_file (const char *fn, int rating)
 {
 	assert(fn && rating >= 0 && rating <= 5);
 
+	const char *failmsg = "Rating could not be written (check permissions).";
+	#define FAIL do { \
+		server_error (__FILE__, __LINE__, "ratings_write_file", failmsg); \
+		return 0; } while (0)
+
+
 	/* keep full path for open_ratings_file */
 	const char *path = fn;
 
@@ -287,23 +294,25 @@ bool ratings_write_file (const char *fn, int rating)
 		/* ratings file did not exist or could not be opened
 		 * for reading. Try creating it */
 		FILE *rf = open_ratings_file (path, "ab");
-		if (!rf) return 0; /* can't create it either */
+		if (!rf) FAIL; /* can't create it either */
 
 		/* append new rating */
-		fprintf (rf, "%d %s\n", rating, fn);
+		int ok = fprintf (rf, "%d %s\n", rating, fn);
 		fclose (rf);
+		if (!ok) FAIL;
 		return 1;
 	}
 
 	/* ratings file exists, locate our file */
 	long filepos;
+	int  ok = 1;
 	int r0 = find_rating (fn, rf, &filepos);
 	if (r0 < 0)
 	{
 		/* not found - append */
 		if (rating > 0 && 0 == fseek (rf, 0, SEEK_END))
 		{
-			fprintf (rf, "%d %s\n", rating, fn);
+			ok = fprintf (rf, "%d %s\n", rating, fn);
 		}
 	}
 	else if (r0 != rating)
@@ -312,10 +321,15 @@ bool ratings_write_file (const char *fn, int rating)
 		assert (rating >= 0 && rating <= 5);
 		if (0 == fseek (rf, filepos, SEEK_SET))
 		{
-			fputc ('0' + rating, rf);
+			ok = (fputc ('0' + rating, rf) > 0);
 		}
 	}
 	fclose (rf);
+
+	if (!ok) FAIL;
+
+	#undef FAIL
+
 	return 1;
 }
 

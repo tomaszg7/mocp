@@ -93,6 +93,44 @@ void tags_copy (struct file_tags *dst, const struct file_tags *src)
 	dst->filled = src->filled;
 }
 
+/* copy or move missing tags from src to dst */
+void tags_update (struct file_tags *dst, struct file_tags *src, int move)
+{
+	assert (dst && src);
+
+	if (!(dst->filled & TAGS_COMMENTS) && (src->filled & TAGS_COMMENTS))
+	{
+		assert (!dst->title && !dst->artist && !dst->album);
+
+		dst->track = src->track;
+		
+		if (move)
+		{
+			dst->title  = src->title;  src->title  = NULL;
+			dst->artist = src->artist; src->artist = NULL;
+			dst->album  = src->album;  src->album  = NULL;
+			src->filled &= ~TAGS_COMMENTS;
+		}
+		else
+		{
+			dst->title  = xstrdup (src->title);
+			dst->artist = xstrdup (src->artist);
+			dst->album  = xstrdup (src->album);
+		}
+		dst->filled |= TAGS_COMMENTS;
+	}
+	if (!(dst->filled & TAGS_TIME) && (src->filled & TAGS_TIME))
+	{
+		dst->time = src->time;
+		dst->filled |= TAGS_TIME;
+	}
+	if (!(dst->filled & TAGS_RATING) && (src->filled & TAGS_RATING))
+	{
+		dst->rating = src->rating;
+		dst->filled |= TAGS_RATING;
+	}
+}
+
 struct file_tags *tags_new ()
 {
 	struct file_tags *tags;

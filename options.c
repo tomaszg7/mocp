@@ -832,26 +832,30 @@ static void build_rating_strings()
 	const char *s1 = options_get_str ("RatingStar");
 	if (!s0) s0 = " ";
 	if (!s1) s1 = "*";
-	size_t l0 = strlen (s0), l1 = strlen (s1);
-	size_t l = l0 > l1 ? l0 : l1; // max
+	const size_t l0 = strlen (s0), l1 = strlen (s1);
 
 	for (int i = 0; i <= 5; ++i)
 	{
+		/* S[i] should be NULL, but it's cheap to handle this
+		 * being called again, so why not */
 		free ((void*)S[i]);
-		char *s = xmalloc (5*l + 1);
-		if (!s) fatal ("Failed to allocate rating string %d (%zu bytes)!", i, 5*l + 1);
+
+		/* allocate space for i stars and 5-i spaces */
+		char *s = xmalloc (i*l1 + (5-i)*l0 + 1);
+		if (!s) fatal ("Failed to allocate rating string");
 		S[i] = s;
+
 		for (int j = 0; j < 5; ++j)
 		{
-			if (j >= i)
-			{
-				memcpy (s, s0, l0);
-				s += l0;
-			}
-			else
+			if (j < i)
 			{
 				memcpy (s, s1, l1);
 				s += l1;
+			}
+			else
+			{
+				memcpy (s, s0, l0);
+				s += l0;
 			}
 		}
 		*s = 0;

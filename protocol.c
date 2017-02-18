@@ -603,6 +603,24 @@ struct move_ev_data *move_ev_data_dup (const struct move_ev_data *m)
 	return new;
 }
 
+struct tag_ev_response *tag_ev_data_dup (const struct tag_ev_response *d)
+{
+	struct tag_ev_response *new;
+
+	assert (d != NULL);
+	assert (d->file != NULL);
+
+	new = (struct tag_ev_response *)xmalloc (sizeof(struct tag_ev_response));
+	new->file = xstrdup (d->file);
+	if (d->tags)
+	{
+		new->tags = tags_new ();
+		tags_copy (new->tags, d->tags);
+	}
+
+	return new;
+}
+
 /* Free data associated with the event if any. */
 void free_event_data (const int type, void *data)
 {

@@ -631,21 +631,16 @@ static void interface_message (const char *format, ...)
 
 /* Update tags (and titles) for the given item on the playlist with new tags. */
 static void update_item_tags (struct plist *plist, const int num,
-		const struct file_tags *tags)
+		struct file_tags *tags)
 {
 	struct file_tags *old_tags = plist_get_tags (plist, num);
 
-	plist_set_tags (plist, num, tags);
-
-	/* Get the time from the old tags if it's not present in the new tags.
+	/* Get the tags from the old tags if it's not present in the new tags.
 	 * FIXME: There is risk, that the file was modified and the time
 	 * from the old tags is not valid. */
-	if (!(tags->filled & TAGS_TIME) && old_tags && old_tags->time != -1)
-		plist_set_item_time (plist, num, old_tags->time);
+	if (old_tags) tags_update (tags, old_tags, 1);
 
-	/* Same thing for ratings */
-	if (!(tags->filled & TAGS_RATING) && old_tags && old_tags->filled & TAGS_RATING)
-		plist_set_item_rating (plist, num, old_tags->rating);
+	plist_set_tags (plist, num, tags);
 
 	if (plist->items[num].title_tags) {
 		free (plist->items[num].title_tags);
@@ -2107,8 +2102,6 @@ static void set_rating (int r)
 	send_int_to_srv (CMD_SET_RATING);
 	send_str_to_srv (file);
 	send_int_to_srv (r);
-
-	send_tags_request (file, get_tags_setting ());
 
 	free (file);
 }
