@@ -2556,6 +2556,12 @@ static void jump_to (const int sec)
 	send_int_to_srv (sec);
 }
 
+static void seek_to_percent (int percent)
+{
+	send_int_to_srv (CMD_JUMP_TO);
+	send_int_to_srv (-percent);
+}
+
 static void delete_item ()
 {
 	char *file;
@@ -3274,6 +3280,18 @@ static void menu_key (const struct iface_key *k)
 			case KEY_CMD_SEEK_FORWARD:
 				seek (options_get_int ("SeekTime"));
 				break;
+
+			case KEY_CMD_SEEK_0: seek_to_percent (0 * 10); break;
+			case KEY_CMD_SEEK_1: seek_to_percent (1 * 10); break;
+			case KEY_CMD_SEEK_2: seek_to_percent (2 * 10); break;
+			case KEY_CMD_SEEK_3: seek_to_percent (3 * 10); break;
+			case KEY_CMD_SEEK_4: seek_to_percent (4 * 10); break;
+			case KEY_CMD_SEEK_5: seek_to_percent (5 * 10); break;
+			case KEY_CMD_SEEK_6: seek_to_percent (6 * 10); break;
+			case KEY_CMD_SEEK_7: seek_to_percent (7 * 10); break;
+			case KEY_CMD_SEEK_8: seek_to_percent (8 * 10); break;
+			case KEY_CMD_SEEK_9: seek_to_percent (9 * 10); break;
+
 			case KEY_CMD_HELP:
 				iface_switch_to_help ();
 				break;

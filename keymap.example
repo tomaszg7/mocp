@@ -185,5 +185,16 @@ exec_command10        = F10
 # default:
 #
 #   toggle_percent	 Switch on/off play progress bar time percentage
+#
 #   volume_0
 #
+#   seek_0               Jump to  0%
+#   seek_1               Jump to 10%
+#   seek_2               Jump to 20%
+#   seek_3               Jump to 30%
+#   seek_4               Jump to 40%
+#   seek_5               Jump to 50%
+#   seek_6               Jump to 60%
+#   seek_7               Jump to 70%
+#   seek_8               Jump to 80%
+#   seek_9               Jump to 90%

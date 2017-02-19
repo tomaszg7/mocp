@@ -519,6 +519,86 @@ static struct command commands[] = {
 		{ '0' | META_KEY_FLAG, -1 },
 		1
 	},
+	{
+		KEY_CMD_SEEK_0,
+		"seek_0",
+		"Seek to start of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_1,
+		"seek_1",
+		"Seek to 10% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_2,
+		"seek_2",
+		"Seek to 20% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_3,
+		"seek_3",
+		"Seek to 30% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_4,
+		"seek_4",
+		"Seek to 40% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_5,
+		"seek_5",
+		"Seek to 50% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_6,
+		"seek_6",
+		"Seek to 60% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_7,
+		"seek_7",
+		"Seek to 70% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_8,
+		"seek_8",
+		"Seek to 80% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
+		KEY_CMD_SEEK_9,
+		"seek_9",
+		"Seek to 90% of song",
+		CON_MENU,
+		{ -1 },
+		0
+	},
  	{
  		KEY_CMD_MARK_START,
  		"mark_start",
