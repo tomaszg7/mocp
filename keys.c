@@ -432,6 +432,14 @@ static struct command commands[] = {
 		1
 	},
 	{
+		KEY_CMD_VOLUME_0,
+		"volume_0",
+		"Set volume to 0%",
+		CON_MENU,
+		{ -1 },
+		0
+	},
+	{
 		KEY_CMD_VOLUME_10,
 		"volume_10",
 		"Set volume to 10%",
@@ -501,6 +509,14 @@ static struct command commands[] = {
 		"Set volume to 90%",
 		CON_MENU,
 		{ '9' | META_KEY_FLAG, -1 },
+		1
+	},
+	{
+		KEY_CMD_VOLUME_100,
+		"volume_100",
+		"Set volume to 100%",
+		CON_MENU,
+		{ '0' | META_KEY_FLAG, -1 },
 		1
 	},
 	{

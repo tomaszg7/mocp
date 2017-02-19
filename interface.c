@@ -3359,6 +3359,9 @@ static void menu_key (const struct iface_key *k)
 			case KEY_CMD_SEEK_BACKWARD_5:
 				seek_silent (-options_get_int ("SilentSeekTime"));
 				break;
+			case KEY_CMD_VOLUME_0:
+				set_mixer (0);
+				break;
 			case KEY_CMD_VOLUME_10:
 				set_mixer (10);
 				break;
@@ -3385,6 +3388,9 @@ static void menu_key (const struct iface_key *k)
 				break;
 			case KEY_CMD_VOLUME_90:
 				set_mixer (90);
+				break;
+			case KEY_CMD_VOLUME_100:
+				set_mixer (100);
 				break;
 			case KEY_CMD_RATE_0:
 				set_rating (0);
