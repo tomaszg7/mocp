@@ -2081,7 +2081,8 @@ static void toggle_show_format ()
 /* Reread the directory. */
 static void reread_dir ()
 {
-	go_to_dir (NULL, 1);
+	while (go_to_dir (NULL, 1)==0)
+		go_dir_up();
 }
 
 /* Clear the playlist on user request. */
