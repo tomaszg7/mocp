@@ -866,6 +866,28 @@ static int req_jump_to (struct client *cli)
 
 	if (!get_int(cli->socket, &sec))
 		return 0;
+
+	if (sec < 0)
+	{
+		sec = -sec; /* percentage */
+		assert(sec >= 0 && sec <= 100);
+
+		char *file = audio_get_sname ();
+		if (!file || !*file)
+		{
+			free (file);
+			return 0;
+		}
+	
+		struct file_tags *tags;
+		tags = tags_cache_get_immediate (tags_cache, file, TAGS_TIME);
+		assert (tags && tags->filled & TAGS_TIME);
+
+		sec = (tags->time * sec)/100;
+		tags_free (tags);
+		free (file);
+	}
+
 	logit ("Jumping to %ds", sec);
 	audio_jump_to (sec);
 
