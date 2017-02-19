@@ -700,3 +700,28 @@
 # players usually behave.  (Note that this option previously took the
 # values 1 and 0; these are now deprecated in favour of 'yes' and 'no'.)
 #QueueNextSongReturn = yes
+
+# Next option decides if ratings should be displayed for all songs
+# If this is 'no', ratings are not read, which is faster.
+#RatingShow = yes
+
+# RatingStar and RatingSpace are used to generate the rating strings.
+# They can be UTF-8, but must be single characters.
+# These have no effect if RatingShow is 'no'.
+#RatingStar  = "*"
+#RatingSpace = " "
+
+# RatingFile is searched in every directory containing music files.
+# Ratings files are plaintext files where every line starts with a
+# rating (0..5), followed by a single space and a filename the rating
+# applies to. Example:
+#
+# 5 song1.mp3
+# 3 song2.mp3
+# 4 song3.mp3
+# 1 song42.ogg
+#
+# For shared libraries "ratings_alice", "ratings_bob", etc can be used.
+#
+#RatingFile = "ratings"
+

@@ -180,6 +180,14 @@ exec_command8         = F8
 exec_command9         = F9
 exec_command10        = F10
 
+# Ratings:
+rate_0                = 0
+rate_1                = 1
+rate_2                = 2
+rate_3                = 3
+rate_4                = 4
+rate_5                = 5
+
 # The following commands are available but not assigned to any keys by
 # default:
 #

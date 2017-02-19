@@ -986,14 +986,6 @@ static int parse_key (const char *symbol)
 
 	if (strlen(symbol) == 1) {
 		/* Just a regular char */
-		static bool digit_key_warned = false;
-		if (!digit_key_warned && isdigit (symbol[0])) {
-			fprintf (stderr,
-			         "\n\tUsing digits as keys is deprecated as they may"
-			         "\n\tbe used for specific purposes in release 2.6.\n");
-			xsleep (5, 1);
-			digit_key_warned = true;
-		}
 		return symbol[0];
 	}
 
