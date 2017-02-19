@@ -1,0 +1,15 @@
+Helper scripts:
+
+[*] moc-lyrics.tg.pl - fetches lyrics and saves them to a file.
+
+ExecCommand1 = "~/moc-lyrics.tg.pl -a %r -t %t -f %f"
+
+[*] moc_notify - displays notification and runs Last.fm submit script.
+
+OnSongChange = "~/moc_notify %a %t %r %d %f"
+
+[*] moc_simple.sh, moc_submit_lastfm - Last.fm submit scripts. Need running lastfmsubmitd deamon:
+http://www.red-bean.com/decklin/lastfmsubmitd/
+
+OnSongChange = "~/moc_submit_lastfm --artist %a --title %t --length %d --album %r"
+OnSongChange = "~/moc_simple.sh %a %t %d %r"
