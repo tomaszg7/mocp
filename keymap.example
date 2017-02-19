@@ -114,6 +114,7 @@ volume_60             = M-6
 volume_70             = M-7
 volume_80             = M-8
 volume_90             = M-9
+volume_100            = M-0
 
 # Directory navigation keys: defaults are Shift-number
 #                            (i.e., 'shift 1' -> '!' -> 'Fastdir1').
@@ -184,4 +185,5 @@ exec_command10        = F10
 # default:
 #
 #   toggle_percent	 Switch on/off play progress bar time percentage
+#   volume_0
 #
