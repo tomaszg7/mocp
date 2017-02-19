@@ -1,0 +1,9 @@
+#!/bin/sh
+p=`dirname "$5"`
+if [[ -f $p/cover.jpg ]]; then
+cp "$p/cover.jpg" /tmp/cover.jpg
+notify-send -i /tmp/cover.jpg "$1" "$2\n$3"
+else
+notify-send -i audio-headphones "$1" "$2\n$3"
+fi
+/home/tomaszg/moc_submit_lastfm --artist "$1" --title "$2" --length "$4" --album "$3"
