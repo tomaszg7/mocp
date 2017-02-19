@@ -185,40 +185,6 @@ static FILE *open_ratings_file (const char *fn, const char *mode)
 	}
 }
 
-/* read rating into a plist_item */
-void ratings_read (struct plist_item *item)
-{
-	assert (item && item->file);
-
-	/* must be an actual file */
-	if (item->type != F_SOUND) return;
-
-	int rating = 0;
-
-	FILE *rf = open_ratings_file (item->file, "rb");
-	if (rf)
-	{
-		/* get filename */
-		const char *fn = item->file;
-		const char *sep = strrchr (fn, '/');
-		if (sep) fn = sep + 1;
-
-		/* read rating from ratings file */
-		rating = find_rating (fn, rf, NULL);
-
-		/* if fn has no rating, treat as 0-rating */
-		if (rating < 0) rating = 0;
-
-		fclose (rf);
-	}
-
-	/* store the rating */
-	if (!item->tags) item->tags = tags_new ();
-	if (!item->tags) return;
-	item->tags->rating = rating;
-	item->tags->filled |= TAGS_RATING;
-}
-
 /* read rating for a file into file_tags */
 void ratings_read_file (const char *fn, struct file_tags *tags)
 {
@@ -245,27 +211,6 @@ void ratings_read_file (const char *fn, struct file_tags *tags)
 	/* store the rating */
 	tags->rating = rating;
 	tags->filled |= TAGS_RATING;
-}
-
-/* read ratings for all items in a plist */
-void ratings_read_all (const struct plist *plist)
-{
-	assert (plist);
-
-	for (int i = 0; i < plist->num && !user_wants_interrupt (); ++i)
-	{
-		if (plist_deleted (plist, i)) continue;
-		struct plist_item *item = plist->items + i;
-		if (!item || (item->tags && item->tags->filled & TAGS_RATING))
-			continue;
-
-		/* TODO: open ratings file for item and read the
-		 * entire thing, hopefully hitting lots of
-		 * other items as well.
-		 * Currently this is dead code though! */
-		
-		ratings_read (item);
-	}
 }
 
 /* update ratings file for given file path and rating */
@@ -331,19 +276,5 @@ bool ratings_write_file (const char *fn, int rating)
 	#undef FAIL
 
 	return 1;
-}
-
-/* update ratings file for plist_item */
-bool ratings_write (const struct plist_item *item)
-{
-	assert(item && item->file);
-	if (item->type != F_SOUND) return 0;
-	if (item->type != F_SOUND || !item->tags) return 0;
-	if (!(item->tags->filled & TAGS_RATING)) return 1;
-
-	const int rating = item->tags->rating;
-	const char *fn = item->file;
-
-	return ratings_write_file (fn, rating);
 }
 
