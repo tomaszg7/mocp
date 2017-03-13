@@ -4013,6 +4013,13 @@ void interface_cmdline_play_first (int server_sock)
 		send_int_to_srv (plist_get_serial(&plist));
 	}
 
+	if (options_get_bool("ForceShufflePlaylistOnly")) {
+		send_int_to_srv (CMD_SET_OPTION);
+		send_str_to_srv ("Shuffle");
+		send_bool_to_srv (TRUE);
+		sync_bool_option ("Shuffle");
+	}
+
 	send_int_to_srv (CMD_PLAY);
 	send_str_to_srv ("");
 
