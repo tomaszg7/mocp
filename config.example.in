@@ -501,6 +501,7 @@
 # Some arguments are substituted before executing:
 #
 #     %f - file path
+#     %d - current directory
 #     %i - title made from tags
 #     %S - start block mark (in seconds)
 #     %E - end block mark (in seconds)

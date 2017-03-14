@@ -29,6 +29,7 @@
 #include <sys/wait.h>
 #include <dirent.h>
 #include <sys/select.h>
+#include <libgen.h>
 
 #ifdef HAVE_SYS_INOTIFY_H
 #include <sys/inotify.h>
@@ -3007,6 +3008,9 @@ static char *custom_cmd_substitute (const char *arg)
 		case 'f':
 			result = iface_get_curr_file ();
 			break;
+		case 'd':
+			result = xstrdup (cwd);
+			break;
 		case 'I':
 			result = xstrdup (curr_file.title);
 			break;
@@ -3037,6 +3041,13 @@ static char *custom_cmd_substitute (const char *arg)
 		case 'F':
 			if (curr_file.file)
 				result = xstrdup (curr_file.file);
+			break;
+		case 'D':
+			if (curr_file.file) {
+				char *filename = xstrdup (curr_file.file);
+				result = xstrdup (dirname (filename));
+				free (filename);
+			}
 			break;
 		case 'S':
 			if (curr_file.file && curr_file.block_file) {
