@@ -126,21 +126,15 @@ static void opus_tags (const char *file_name, struct file_tags *info, const int 
 	int err_code;
 
 	// op_test() is faster than op_open(), but we can't read file time with it.
-	if (tags_sel & TAGS_TIME) {
+	if (tags_sel & TAGS_TIME)
 		of = op_open_file(file_name,&err_code);
-		if (err_code < 0) {
-			logit ("Can't open %s: %s", file_name, opus_str_error (err_code));
-			op_free(of);
-			return;
-		}
-	}
-	else {
+	else
 		of = op_open_file(file_name,&err_code);
-		if (err_code < 0) {
-			logit ("Can't open %s: %s", file_name, opus_str_error (err_code));
-			op_free (of);
-			return;
-		}
+
+	if (err_code < 0) {
+		logit ("Can't open %s: %s", file_name, opus_str_error (err_code));
+		op_free (of);
+		return;
 	}
 
 	if (tags_sel & TAGS_COMMENTS)
