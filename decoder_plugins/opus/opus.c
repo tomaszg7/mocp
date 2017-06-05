@@ -129,7 +129,7 @@ static void opus_tags (const char *file_name, struct file_tags *info, const int 
 	if (tags_sel & TAGS_TIME)
 		of = op_open_file(file_name,&err_code);
 	else
-		of = op_open_file(file_name,&err_code);
+		of = op_test_file(file_name,&err_code);
 
 	if (err_code < 0) {
 		logit ("Can't open %s: %s", file_name, opus_str_error (err_code));
