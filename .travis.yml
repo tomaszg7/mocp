@@ -28,8 +28,5 @@ addons:
       - libsamplerate-dev
       - libsndfile-dev
       - libvorbis-dev
-      - libavcodec-dev
-      - libavformat-dev
-      - libavutil-dev
       - libmpg123-dev
-script: autoreconf -if && ./configure && make
+script: autoreconf -if && ./configure --without-ffmpeg && make
