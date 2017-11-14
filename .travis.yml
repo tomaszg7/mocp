@@ -17,6 +17,7 @@ addons:
       - debhelper
       - dh-autoreconf
       - dpkg-dev
+      - libpopt-dev
       - libtool
       - libasound2-dev
       - libdb5.3-dev
