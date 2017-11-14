@@ -31,3 +31,4 @@ addons:
       - libavformat-dev
       - libavutil-dev
       - libmpg123-dev
+script: autoreconf -if && ./configure && make
