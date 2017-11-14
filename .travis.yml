@@ -26,7 +26,7 @@ addons:
       - libopusfile-dev
       - libsamplerate-dev
       - libsndfile-dev
-      - libvorbisfile-dev
+      - libvorbis-dev
       - libavcodec-dev
       - libavformat-dev
       - libavutil-dev
