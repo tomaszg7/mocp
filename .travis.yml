@@ -1,0 +1,33 @@
+language: c
+os: linux
+dist: trusty
+sudo: required
+compiler:
+  - gcc
+  - clang
+addons:
+  apt:
+    sources:
+      - trusty
+    packages:
+      - autoconf
+      - automake
+      - autotools-dev
+      - build-essential
+      - debhelper
+      - dh-autoreconf
+      - dpkg-dev
+      - libtool
+      - libasound2-dev
+      - libdb5.3-dev
+      - libflac-dev
+      - libncursesw5-dev
+      - libogg-dev
+      - libopusfile-dev
+      - libsamplerate-dev
+      - libsndfile-dev
+      - libvorbisfile-dev
+      - libavcodec-dev
+      - libavformat-dev
+      - libavutil-dev
+      - libmpg123-dev
