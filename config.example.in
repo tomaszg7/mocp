@@ -415,8 +415,7 @@
 # to 2, resampling is forced on to MaxSamplerate. When set to 0 the device is
 # opened with the file's rate. Note that setting it to 1 acts as
 # "ALSAStutterDefeat" from mainline MOC.
-#EnableResample = 0
-#ForceSampleRate = 0
+#EnableResample = 1
 
 # Forbid MOC from using listed audio formats. Useful when your soundcard 
 # reports that it is able to process some format but it can't.
