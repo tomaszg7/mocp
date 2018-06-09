@@ -263,26 +263,28 @@ static int sndfile_decode (void *void_data, char *buf, int buf_len,
 
 #ifdef INTERNAL_FLOAT
 	switch (data->snd_info.format & SF_FORMAT_SUBMASK) {
-	case SF_FORMAT_FLOAT:
-	case SF_FORMAT_DOUBLE:
-	case SF_FORMAT_VORBIS:
-		sound_params->fmt = SFMT_FLOAT;
-		use_float = 1;
+		case SF_FORMAT_FLOAT:
+		case SF_FORMAT_DOUBLE:
+		case SF_FORMAT_VORBIS:
+			sound_params->fmt = SFMT_FLOAT;
+			use_float = 1;
 	}
 #endif
 
-	switch (sizeof(int)) {
-	case 4:
-		sound_params->fmt = SFMT_S32 | SFMT_NE;
-		break;
-	case 2:
-		sound_params->fmt = SFMT_S16 | SFMT_NE;
-		break;
-	default:
-		logit("sizeof(int)=%d is not supported. Please report this error. Falling back to float decoding.",
-		      (int)sizeof(int));
-		sound_params->fmt = SFMT_FLOAT;
-		use_float = 1;
+	if (!use_float) {
+		switch (sizeof(int)) {
+			case 4:
+				sound_params->fmt = SFMT_S32 | SFMT_NE;
+				break;
+			case 2:
+				sound_params->fmt = SFMT_S16 | SFMT_NE;
+				break;
+			default:
+				logit("sizeof(int)=%d is not supported. Please report this error.\
+						Falling back to float decoding.", (int)sizeof(int));
+				sound_params->fmt = SFMT_FLOAT;
+				use_float = 1;
+		}
 	}
 
 	if (use_float)
