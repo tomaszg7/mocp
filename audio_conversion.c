@@ -528,7 +528,7 @@ static char *float_to_fixed (const float *buf, const size_t samples,
 	return new_snd;
 }
 
-static void change_sign_8 (uint8_t *buf, const size_t samples)
+static inline void change_sign_8 (uint8_t *buf, const size_t samples)
 {
 	size_t i;
 
@@ -536,7 +536,7 @@ static void change_sign_8 (uint8_t *buf, const size_t samples)
 		*buf++ ^= 1 << 7;
 }
 
-static void change_sign_16 (uint16_t *buf, const size_t samples)
+static inline void change_sign_16 (uint16_t *buf, const size_t samples)
 {
 	size_t i;
 
@@ -544,7 +544,7 @@ static void change_sign_16 (uint16_t *buf, const size_t samples)
 		*buf++ ^= 1 << 15;
 }
 
-static void change_sign_24 (uint32_t *buf, const size_t samples)
+static inline void change_sign_24 (uint32_t *buf, const size_t samples)
 {
 	size_t i;
 
@@ -552,7 +552,7 @@ static void change_sign_24 (uint32_t *buf, const size_t samples)
 		*buf++ ^= 1 << 23;
 }
 
-static void change_sign_32 (uint32_t *buf, const size_t samples)
+static inline void change_sign_32 (uint32_t *buf, const size_t samples)
 {
 	size_t i;
 
@@ -606,7 +606,7 @@ static void change_sign (char *buf, const size_t size, long *fmt)
 	}
 }
 
-void audio_conv_bswap_16 (int16_t *buf, const size_t num)
+static inline void audio_conv_bswap_16 (int16_t *buf, const size_t num)
 {
 	size_t i;
 
@@ -614,7 +614,7 @@ void audio_conv_bswap_16 (int16_t *buf, const size_t num)
 		buf[i] = bswap_16 (buf[i]);
 }
 
-void audio_conv_bswap_24 (int8_t *buf, const size_t num)
+static inline void audio_conv_bswap_24 (int8_t *buf, const size_t num)
 {
 	size_t i;
         int8_t tmp;
@@ -626,7 +626,7 @@ void audio_conv_bswap_24 (int8_t *buf, const size_t num)
         }
 }
 
-void audio_conv_bswap_32 (int32_t *buf, const size_t num)
+static inline void audio_conv_bswap_32 (int32_t *buf, const size_t num)
 {
 	size_t i;
 
