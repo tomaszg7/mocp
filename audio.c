@@ -861,7 +861,7 @@ int audio_open (struct sound_params *sound_params)
 		char fmt_name[SFMT_STR_MAX] LOGIT_ONLY;
 
 		driver_sound_params.rate = hw.get_rate ();
-			debug ("Driver sfmt: %ld, req sfmt %ld",driver_sound_params.fmt, req_sound_params.fmt);
+			debug ("Driver sfmt: 0x%lX, req sfmt 0x%lX",driver_sound_params.fmt, req_sound_params.fmt);
 			debug ("Driver channels: %d, req channels %d",driver_sound_params.channels, req_sound_params.channels);
 			debug ("Driver rate: %d, req rate %d",driver_sound_params.rate, req_sound_params.rate);
 		if (driver_sound_params.fmt != req_sound_params.fmt
