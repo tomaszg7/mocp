@@ -114,10 +114,6 @@ static char *last_stream_url = NULL;
 
 static int current_mixer = 0;
 
-/* Check if the two sample rates don't differ so much that we can't play. */
-#define sample_rate_compat(sound, device) ((device) * 1.05 >= sound \
-		&& (device) * 0.95 <= sound)
-
 /* Make a human readable description of the sound sample format(s).
  * Put the description in msg which is of size buf_size.
  * Return msg. */
@@ -865,11 +861,8 @@ int audio_open (struct sound_params *sound_params)
 			debug ("Driver channels: %d, req channels %d",driver_sound_params.channels, req_sound_params.channels);
 			debug ("Driver rate: %d, req rate %d",driver_sound_params.rate, req_sound_params.rate);
 		if (driver_sound_params.fmt != req_sound_params.fmt
-				|| driver_sound_params.channels
-				!= req_sound_params.channels
-				|| (!sample_rate_compat(
-						req_sound_params.rate,
-						driver_sound_params.rate))) {
+				|| driver_sound_params.channels != req_sound_params.channels
+				|| (req_sound_params.rate != driver_sound_params.rate)) {
 			logit ("Conversion of the sound is needed.");
 			if (!audio_conv_new (&sound_conv, &req_sound_params,
 					&driver_sound_params)) {
