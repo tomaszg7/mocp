@@ -855,9 +855,9 @@ void options_init ()
 
 	add_path ("OnSongChange", NULL, CHECK_NONE);
 	add_bool ("RepeatSongChange", false);
-	add_str  ("OnServerStart", NULL, CHECK_NONE);
-	add_str  ("OnServerStop", NULL, CHECK_NONE);
-	add_path  ("OnStop", NULL, CHECK_NONE);
+	add_path ("OnServerStart", NULL, CHECK_NONE);
+	add_path ("OnServerStop", NULL, CHECK_NONE);
+	add_path ("OnStop", NULL, CHECK_NONE);
 
 	add_bool ("QueueNextSongReturn", false);
 
