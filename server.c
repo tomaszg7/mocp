@@ -321,6 +321,37 @@ static void log_pthread_stack_size ()
 #endif
 }
 
+/* Handle running external command on requested event. */
+static void run_extern_cmd (const char *event)
+{
+	char *command;
+
+	command = xstrdup (options_get_str (event));
+
+	if (command) {
+		char *args[2], *err;
+
+		args[0] = xstrdup (command);
+		args[1] = NULL;
+
+		switch (fork ()) {
+		case 0:
+			execve (command, args, environ);
+			fatal ("Error when running %s command '%s': %s",
+			        event, command, xstrerror (errno));
+		case -1:
+			err = xstrerror (errno);
+			logit ("Error when running %s command '%s': %s",
+			        event, command, err);
+			free (err);
+			break;
+		}
+
+		free (command);
+		free (args[0]);
+	}
+}
+
 /* Initialize the server - return fd of the listening socket or -1 on error */
 void server_init (int debugging, int foreground)
 {
@@ -401,6 +432,9 @@ void server_init (int debugging, int foreground)
 		redirect_output (stdout);
 		redirect_output (stderr);
 	}
+
+	logit ("Running OnServerStart");
+	run_extern_cmd ("OnServerStart");
 
 	return;
 }
@@ -507,8 +541,8 @@ static void on_song_change ()
 				break;
 			case 'n':
 				if (curr_tags->track >= 0) {
-					str = (char *) xmalloc (sizeof (char) * 4);
-					snprintf (str, 4, "%d", curr_tags->track);
+					str = (char *) xmalloc (sizeof (char) * 16);
+					snprintf (str, 16, "%d", curr_tags->track);
 					lists_strs_push (arg_list, str);
 				}
 				else
@@ -519,8 +553,8 @@ static void on_song_change ()
 				break;
 			case 'D':
 				if (curr_tags->time >= 0) {
-					str = (char *) xmalloc (sizeof (char) * 10);
-					snprintf (str, 10, "%d", curr_tags->time);
+					str = (char *) xmalloc (sizeof (char) * 16);
+					snprintf (str, 16, "%d", curr_tags->time);
 					lists_strs_push (arg_list, str);
 				}
 				else
@@ -528,7 +562,7 @@ static void on_song_change ()
 				break;
 			case 'd':
 				if (curr_tags->time >= 0) {
-					str = (char *) xmalloc (sizeof (char) * 12);
+					str = (char *) xmalloc (sizeof (char) * 32);
 					sec_to_min (str, curr_tags->time);
 					lists_strs_push (arg_list, str);
 				}
@@ -556,7 +590,8 @@ static void on_song_change ()
 	case 0:
 		args = lists_strs_save (arg_list);
 		execve (args[0], args, environ);
-		exit (EXIT_FAILURE);
+		fatal ("Error when running OnSongChange command '%s': %s",
+		        args[0], xstrerror (errno));
 	case -1:
 		log_errno ("Failed to fork()", errno);
 	}
@@ -564,36 +599,6 @@ static void on_song_change ()
 	lists_strs_free (arg_list);
 	free (last_file);
 	last_file = curr_file;
-}
-
-/* Handle running external command on Stop event. */
-static void on_stop ()
-{
-	char *command;
-
-	command = xstrdup (options_get_str("OnStop"));
-
-	if (command) {
-		char *args[2], *err;
-
-		args[0] = xstrdup (command);
-		args[1] = NULL;
-
-		switch (fork()) {
-			case 0:
-				execve (command, args, environ);
-				exit (EXIT_FAILURE);
-			case -1:
-				err = xstrerror (errno);
-				logit ("Error when running OnStop command '%s': %s",
-				        command, err);
-				free (err);
-				break;
-		}
-
-		free (command);
-		free (args[0]);
-	}
 }
 
 /* Return true iff 'event' is a playlist event. */
@@ -623,7 +628,7 @@ static void add_event_all (const int event, const void *data)
 				on_song_change ();
 				break;
 			case STATE_STOP:
-				on_stop ();
+				run_extern_cmd ("OnStop");
 				break;
 		}
 	}
@@ -710,6 +715,8 @@ static void server_shutdown ()
 	audio_exit ();
 	tags_cache_free (tags_cache);
 	tags_cache = NULL;
+	logit ("Running OnServerStop");
+	run_extern_cmd ("OnServerStop");
 	unlink (socket_name());
 	unlink (create_file_name(PID_FILE));
 	close (wake_up_pipe[0]);

@@ -2,10 +2,12 @@
 # 'config' and placed in the ~/.moc directory.  As this file can specify
 # commands which invoke other applications, MOC will refuse to start if it
 # is not owned by either root or the current user, or if it is writable by
-# anyone other than its owner.  All options are given with their default
-# values, and therefore commented.
+# anyone other than its owner.
 
-# Comments begin with '#'.
+# Comments begin with '#'.  All options are given with their default
+# values, and therefore commented.  If you change the value from the
+# default you must uncomment the line to have the new value take effect.
+#
 # You can use quotes and escape ('\') in parameters.
 #
 # You can have variable values substituted by enclosing the variable name
@@ -72,8 +74,9 @@
 #MusicDir =
 
 # Start in the music directory by default?  If set to 'no', start
-# in the current directory by default.  A single directory on
-# the command line takes precedence.
+# in the directory being viewed when the was client last active or,
+# as a last resort, the directory in which the client is being started.
+# A single directory on the command line takes precedence.
 #StartInMusicDir = no
 
 # The number of lines which are retained in an in-memory circular logging
@@ -691,6 +694,12 @@
 # Example:    OnStop = "~/.moc/myscript_on_stop"
 #
 #OnStop =
+
+# Run the OnServerStart or OnServerStop commands (full path, no arguments)
+# when MOC server is started or terminated respectively.  The server will
+# not wait for the commands to complete before continuing.
+#OnServerStart =
+#OnServerStop =
 
 # This option determines which song to play after finishing all the songs
 # in the queue.  Setting this to 'yes' causes MOC to play the song which

@@ -128,29 +128,13 @@ static void draw_item (const struct menu *menu, const struct menu_item *mi,
 		xwaddstr (menu->win, "]");
 	}
 
-	if ((menu->show_time && *mi->time) ||
-	    (menu->show_rating && *mi->rating) ||
-	    (menu->show_format && *mi->format))
-	{
-		bool first = 1;
-		xwprintw (menu->win, "[");
-
-		if (menu->show_rating) {
-			wmove (menu->win, pos, item_info_pos + 6); /* Already printed. */
-			first = 0;
-		}
-		if (menu->show_time) {
-			if (!first) xwprintw (menu->win, "|");
-			xwprintw (menu->win, "%5s", mi->time ? mi->time : "  ");
-			first = 0;
-		}
-		if (menu->show_format && *mi->format)
-		{
-			if (!first) xwprintw (menu->win, "|");
-			xwprintw (menu->win, "%3s", mi->format);
-		}
-		xwprintw (menu->win, "]");
-	}
+	if (menu->show_time && menu->show_format
+			&& (*mi->time || *mi->format))
+		xwprintw (menu->win, "[%5s|%3s]", mi->time, mi->format);
+	else if (menu->show_time && mi->time[0])
+		xwprintw (menu->win, "[%5s]", mi->time);
+	else if (menu->show_format && mi->format[0])
+		xwprintw (menu->win, "[%3s]", mi->format);
 }
 
 void menu_draw (const struct menu *menu, const int active)
