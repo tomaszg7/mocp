@@ -567,8 +567,8 @@ static int alsa_init (struct output_driver_caps *caps)
 	if (mixer_elem_curr)
 		alsa_set_current_mixer ();
 
-	if (!mixer_elem_curr)
-		goto err;
+// 	if (!mixer_elem_curr)
+// 		goto err;
 
 	result = fill_capabilities (caps);
 	if (result == 0)
@@ -838,6 +838,9 @@ static int alsa_read_mixer ()
 	long *real_vol;
 	int *vol;
 
+	if (!mixer_elem_curr)
+		return 100;
+
 	if (mixer_elem_curr == mixer_elem1) {
 		real_vol = &real_volume1;
 		vol = &volume1;
@@ -866,7 +869,7 @@ static int alsa_read_mixer ()
 
 static void alsa_set_mixer (int vol)
 {
-	if (mixer_handle) {
+	if (mixer_handle && mixer_elem_curr) {
 		int rc;
 		long vol_alsa;
 		long *real_vol;
@@ -977,6 +980,9 @@ static void alsa_toggle_mixer_channel ()
 
 static char *alsa_get_mixer_channel_name ()
 {
+	if (!mixer_elem_curr)
+		return NULL;
+
 	char *result;
 
 	if (mixer_elem_curr == mixer_elem1)
