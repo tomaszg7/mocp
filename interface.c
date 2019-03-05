@@ -2416,13 +2416,14 @@ static void entry_key_search (const struct iface_key *k)
 static void save_playlist (const char *file, const int save_serial)
 {
 	iface_set_status ("Saving the playlist...");
-	fill_tags (playlist, TAGS_COMMENTS | TAGS_TIME, 0);
-	if (!user_wants_interrupt()) {
-		if (plist_save (playlist, file, save_serial))
-			interface_message ("Playlist saved");
+	if (options_get_bool ("SavePlaylistTags")) {
+		fill_tags (playlist, TAGS_COMMENTS | TAGS_TIME, 0);
+		if (user_wants_interrupt())
+			iface_set_status ("Reading tags aborted");
 	}
-	else
-		iface_set_status ("Aborted");
+
+	if (plist_save (playlist, file, save_serial, (options_get_bool ("SavePlaylistTags") && !user_wants_interrupt())))
+		interface_message ("Playlist saved");
 	iface_set_status ("");
 }
 
@@ -3980,9 +3981,9 @@ void interface_cmdline_append (int server_sock, lists_t_strs *args)
 
 			plist_cat (&saved_plist, &new);
 			if (options_get_bool("SavePlaylist")) {
-				fill_tags (&saved_plist, TAGS_COMMENTS
-						| TAGS_TIME, 1);
-				plist_save (&saved_plist, create_file_name (PLAYLIST_FILE), 1);
+				if (options_get_bool("SavePlaylistTags"))
+					fill_tags (&saved_plist, TAGS_COMMENTS | TAGS_TIME, 1);
+				plist_save (&saved_plist, create_file_name (PLAYLIST_FILE), 1, options_get_bool("SavePlaylistTags"));
 			}
 
 			plist_free (&saved_plist);

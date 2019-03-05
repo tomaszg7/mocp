@@ -100,6 +100,8 @@ static int plist_load_m3u (struct plist *plist, const char *fname,
 
 	while ((line = read_line (file))) {
 		if (!strncmp (line, "#EXTINF:", sizeof("#EXTINF:") - 1)) {
+			if (!options_get_bool ("SavePlaylistTags")) continue;
+
 			char *comma, *num_err;
 			char time_text[10] = "";
 			int time_sec;
@@ -402,7 +404,7 @@ int plist_load (struct plist *plist, const char *fname, const char *cwd,
  * If save_serial is not 0, the playlist serial is saved in a
  * comment. */
 static int plist_save_m3u (struct plist *plist, const char *fname,
-		const int strip_path, const int save_serial)
+		const int strip_path, const int save_serial, const bool save_tags)
 {
 	FILE *file = NULL;
 	int i, ret, result = 0;
@@ -420,10 +422,11 @@ static int plist_save_m3u (struct plist *plist, const char *fname,
 	if (fcntl (fileno (file), F_SETLKW, &write_lock) == -1)
 		log_errno ("Can't lock the playlist file", errno);
 
-	if (fprintf (file, "#EXTM3U\r\n") < 0) {
-		error_errno ("Error writing playlist", errno);
-		goto err;
-	}
+	if (options_get_bool ("SavePlaylistTags"))
+		if (fprintf (file, "#EXTM3U\r\n") < 0) {
+			error_errno ("Error writing playlist", errno);
+			goto err;
+		}
 
 	if (save_serial && fprintf (file, "#MOCSERIAL: %d\r\n",
 	                                  plist_get_serial (plist)) < 0) {
@@ -435,15 +438,19 @@ static int plist_save_m3u (struct plist *plist, const char *fname,
 		if (!plist_deleted (plist, i)) {
 
 			/* EXTM3U */
-			if (plist->items[i].tags)
-				ret = fprintf (file, "#EXTINF:%d,%s\r\n",
-						plist->items[i].tags->time,
-						plist->items[i].title_tags ?
-						plist->items[i].title_tags
-						: plist->items[i].title_file);
+			if (save_tags) {
+				if (plist->items[i].tags)
+					ret = fprintf (file, "#EXTINF:%d,%s\r\n",
+							plist->items[i].tags->time,
+							plist->items[i].title_tags ?
+							plist->items[i].title_tags
+							: plist->items[i].title_file);
+				else
+					ret = fprintf (file, "#EXTINF:%d,%s\r\n", 0,
+							plist->items[i].title_file);
+			}
 			else
-				ret = fprintf (file, "#EXTINF:%d,%s\r\n", 0,
-						plist->items[i].title_file);
+				ret = 17;
 
 			/* file */
 			if (ret >= 0)
@@ -472,7 +479,7 @@ err:
 
 /* Save the playlist into the file. Return 0 on error. If cwd is NULL, use
  * absolute paths. */
-int plist_save (struct plist *plist, const char *file, const int save_serial)
+int plist_save (struct plist *plist, const char *file, const int save_serial, const bool save_tags)
 {
 	int offset = 0;
 	char *dir,*file_copy;
@@ -501,5 +508,5 @@ int plist_save (struct plist *plist, const char *file, const int save_serial)
 		free(file_copy);
 	}
 
-	return plist_save_m3u (plist, file, offset, save_serial);
+	return plist_save_m3u (plist, file, offset, save_serial, save_tags);
 }

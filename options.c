@@ -738,6 +738,7 @@ void options_init ()
 	add_bool ("Precache", true);
 	add_bool ("SavePlaylist", true);
 	add_bool ("SyncPlaylist", true);
+	add_bool ("SavePlaylistTags", false);
 	add_str  ("Keymap", NULL, CHECK_NONE);
 	add_bool ("ASCIILines", false);
 	add_bool ("RatingShow", true);
