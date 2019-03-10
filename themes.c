@@ -440,7 +440,10 @@ static int parse_theme_colordef (const int line_num,
 			theme_parse_error (line_num, "expected '='");
 		return 0;
 	}
+
 	tmp = strtok(NULL, "");
+
+	/* Check if color is in hex format */
 	if (tmp[0] == '#') {
 		char *end;
 		long color;
@@ -458,11 +461,12 @@ static int parse_theme_colordef (const int line_num,
 						"expected '#RRGGBB'");
 			return -1;
 		}
-		red = (color >> 16) * 1000 / 256;
-		green = ((color >> 8) & 0xFF) * 1000 / 256;
-		blue = (color & 0xFF) * 1000 / 256;
+		red = (color >> 16) * 1000 / 255;
+		green = ((color >> 8) & 0xFF) * 1000 / 255;
+		blue = (color & 0xFF) * 1000 / 255;
 	}
-	else {
+	else
+	{
 		tmp2 = strtok(tmp, " \t");
 		red = parse_rgb_color_value (line_num, errors_are_fatal, tmp2);
 		tmp2 = strtok(NULL, " \t");
