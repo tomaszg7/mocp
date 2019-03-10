@@ -15,6 +15,7 @@
 # or
 #
 # colordef COLOR = RED GREEN BLUE
+# colordef COLOR = xRRGGBB
 #
 # Where names are case insensitive.
 #
@@ -81,6 +82,9 @@
 # from 0 to 1000. Example:
 #
 # colordef red = 1000 0 0
+#
+# Alternatively you can use hex notation. Example:
+# colordef red = xFF0000
 #
 # HINT: you have only 8 colors, but combined with attributes bold and/or
 # reversed you actually get more colors.

@@ -393,13 +393,12 @@ static int parse_theme_element (const int line_num, const char *name,
  * to the number. If errors_are_fatal, use theme_parse_error() on error,
  * otherwise return -1. */
 static short parse_rgb_color_value (const int line_num,
-		const int errors_are_fatal)
+		const int errors_are_fatal, char *tmp)
 {
-	char *tmp;
 	char *end;
 	long color;
 
-	if (!(tmp = strtok(NULL, " \t"))) {
+	if (!tmp) {
 		if (errors_are_fatal)
 			theme_parse_error (line_num, "3 color values expected");
 		return -1;
@@ -428,7 +427,7 @@ static int parse_theme_colordef (const int line_num,
 		const int errors_are_fatal)
 {
 	char *name;
-	char *tmp;
+	char *tmp, *tmp2;
 	short red, green, blue;
 
 	if (!(name = strtok(NULL, " \t"))) {
@@ -441,12 +440,38 @@ static int parse_theme_colordef (const int line_num,
 			theme_parse_error (line_num, "expected '='");
 		return 0;
 	}
+	tmp = strtok(NULL, "");
+	if (tmp[0] == '#') {
+		char *end;
+		long color;
 
-	red = parse_rgb_color_value (line_num, errors_are_fatal);
-	green = parse_rgb_color_value (line_num, errors_are_fatal);
-	blue = parse_rgb_color_value (line_num, errors_are_fatal);
-	if (red == -1 || green == -1 || blue == -1)
-		return 0;
+		color = strtol (tmp+1, &end, 16);
+		if (*end) {
+			if (errors_are_fatal)
+				theme_parse_error (line_num,
+						"expected '#RRGGBB'");
+			return -1;
+		}
+		if (!RANGE(0, color, 0xFFFFFF)) {
+			if (errors_are_fatal)
+				theme_parse_error (line_num,
+						"expected '#RRGGBB'");
+			return -1;
+		}
+		red = (color >> 16) * 1000 / 256;
+		green = ((color >> 8) & 0xFF) * 1000 / 256;
+		blue = (color & 0xFF) * 1000 / 256;
+	}
+	else {
+		tmp2 = strtok(tmp, " \t");
+		red = parse_rgb_color_value (line_num, errors_are_fatal, tmp2);
+		tmp2 = strtok(NULL, " \t");
+		green = parse_rgb_color_value (line_num, errors_are_fatal, tmp2);
+		tmp2 = strtok(NULL, " \t");
+		blue = parse_rgb_color_value (line_num, errors_are_fatal, tmp2);
+		if (red == -1 || green == -1 || blue == -1)
+			return 0;
+	}
 
 	if (!new_colordef(line_num, name, red, green, blue, errors_are_fatal))
 		return 0;
@@ -459,6 +484,7 @@ static int parse_theme_colordef (const int line_num,
  * ELEMENT = FOREGROUND BACKGROUND [ATTRIBUTE[,ATTRIBUTE,..]]
  * or:
  * colordef COLORNAME = RED GREEN BLUE
+ * colordef COLORNAME = xRRGGBB
  *
  * Blank lines and beginning with # are ignored, see example_theme.
  *
