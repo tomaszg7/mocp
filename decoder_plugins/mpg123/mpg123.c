@@ -48,14 +48,22 @@ struct mpg123_data
 	struct file_tags *tags;
 };
 
-// ID3v1 tag values may not be null-terminated
+// ID3v1 tag values may not be null-terminated. Truncate trailing spaces and zeros.
 char* safe_string (char text[30])
 {
 	char *out;
 
-	out = xmalloc(sizeof(char)*31);
-	memcpy(out, text, 30*sizeof(char));
-	out[30] = 0;
+	int n = 0;
+	while (text[n] != 0 && n < 29) {
+		n++;
+	}
+	while (text[n] == ' ' && n > 0) {
+		n--;
+	}
+
+	out = xmalloc((n+2) * sizeof(char));
+	memcpy(out, text, (n+1) * sizeof(char));
+	out[n+1] = 0;
 	return out;
 }
 
@@ -71,15 +79,15 @@ static void get_tags (mpg123_handle *mf, struct file_tags *info)
 			debug("TG: v2 tags present");
 			if (v2->title && v2->title->p) {
 				info->title = xstrdup(v2->title->p);
-				debug("TG: title v2 %s", info->title);
+				debug("TG: title v2 %s.", info->title);
 			}
 			if (v2->artist && v2->artist->p) {
 				info->artist = xstrdup(v2->artist->p);
-				debug("TG: artist v2 %s", info->artist);
+				debug("TG: artist v2 %s.", info->artist);
 			}
 			if (v2->album && v2->album->p) {
 				info->album  = xstrdup(v2->album->p);
-				debug("TG: album v2 %s", info->album);
+				debug("TG: album v2 %s.", info->album);
 			}
 
 			size_t i,j;
@@ -90,9 +98,9 @@ static void get_tags (mpg123_handle *mf, struct file_tags *info)
 				memcpy(tag_id,v2->text[i].id,4);
 				tag_id[4] = 0;
 
-				debug("TG: field id: %s, value v2: %s", tag_id, v2->text[i].text.p);
+				debug("TG: field id: %s, value v2: %s.", tag_id, v2->text[i].text.p);
 				if (strcmp(tag_id,"TRCK")==0) {
-				debug("TG: track number found");
+				debug("TG: track number found.");
 
 				//since track number may be in form 07/23, we need to extract the first number
 				for (j=0; j<v2->text[i].text.fill; ++j) {
@@ -105,7 +113,7 @@ static void get_tags (mpg123_handle *mf, struct file_tags *info)
 				num=xmalloc((j+1)*sizeof(char));
 				memcpy(num,v2->text[i].text.p,j);
 				if (atoi(num)>0) info->track = atoi(num);
-				debug("TG: track v2 %d",info->track);
+				debug("TG: track v2 %d.",info->track);
 				free(num);
 				}
 				}
@@ -118,19 +126,19 @@ static void get_tags (mpg123_handle *mf, struct file_tags *info)
 
 			if (!info->title) {
 				info->title  = safe_string(v1->title);
-				debug("TG: title v1 %s", info->title);
+				debug("TG: title v1 %s.", info->title);
 			}
 			if (!info->artist) {
 				info->artist = safe_string(v1->artist);
-				debug("TG: artist v1 %s", info->artist);
+				debug("TG: artist v1 %s.", info->artist);
 			}
 			if (!info->album) {
 				info->album = safe_string(v1->album);
-				debug("TG: album v1 %s", info->album);
+				debug("TG: album v1 %s.", info->album);
 			}
 			if (info->track==-1 && v1->comment[28]==0 && v1->comment[29]>0) {
 				info->track = (int)(v1->comment[29]);
-				debug("TG: track v1 %d", info->track);
+				debug("TG: track v1 %d.", info->track);
 			}
 		}
 	mpg123_meta_free(mf);
