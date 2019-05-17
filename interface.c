@@ -2858,8 +2858,8 @@ static void make_theme_menu ()
 
 		error ("No themes found.");
 	}
-
-	iface_update_theme_selection (get_current_theme ());
+	else
+		iface_update_theme_selection (get_current_theme ());
 	iface_refresh ();
 }
 
