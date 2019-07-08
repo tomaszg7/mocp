@@ -1,0 +1,17 @@
+*.[oa]
+*~
+*.backup
+*.l[ao]
+*.kdev4
+Makefile
+Makefile.in
+.kdev4
+.kate-swp
+.deps
+.libs
+mocp
+missing
+.svn
+config.h
+config.h.in
+config.log
