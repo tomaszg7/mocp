@@ -1,0 +1,45 @@
+# Star Trek inspired theme by tomaszg
+
+colordef white = #F8FBDB
+colordef blue = #9B98FE
+colordef yellow = #FE9800
+colordef red = #CC6061
+colordef magenta = #C498C4
+colordef green = #FFA873
+
+#			  FG		BG
+background		= black		black	
+frame			= yellow	black	reverse
+window_title		= magenta	black	reverse
+directory		= blue		black	
+selected_directory	= black		red	
+playlist		= magenta	black	
+selected_playlist	= black		red	
+file			= green		black	
+selected_file		= black		red	
+marked_file		= red		black	
+marked_selected_file	= white		red	
+info			= blue		black	
+selected_info		= black		red	
+marked_info		= blue		black	
+marked_selected_info	= white		red	
+status			= red		black	
+title			= yellow	black	
+state			= red		black	
+current_time		= white		black	
+time_left		= white		black	
+total_time		= white		black	
+time_total_frames	= white		black	
+sound_parameters	= blue		black	
+legend			= blue		black	
+disabled		= blue		black	
+enabled			= yellow	black	reverse
+empty_mixer_bar		= black		black	
+filled_mixer_bar	= white		red	
+empty_time_bar		= black		black	
+filled_time_bar		= black		red	
+entry			= black		black	
+entry_title		= black		cyan	
+error			= yellow	black	
+message			= red		black	
+plist_time		= blue		black	

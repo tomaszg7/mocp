@@ -1,0 +1,46 @@
+# Inspired by MC seasons-winter16M theme, made by tomaszg
+
+colordef white = #e4e3ed
+colordef blue = #3064a9
+colordef cyan = #cbd1e1
+colordef magenta = #5f00af
+#colordef white = 890 886 926
+#colordef blue = 187 390 660
+#colordef cyan = 793 816 879
+
+#			  FG		BG
+background		= white		white	normal
+frame			= black		white	normal
+window_title		= black		white	
+directory		= black		white	normal
+selected_directory	= black		cyan	
+playlist		= magenta	white	
+selected_playlist	= white		black	bold
+file			= black		white	normal
+selected_file		= black		cyan	
+marked_file		= blue		white	
+marked_selected_file	= blue		cyan	
+info			= black		white	
+selected_info		= black		cyan	
+marked_info		= blue		white	
+marked_selected_info	= blue		cyan	
+status			= black		white	
+title			= black		white	bold
+state			= red		white	
+current_time		= black		white	normal
+time_left		= blue		white	
+total_time		= black		white	
+time_total_frames	= black		white	normal
+sound_parameters	= blue		white	
+legend			= blue		white	normal
+disabled		= cyan		white	normal
+enabled			= blue		white	normal
+empty_mixer_bar		= black		white	
+filled_mixer_bar	= white		blue	
+empty_time_bar		= white		white	normal
+filled_time_bar		= white		blue	
+entry			= black		white	normal
+entry_title		= black		cyan	normal
+error			= red		white	normal
+message			= magenta	white	normal
+plist_time		= white		cyan	bold
